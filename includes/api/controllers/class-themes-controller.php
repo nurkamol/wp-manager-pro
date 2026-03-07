@@ -17,6 +17,9 @@ class Themes_Controller {
         if ( ! class_exists( 'Theme_Upgrader' ) ) {
             require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
         }
+        if ( ! function_exists( 'request_filesystem_credentials' ) ) {
+            require_once ABSPATH . 'wp-admin/includes/file.php';
+        }
     }
 
     public static function get_themes( WP_REST_Request $request ) {
@@ -166,5 +169,160 @@ class Themes_Controller {
             'themes' => $results,
             'total'  => $api->info['results'] ?? 0,
         ], 200 );
+    }
+
+    public static function upload_theme( WP_REST_Request $request ) {
+        self::load_theme_functions();
+
+        $files = $request->get_file_params();
+
+        if ( empty( $files['file'] ) ) {
+            return new WP_Error( 'missing_file', 'No file was uploaded.', [ 'status' => 400 ] );
+        }
+
+        $file = $files['file'];
+
+        if ( $file['error'] !== UPLOAD_ERR_OK ) {
+            return new WP_Error( 'upload_error', 'File upload error code: ' . $file['error'], [ 'status' => 400 ] );
+        }
+
+        // Validate it is a zip file.
+        $ext = strtolower( pathinfo( $file['name'], PATHINFO_EXTENSION ) );
+        if ( $ext !== 'zip' ) {
+            return new WP_Error( 'invalid_file_type', 'Only .zip files are allowed.', [ 'status' => 400 ] );
+        }
+
+        $overwrite = (bool) $request->get_param( 'overwrite' );
+
+        $upgrader = new \Theme_Upgrader( new \WP_Ajax_Upgrader_Skin() );
+        $result   = $upgrader->install( $file['tmp_name'], [ 'overwrite_package' => $overwrite ] );
+
+        if ( is_wp_error( $result ) ) {
+            return new WP_Error( 'install_failed', $result->get_error_message(), [ 'status' => 500 ] );
+        }
+
+        if ( ! $result ) {
+            return new WP_Error( 'install_failed', 'Theme installation from upload failed.', [ 'status' => 500 ] );
+        }
+
+        return new WP_REST_Response( [
+            'success' => true,
+            'message' => 'Theme uploaded and installed successfully.',
+        ], 200 );
+    }
+
+    public static function export_theme( WP_REST_Request $request ) {
+        $slug = sanitize_text_field( $request->get_param( 'slug' ) );
+
+        if ( ! $slug ) {
+            return new WP_Error( 'missing_param', 'Theme slug is required.', [ 'status' => 400 ] );
+        }
+
+        // Validate theme exists.
+        if ( ! wp_get_theme( $slug )->exists() ) {
+            return new WP_Error( 'theme_not_found', 'Theme not found.', [ 'status' => 404 ] );
+        }
+
+        if ( ! class_exists( 'ZipArchive' ) ) {
+            return new WP_Error( 'zip_not_available', 'ZipArchive class is not available on this server.', [ 'status' => 500 ] );
+        }
+
+        $theme_dir = get_theme_root() . '/' . $slug;
+
+        if ( ! is_dir( $theme_dir ) ) {
+            return new WP_Error( 'theme_dir_not_found', 'Theme directory not found.', [ 'status' => 404 ] );
+        }
+
+        // Set up export directory.
+        $upload_dir = wp_upload_dir();
+        $export_dir = $upload_dir['basedir'] . '/wmp-exports/';
+        wp_mkdir_p( $export_dir );
+
+        $key          = wp_generate_password( 16, false );
+        $zip_filename = $export_dir . $slug . '-' . $key . '.zip';
+
+        $zip = new \ZipArchive();
+        if ( $zip->open( $zip_filename, \ZipArchive::CREATE | \ZipArchive::OVERWRITE ) !== true ) {
+            return new WP_Error( 'zip_failed', 'Failed to create ZIP archive.', [ 'status' => 500 ] );
+        }
+
+        self::add_folder_to_zip( $zip, get_theme_root(), $theme_dir );
+        $zip->close();
+
+        if ( ! file_exists( $zip_filename ) ) {
+            return new WP_Error( 'zip_failed', 'ZIP archive was not created.', [ 'status' => 500 ] );
+        }
+
+        // Store transient for download.
+        set_transient( 'wmp_export_' . $key, $zip_filename, 300 );
+
+        $download_url = rest_url( 'wp-manager-pro/v1/themes/download' ) . '?key=' . $key;
+
+        return new WP_REST_Response( [
+            'success'      => true,
+            'download_url' => $download_url,
+            'filename'     => $slug . '.zip',
+        ], 200 );
+    }
+
+    public static function download_export( WP_REST_Request $request ) {
+        $key = sanitize_text_field( $request->get_param( 'key' ) );
+
+        if ( ! $key ) {
+            return new WP_Error( 'missing_key', 'Download key is required.', [ 'status' => 400 ] );
+        }
+
+        $zip_file = get_transient( 'wmp_export_' . $key );
+
+        if ( ! $zip_file || ! file_exists( $zip_file ) ) {
+            return new WP_Error( 'not_found', 'Export file not found or has expired.', [ 'status' => 404 ] );
+        }
+
+        delete_transient( 'wmp_export_' . $key );
+
+        // Strip the random key from the filename for the download name.
+        $basename   = basename( $zip_file );
+        $clean_name = preg_replace( '/-[a-zA-Z0-9]{16}(\.zip)$/', '$1', $basename );
+        $file_size  = filesize( $zip_file );
+
+        @ob_end_clean();
+
+        header( 'Content-Type: application/zip' );
+        header( 'Content-Disposition: attachment; filename="' . $clean_name . '"' );
+        header( 'Content-Length: ' . $file_size );
+        header( 'Cache-Control: no-cache, must-revalidate' );
+        header( 'Pragma: public' );
+
+        readfile( $zip_file );
+        @unlink( $zip_file );
+        exit;
+    }
+
+    private static function add_folder_to_zip( \ZipArchive $zip, string $base_path, string $folder ) {
+        $base_path = rtrim( $base_path, DIRECTORY_SEPARATOR ) . DIRECTORY_SEPARATOR;
+        $folder    = rtrim( $folder, DIRECTORY_SEPARATOR );
+
+        if ( ! is_dir( $folder ) ) {
+            return;
+        }
+
+        $items = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator( $folder, \RecursiveDirectoryIterator::SKIP_DOTS ),
+            \RecursiveIteratorIterator::SELF_FIRST
+        );
+
+        foreach ( $items as $item ) {
+            $item_path     = $item->getRealPath();
+            $relative_path = substr( $item_path, strlen( $base_path ) );
+
+            // Normalize to forward slashes for zip compatibility.
+            $relative_path = str_replace( DIRECTORY_SEPARATOR, '/', $relative_path );
+
+            if ( $item->isDir() ) {
+                $zip->addEmptyDir( $relative_path . '/' );
+            } else {
+                $zip->addFile( $item_path, $relative_path );
+            }
+        }
     }
 }

@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { toast } from 'sonner'
-import { Search, UserCheck, LogIn, Trash2, RefreshCw, AlertTriangle } from 'lucide-react'
+import { Search, UserCheck, LogIn, Trash2, RefreshCw, AlertTriangle, Pencil } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
 
 interface User {
@@ -47,6 +47,8 @@ export function Users() {
   const [changeRoleUser, setChangeRoleUser] = useState<User | null>(null)
   const [newRole, setNewRole] = useState('')
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null)
+  const [renameTarget, setRenameTarget] = useState<User | null>(null)
+  const [newUsername, setNewUsername] = useState('')
 
   const { data, isLoading } = useQuery<UsersData>({
     queryKey: ['users', searchQuery, roleFilter],
@@ -79,6 +81,18 @@ export function Users() {
       toast.success('User deleted')
       queryClient.invalidateQueries({ queryKey: ['users'] })
       setDeleteTarget(null)
+    },
+    onError: (err: Error) => toast.error(err.message),
+  })
+
+  const renameMutation = useMutation({
+    mutationFn: ({ user_id, username }: { user_id: number; username: string }) =>
+      api.post('/users/rename', { user_id, username }),
+    onSuccess: () => {
+      toast.success('Username changed successfully')
+      queryClient.invalidateQueries({ queryKey: ['users'] })
+      setRenameTarget(null)
+      setNewUsername('')
     },
     onError: (err: Error) => toast.error(err.message),
   })
@@ -168,6 +182,20 @@ export function Users() {
                       <Button
                         variant="ghost"
                         size="sm"
+                        onClick={() => {
+                          setRenameTarget(user)
+                          setNewUsername(user.login)
+                        }}
+                        className="h-7 text-xs text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                        disabled={user.is_current}
+                        title="Rename username"
+                      >
+                        <Pencil className="w-3 h-3" />
+                        Rename
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={() => { setChangeRoleUser(user); setNewRole(user.roles[0] || '') }}
                         className="h-7 text-xs"
                         disabled={user.is_current}
@@ -209,6 +237,44 @@ export function Users() {
           )}
         </div>
       </div>
+
+      {/* Rename Username Dialog */}
+      <Dialog open={!!renameTarget} onOpenChange={() => { setRenameTarget(null); setNewUsername('') }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Pencil className="w-4 h-4" /> Rename Username
+            </DialogTitle>
+            <DialogDescription>
+              Change the login username for <strong>{renameTarget?.display_name}</strong>. This affects the username used to log in.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <label className="text-xs text-slate-500">Current username: <strong>{renameTarget?.login}</strong></label>
+            <Input
+              autoFocus
+              placeholder="New username"
+              value={newUsername}
+              onChange={e => setNewUsername(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && newUsername && renameTarget) {
+                  renameMutation.mutate({ user_id: renameTarget.id, username: newUsername })
+                }
+              }}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setRenameTarget(null); setNewUsername('') }}>Cancel</Button>
+            <Button
+              onClick={() => renameTarget && renameMutation.mutate({ user_id: renameTarget.id, username: newUsername })}
+              disabled={!newUsername || renameMutation.isPending || newUsername === renameTarget?.login}
+            >
+              {renameMutation.isPending ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Pencil className="w-4 h-4" />}
+              Change Username
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Change Role Dialog */}
       <Dialog open={!!changeRoleUser} onOpenChange={() => setChangeRoleUser(null)}>

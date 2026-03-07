@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils'
 import {
   LayoutDashboard, Puzzle, Palette, FolderOpen, Database, Server,
   Construction, Users, Bug, Image, StickyNote, ChevronLeft, ChevronRight,
-  ExternalLink, Settings
+  ExternalLink, Settings, RotateCcw
 } from 'lucide-react'
 import { getConfig } from '@/lib/api'
 import { useState } from 'react'
@@ -21,6 +21,7 @@ const navItems = [
   { to: '/images', icon: Image, label: 'Image Tools' },
   { to: '/notes', icon: StickyNote, label: 'Notes' },
   { to: '/system', icon: Server, label: 'System Info' },
+  { to: '/reset', icon: RotateCcw, label: 'Reset Tools' },
 ]
 
 interface SidebarProps {

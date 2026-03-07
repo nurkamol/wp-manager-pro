@@ -14,6 +14,7 @@ use WP_Manager_Pro\API\Controllers\Maintenance_Controller;
 use WP_Manager_Pro\API\Controllers\Notes_Controller;
 use WP_Manager_Pro\API\Controllers\Debug_Controller;
 use WP_Manager_Pro\API\Controllers\Images_Controller;
+use WP_Manager_Pro\API\Controllers\Reset_Controller;
 
 class Routes {
 
@@ -60,6 +61,21 @@ class Routes {
             'callback'            => [ Plugins_Controller::class, 'search_plugins' ],
             'permission_callback' => [ self::class, 'admin_permission' ],
         ] );
+        register_rest_route( $namespace, '/plugins/upload', [
+            'methods'             => 'POST',
+            'callback'            => [ Plugins_Controller::class, 'upload_plugin' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/plugins/export', [
+            'methods'             => 'POST',
+            'callback'            => [ Plugins_Controller::class, 'export_plugin' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/plugins/download', [
+            'methods'             => 'GET',
+            'callback'            => [ Plugins_Controller::class, 'download_export' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
 
         // Themes.
         register_rest_route( $namespace, '/themes', [
@@ -85,6 +101,21 @@ class Routes {
         register_rest_route( $namespace, '/themes/search', [
             'methods'             => 'GET',
             'callback'            => [ Themes_Controller::class, 'search_themes' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/themes/upload', [
+            'methods'             => 'POST',
+            'callback'            => [ Themes_Controller::class, 'upload_theme' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/themes/export', [
+            'methods'             => 'POST',
+            'callback'            => [ Themes_Controller::class, 'export_theme' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/themes/download', [
+            'methods'             => 'GET',
+            'callback'            => [ Themes_Controller::class, 'download_export' ],
             'permission_callback' => [ self::class, 'admin_permission' ],
         ] );
 
@@ -114,6 +145,16 @@ class Routes {
             'callback'            => [ Files_Controller::class, 'create_directory' ],
             'permission_callback' => [ self::class, 'admin_permission' ],
         ] );
+        register_rest_route( $namespace, '/files/upload', [
+            'methods'             => 'POST',
+            'callback'            => [ Files_Controller::class, 'upload_file' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/files/rename', [
+            'methods'             => 'POST',
+            'callback'            => [ Files_Controller::class, 'rename_file' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
 
         // Database.
         register_rest_route( $namespace, '/database/tables', [
@@ -139,6 +180,26 @@ class Routes {
         register_rest_route( $namespace, '/database/query', [
             'methods'             => 'POST',
             'callback'            => [ Database_Controller::class, 'run_query' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/database/row', [
+            'methods'             => 'POST',
+            'callback'            => [ Database_Controller::class, 'insert_row' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/database/row', [
+            'methods'             => 'PUT',
+            'callback'            => [ Database_Controller::class, 'update_row' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/database/row', [
+            'methods'             => 'DELETE',
+            'callback'            => [ Database_Controller::class, 'delete_row' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/database/export', [
+            'methods'             => 'GET',
+            'callback'            => [ Database_Controller::class, 'export_table' ],
             'permission_callback' => [ self::class, 'admin_permission' ],
         ] );
 
@@ -180,6 +241,11 @@ class Routes {
         register_rest_route( $namespace, '/users/delete', [
             'methods'             => 'DELETE',
             'callback'            => [ Users_Controller::class, 'delete_user' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/users/rename', [
+            'methods'             => 'POST',
+            'callback'            => [ Users_Controller::class, 'rename_user' ],
             'permission_callback' => [ self::class, 'admin_permission' ],
         ] );
 
@@ -241,6 +307,18 @@ class Routes {
         register_rest_route( $namespace, '/images/regenerate', [
             'methods'             => 'POST',
             'callback'            => [ Images_Controller::class, 'regenerate_thumbnails' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+
+        // Reset Tools.
+        register_rest_route( $namespace, '/reset/status', [
+            'methods'             => 'GET',
+            'callback'            => [ Reset_Controller::class, 'get_status' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/reset/execute', [
+            'methods'             => 'POST',
+            'callback'            => [ Reset_Controller::class, 'execute_reset' ],
             'permission_callback' => [ self::class, 'admin_permission' ],
         ] );
     }

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { PageHeader } from '@/components/PageHeader'
@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent } from '@/components/ui/card'
 import { toast } from 'sonner'
-import { Search, Power, Trash2, Download, RefreshCw, AlertTriangle, Star } from 'lucide-react'
+import { Search, Power, Trash2, Download, RefreshCw, AlertTriangle, Star, Upload, Package } from 'lucide-react'
 import { stripHtml, truncate } from '@/lib/utils'
 
 interface Plugin {
@@ -37,11 +37,18 @@ interface WpPlugin {
 
 export function Plugins() {
   const queryClient = useQueryClient()
+  const uploadInputRef = useRef<HTMLInputElement>(null)
+
   const [search, setSearch] = useState('')
   const [wpSearch, setWpSearch] = useState('')
   const [wpSearchQuery, setWpSearchQuery] = useState('')
   const [deleteTarget, setDeleteTarget] = useState<Plugin | null>(null)
   const [installing, setInstalling] = useState<string | null>(null)
+
+  // Upload tab state
+  const [uploadFile, setUploadFile] = useState<File | null>(null)
+  const [overwrite, setOverwrite] = useState(false)
+  const [isDragging, setIsDragging] = useState(false)
 
   const { data: pluginsData, isLoading } = useQuery({
     queryKey: ['plugins'],
@@ -68,7 +75,7 @@ export function Plugins() {
   const deleteMutation = useMutation({
     mutationFn: (plugin: string) => api.delete('/plugins/delete', { plugin }),
     onSuccess: () => {
-      toast.success(`Plugin deleted successfully`)
+      toast.success('Plugin deleted successfully')
       queryClient.invalidateQueries({ queryKey: ['plugins'] })
       setDeleteTarget(null)
     },
@@ -90,6 +97,44 @@ export function Plugins() {
       setInstalling(null)
     },
   })
+
+  const uploadMutation = useMutation({
+    mutationFn: (fd: FormData) => api.upload('/plugins/upload', fd),
+    onSuccess: () => {
+      toast.success('Plugin uploaded and installed successfully')
+      queryClient.invalidateQueries({ queryKey: ['plugins'] })
+      setUploadFile(null)
+      setOverwrite(false)
+    },
+    onError: (err: Error) => toast.error(err.message),
+  })
+
+  const exportMutation = useMutation({
+    mutationFn: (plugin: string) => api.post<{ download_url: string }>('/plugins/export', { plugin }),
+    onSuccess: (data) => {
+      window.location.href = data.download_url
+    },
+    onError: (err: Error) => toast.error(err.message),
+  })
+
+  const handleUploadSubmit = () => {
+    if (!uploadFile) return
+    const fd = new FormData()
+    fd.append('file', uploadFile)
+    fd.append('overwrite', overwrite ? '1' : '0')
+    uploadMutation.mutate(fd)
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+    const file = e.dataTransfer.files[0]
+    if (file && file.name.endsWith('.zip')) {
+      setUploadFile(file)
+    } else {
+      toast.error('Please drop a .zip file')
+    }
+  }
 
   const filtered = pluginsData?.plugins.filter(p =>
     p.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -121,6 +166,7 @@ export function Plugins() {
                 Installed ({pluginsData?.plugins.length || 0})
               </TabsTrigger>
               <TabsTrigger value="search">Search & Install</TabsTrigger>
+              <TabsTrigger value="upload">Upload ZIP</TabsTrigger>
             </TabsList>
           </div>
 
@@ -151,7 +197,9 @@ export function Plugins() {
                         plugin={plugin}
                         onToggle={() => toggleMutation.mutate({ plugin: plugin.file, active: plugin.active })}
                         onDelete={() => setDeleteTarget(plugin)}
+                        onExport={() => exportMutation.mutate(plugin.file)}
                         isLoading={toggleMutation.isPending}
+                        isExporting={exportMutation.isPending}
                       />
                     ))}
                   </div>
@@ -170,7 +218,9 @@ export function Plugins() {
                         plugin={plugin}
                         onToggle={() => toggleMutation.mutate({ plugin: plugin.file, active: plugin.active })}
                         onDelete={() => setDeleteTarget(plugin)}
+                        onExport={() => exportMutation.mutate(plugin.file)}
                         isLoading={toggleMutation.isPending}
+                        isExporting={exportMutation.isPending}
                       />
                     ))}
                   </div>
@@ -267,6 +317,80 @@ export function Plugins() {
               </div>
             )}
           </TabsContent>
+
+          {/* Upload ZIP Tab */}
+          <TabsContent value="upload" className="mt-0">
+            <div className="max-w-xl mx-auto space-y-5">
+              <input
+                type="file"
+                ref={uploadInputRef}
+                className="hidden"
+                accept=".zip"
+                onChange={e => {
+                  const file = e.target.files?.[0]
+                  if (file) setUploadFile(file)
+                  e.target.value = ''
+                }}
+              />
+
+              {/* Drop zone */}
+              <div
+                className={`border-2 border-dashed rounded-lg p-10 text-center cursor-pointer transition-colors ${
+                  isDragging ? 'border-blue-400 bg-blue-50' : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                }`}
+                onClick={() => uploadInputRef.current?.click()}
+                onDragOver={e => { e.preventDefault(); setIsDragging(true) }}
+                onDragLeave={() => setIsDragging(false)}
+                onDrop={handleDrop}
+              >
+                <Package className="w-10 h-10 mx-auto mb-3 text-slate-400" />
+                {uploadFile ? (
+                  <div>
+                    <p className="font-medium text-slate-700">{uploadFile.name}</p>
+                    <p className="text-xs text-slate-400 mt-1">{(uploadFile.size / 1024).toFixed(1)} KB</p>
+                    <button
+                      className="mt-2 text-xs text-blue-500 hover:underline"
+                      onClick={e => { e.stopPropagation(); setUploadFile(null) }}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-sm font-medium text-slate-600">Drop a plugin ZIP here or click to browse</p>
+                    <p className="text-xs text-slate-400 mt-1">Only .zip files are accepted</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Overwrite checkbox */}
+              <label className="flex items-center gap-3 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={overwrite}
+                  onChange={e => setOverwrite(e.target.checked)}
+                  className="w-4 h-4 accent-blue-600"
+                />
+                <div>
+                  <p className="text-sm font-medium text-slate-700">Overwrite if exists</p>
+                  <p className="text-xs text-slate-400">Replace plugin files if the plugin is already installed</p>
+                </div>
+              </label>
+
+              <Button
+                className="w-full"
+                onClick={handleUploadSubmit}
+                disabled={!uploadFile || uploadMutation.isPending}
+              >
+                {uploadMutation.isPending ? (
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Upload className="w-4 h-4" />
+                )}
+                {uploadMutation.isPending ? 'Installing...' : 'Upload & Install Plugin'}
+              </Button>
+            </div>
+          </TabsContent>
         </Tabs>
       </div>
 
@@ -299,11 +423,20 @@ export function Plugins() {
   )
 }
 
-function PluginRow({ plugin, onToggle, onDelete, isLoading }: {
+function PluginRow({
+  plugin,
+  onToggle,
+  onDelete,
+  onExport,
+  isLoading,
+  isExporting,
+}: {
   plugin: Plugin
   onToggle: () => void
   onDelete: () => void
+  onExport: () => void
   isLoading: boolean
+  isExporting: boolean
 }) {
   return (
     <div className={`flex items-center justify-between p-4 rounded-lg border bg-white hover:shadow-sm transition-shadow ${plugin.active ? 'border-slate-200' : 'border-slate-100 opacity-70'}`}>
@@ -329,6 +462,16 @@ function PluginRow({ plugin, onToggle, onDelete, isLoading }: {
         >
           <Power className="w-3.5 h-3.5" />
           {plugin.active ? 'Deactivate' : 'Activate'}
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onExport}
+          disabled={isExporting}
+          className="text-slate-500 hover:text-slate-700 hover:bg-slate-50 h-8 w-8"
+          title="Export plugin as ZIP"
+        >
+          {isExporting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
         </Button>
         <Button variant="ghost" size="icon" onClick={onDelete} className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8">
           <Trash2 className="w-3.5 h-3.5" />

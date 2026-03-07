@@ -10,10 +10,10 @@ use WP_Error;
 class Users_Controller {
 
     public static function get_users( WP_REST_Request $request ) {
-        $page    = absint( $request->get_param( 'page' ) ) ?: 1;
-        $limit   = min( absint( $request->get_param( 'limit' ) ) ?: 20, 100 );
-        $search  = sanitize_text_field( $request->get_param( 'search' ) );
-        $role    = sanitize_text_field( $request->get_param( 'role' ) );
+        $page   = absint( $request->get_param( 'page' ) ) ?: 1;
+        $limit  = min( absint( $request->get_param( 'limit' ) ) ?: 20, 100 );
+        $search = sanitize_text_field( $request->get_param( 'search' ) );
+        $role   = sanitize_text_field( $request->get_param( 'role' ) );
 
         $args = [
             'number'  => $limit,
@@ -168,5 +168,67 @@ class Users_Controller {
         }
 
         return new WP_REST_Response( [ 'success' => true, 'message' => 'User deleted successfully.' ], 200 );
+    }
+
+    public static function rename_user( WP_REST_Request $request ) {
+        global $wpdb;
+
+        $user_id  = absint( $request->get_param( 'user_id' ) );
+        $username = sanitize_user( $request->get_param( 'username' ), true );
+
+        if ( ! $user_id ) {
+            return new WP_Error( 'missing_param', 'User ID is required.', [ 'status' => 400 ] );
+        }
+
+        if ( empty( $username ) ) {
+            return new WP_Error( 'missing_username', 'Username is required.', [ 'status' => 400 ] );
+        }
+
+        // Username must not contain spaces.
+        if ( strpos( $username, ' ' ) !== false ) {
+            return new WP_Error( 'invalid_username', 'Username must not contain spaces.', [ 'status' => 400 ] );
+        }
+
+        // Validate username format.
+        if ( ! validate_username( $username ) ) {
+            return new WP_Error( 'invalid_username', 'Username contains invalid characters.', [ 'status' => 400 ] );
+        }
+
+        // Cannot rename self.
+        if ( $user_id === get_current_user_id() ) {
+            return new WP_Error( 'cannot_rename_self', 'Cannot rename your own account.', [ 'status' => 403 ] );
+        }
+
+        // Ensure the user exists.
+        $user = get_user_by( 'id', $user_id );
+        if ( ! $user ) {
+            return new WP_Error( 'user_not_found', 'User not found.', [ 'status' => 404 ] );
+        }
+
+        // Check the username is not already taken.
+        $existing_id = username_exists( $username );
+        if ( $existing_id && (int) $existing_id !== $user_id ) {
+            return new WP_Error( 'username_taken', 'That username is already in use.', [ 'status' => 409 ] );
+        }
+
+        // Perform a direct DB update — wp_update_user() does not allow changing user_login.
+        $result = $wpdb->update(
+            $wpdb->users,
+            [ 'user_login' => $username ],
+            [ 'ID' => $user_id ]
+        );
+
+        if ( $result === false ) {
+            return new WP_Error( 'rename_failed', 'Failed to rename user: ' . $wpdb->last_error, [ 'status' => 500 ] );
+        }
+
+        // Clear user cache so subsequent lookups reflect the new login.
+        clean_user_cache( $user_id );
+
+        return new WP_REST_Response( [
+            'success'  => true,
+            'message'  => 'Username updated successfully.',
+            'username' => $username,
+        ], 200 );
     }
 }

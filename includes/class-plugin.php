@@ -39,6 +39,7 @@ class Plugin {
             'class-notes-controller',
             'class-debug-controller',
             'class-images-controller',
+            'class-reset-controller',
         ];
 
         foreach ( $controllers as $controller ) {
@@ -52,6 +53,10 @@ class Plugin {
         add_action( 'admin_menu', [ Admin::class, 'register_menu' ] );
         add_action( 'admin_enqueue_scripts', [ Admin::class, 'enqueue_assets' ] );
         add_action( 'rest_api_init', [ API\Routes::class, 'register_routes' ] );
+
+        // SVG support (conditional on settings).
+        add_filter( 'upload_mimes', [ API\Controllers\Images_Controller::class, 'maybe_allow_svg' ] );
+        add_filter( 'wp_handle_upload_prefilter', [ API\Controllers\Images_Controller::class, 'sanitize_svg' ] );
     }
 
     public function load_textdomain() {

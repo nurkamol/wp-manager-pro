@@ -7,6 +7,71 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [1.1.0] — 2026-03-08
+
+### Added
+
+#### Plugin Manager
+- **ZIP Upload**: Upload a `.zip` file to install a new plugin or overwrite an existing one (uses WordPress `Plugin_Upgrader` with `overwrite_package: true`)
+- **ZIP Export**: Export any installed plugin directory as a `.zip` download; uses PHP `ZipArchive` + `RecursiveIteratorIterator` and streams through the REST endpoint
+- Export temp files stored under `wp-content/uploads/wmp-exports/` with a 5-minute transient key for the download URL
+
+#### Theme Manager
+- **ZIP Upload**: Upload a `.zip` file to install a new theme or overwrite an existing one (uses WordPress `Theme_Upgrader` with `overwrite_package: true`)
+- **ZIP Export**: Export any installed theme directory as a `.zip` download with the same streaming mechanism as plugin export
+
+#### File Manager
+- **Monaco Editor**: Replaced the plain `<textarea>` with the full VS Code editor engine (`@monaco-editor/react`); automatic language detection from file extension covers PHP, JS, TS, TSX, JSX, CSS, SCSS, JSON, SQL, YAML, TOML, HTML, XML, SVG, Markdown, Bash, ENV, INI, and more
+- **File Upload**: Upload any file to the currently browsed directory (`multipart/form-data` via `move_uploaded_file`); validates destination is within `ABSPATH`
+- **Rename**: Rename files and folders in-place via a dialog; guards against path separator injection and renaming critical files
+
+#### Database Manager
+- **Row Insert**: Insert a new row into any table via a dynamically-generated form (POST `/database/row`)
+- **Row Edit**: Edit an existing row's values inline (PUT `/database/row`)
+- **Row Delete**: Delete individual rows by primary key (DELETE `/database/row`)
+- **Table Export**: Export a full table as a `.sql` dump downloaded to the browser; streams via `@ob_end_clean()` + `header()` + `echo` + `exit`
+
+#### User Manager
+- **Username Rename**: Rename any user's login handle; uses `sanitize_user()` + `validate_username()` for validation, checks for conflicts with `username_exists()`, executes via direct `$wpdb->update` on `$wpdb->users`, then clears user cache with `clean_user_cache()`
+- Self-rename prevented server-side
+
+#### Debug Tools
+- **SCRIPT_DEBUG Toggle**: `SCRIPT_DEBUG` constant can now be toggled alongside `WP_DEBUG`, `WP_DEBUG_LOG`, `WP_DEBUG_DISPLAY`, and `SAVEQUERIES`
+- **Log Level Filter**: Error log viewer now supports filtering by level — Error, Warning, Notice, Deprecated — using regex matching against PHP log line prefixes
+- **Copy Log**: One-click copy of the visible error log to the clipboard
+
+#### Image Tools
+- **SVG Support**: New "SVG Support" card — enable/disable SVG uploads globally with per-role checkboxes (administrator, editor, author)
+- **SVG Sanitization**: Server-side sanitization on upload via `wp_handle_upload_prefilter` hook; strips `<script>` tags, `on*` event attributes, `javascript:` hrefs, `<foreignObject>`, and `<base>` elements
+- Settings stored in `wp_options` under `wmp_svg_enabled` and `wmp_svg_allowed_roles`
+
+#### Reset Tools *(New Page)*
+- New `/reset` route and sidebar navigation item (RotateCcw icon)
+- Live count display: posts, pages, comments, media attachments, non-admin users
+- Checkbox selection per content type
+- Double confirmation dialog before any destructive action
+- Server-side execution requires `confirm: true` flag; uses `WP_Query`, `WP_Comment_Query`, `WP_User_Query` for counts and `wp_delete_post`, `wp_delete_attachment`, `wp_delete_user` for deletion
+- Administrator accounts are never touched
+
+#### API Client (`src/lib/api.ts`)
+- Added `api.upload(endpoint, formData)` method for multipart file uploads — does **not** set `Content-Type` header so the browser automatically appends the correct `boundary`
+
+### Changed
+- Version bumped to `1.1.0` in plugin header comment and `WP_MANAGER_PRO_VERSION` constant
+- REST route count: 39 → 55 endpoints (16 new routes)
+- Build output: `index.js` ~589 kB / `style.css` ~37.5 kB (Monaco Editor added)
+- File Manager editor replaced with Monaco (VS Code engine) — syntax highlighting for all supported file types
+- `class-plugin.php` now loads `class-reset-controller` and registers SVG hooks (`upload_mimes`, `wp_handle_upload_prefilter`)
+- `class-routes.php` expanded with all new route registrations
+
+### Technical Notes
+- Monaco Editor: language mapping via `getMonacoLang(ext)` helper in `FileManager.tsx`
+- Export streaming: `@ob_end_clean()` flushes OB before streaming ZIP/SQL from a REST callback
+- Transient-based export: export key stored for 300 s; separate `/download` endpoint validates and streams the file, then deletes it
+- Username rename uses direct `$wpdb->update` — WordPress has no native `wp_rename_user()` function
+
+---
+
 ## [1.0.0] — 2026-03-07
 
 ### Initial Release 🎉
@@ -120,4 +185,5 @@ First public release of WP Manager Pro — a comprehensive, agency-ready WordPre
 
 ---
 
+[1.1.0]: https://github.com/nurkamol/wp-manager-pro/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v1.0.0

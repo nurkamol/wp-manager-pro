@@ -77,6 +77,20 @@ export const api = {
       method: 'DELETE',
       body: body ? JSON.stringify(body) : undefined,
     }),
+
+  // For multipart/form-data uploads — do NOT set Content-Type (browser sets boundary automatically).
+  upload: <T = unknown>(endpoint: string, formData: FormData) => {
+    const config = getConfig()
+    return fetch(`${config.apiUrl}${endpoint}`, {
+      method: 'POST',
+      headers: { 'X-WP-Nonce': config.nonce },
+      body: formData,
+    }).then(async (res) => {
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`)
+      return data as T
+    })
+  },
 }
 
 export { getConfig }

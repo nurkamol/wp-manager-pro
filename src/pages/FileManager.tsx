@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { PageHeader } from '@/components/PageHeader'
@@ -10,9 +10,10 @@ import { toast } from 'sonner'
 import { formatBytes, getFileIcon } from '@/lib/utils'
 import {
   FolderOpen, File, ChevronRight, Home, Save, X, Trash2,
-  RefreshCw, AlertTriangle, FolderPlus, ArrowLeft
+  RefreshCw, AlertTriangle, FolderPlus, ArrowLeft, Upload, Pencil
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import Editor from '@monaco-editor/react'
 
 interface FileItem {
   name: string
@@ -31,14 +32,39 @@ interface FileListData {
   writable: boolean
 }
 
+function getMonacoLang(ext: string): string {
+  switch (ext.toLowerCase()) {
+    case 'php': return 'php'
+    case 'js':
+    case 'jsx': return 'javascript'
+    case 'ts':
+    case 'tsx': return 'typescript'
+    case 'css':
+    case 'scss': return 'css'
+    case 'html':
+    case 'htm': return 'html'
+    case 'json': return 'json'
+    case 'xml': return 'xml'
+    case 'md': return 'markdown'
+    case 'yml':
+    case 'yaml': return 'yaml'
+    case 'svg': return 'xml'
+    default: return 'plaintext'
+  }
+}
+
 export function FileManager() {
   const queryClient = useQueryClient()
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
   const [currentPath, setCurrentPath] = useState('')
   const [editingFile, setEditingFile] = useState<{ path: string; name: string; content: string; ext: string } | null>(null)
   const [editContent, setEditContent] = useState('')
   const [deleteTarget, setDeleteTarget] = useState<FileItem | null>(null)
   const [newDirName, setNewDirName] = useState('')
   const [showNewDir, setShowNewDir] = useState(false)
+  const [renameTarget, setRenameTarget] = useState<FileItem | null>(null)
+  const [newName, setNewName] = useState('')
 
   const { data: fileData, isLoading, refetch } = useQuery<FileListData>({
     queryKey: ['files', currentPath],
@@ -84,6 +110,27 @@ export function FileManager() {
     onError: (err: Error) => toast.error(err.message),
   })
 
+  const uploadMutation = useMutation({
+    mutationFn: (fd: FormData) => api.upload('/files/upload', fd),
+    onSuccess: () => {
+      toast.success('File uploaded successfully')
+      queryClient.invalidateQueries({ queryKey: ['files', currentPath] })
+    },
+    onError: (err: Error) => toast.error(err.message),
+  })
+
+  const renameMutation = useMutation({
+    mutationFn: ({ path, name }: { path: string; name: string }) =>
+      api.post('/files/rename', { path, name }),
+    onSuccess: () => {
+      toast.success('Renamed successfully')
+      setRenameTarget(null)
+      setNewName('')
+      queryClient.invalidateQueries({ queryKey: ['files', currentPath] })
+    },
+    onError: (err: Error) => toast.error(err.message),
+  })
+
   const handleItemClick = useCallback((item: FileItem) => {
     if (item.type === 'directory') {
       setCurrentPath(item.path)
@@ -92,15 +139,37 @@ export function FileManager() {
     }
   }, [readFileMutation])
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const fd = new FormData()
+    fd.append('file', file)
+    fd.append('path', fileData?.path || '')
+    uploadMutation.mutate(fd)
+    // Reset input so same file can be re-uploaded
+    e.target.value = ''
+  }
+
   if (isLoading && !fileData) return <PageLoader text="Loading files..." />
 
   return (
     <div className="fade-in h-full flex flex-col">
+      <input
+        type="file"
+        ref={fileInputRef}
+        className="hidden"
+        onChange={handleFileUpload}
+      />
+
       <PageHeader
         title="File Manager"
         description="Browse and edit WordPress files"
         actions={
           <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={uploadMutation.isPending}>
+              {uploadMutation.isPending ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+              Upload File
+            </Button>
             <Button variant="outline" size="sm" onClick={() => setShowNewDir(true)}>
               <FolderPlus className="w-4 h-4" /> New Folder
             </Button>
@@ -203,7 +272,7 @@ export function FileManager() {
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                       {!item.writable && (
                         <Badge variant="secondary" className="text-[10px]">Read-only</Badge>
                       )}
@@ -211,8 +280,20 @@ export function FileManager() {
                         <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
                       )}
                       <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setRenameTarget(item)
+                          setNewName(item.name)
+                        }}
+                        className="text-slate-400 hover:text-blue-600 p-1 rounded"
+                        title="Rename"
+                      >
+                        <Pencil className="w-3 h-3" />
+                      </button>
+                      <button
                         onClick={(e) => { e.stopPropagation(); setDeleteTarget(item) }}
                         className="text-red-400 hover:text-red-600 p-1 rounded"
+                        title="Delete"
                       >
                         <Trash2 className="w-3 h-3" />
                       </button>
@@ -230,7 +311,7 @@ export function FileManager() {
           </div>
         </div>
 
-        {/* Code Editor Panel */}
+        {/* Monaco Editor Panel */}
         {editingFile && (
           <div className="flex-1 flex flex-col overflow-hidden">
             <div className="flex items-center justify-between px-4 py-2 border-b bg-slate-800 text-white">
@@ -260,12 +341,19 @@ export function FileManager() {
               </div>
             </div>
             <div className="relative flex-1 overflow-hidden bg-slate-900">
-              {/* Line numbers and editor */}
-              <textarea
-                className="code-editor w-full h-full bg-slate-900 text-slate-100 p-4 resize-none outline-none text-[13px]"
+              <Editor
+                height="100%"
+                language={getMonacoLang(editingFile.ext || '')}
+                theme="vs-dark"
                 value={editContent}
-                onChange={e => setEditContent(e.target.value)}
-                spellCheck={false}
+                onChange={(v) => setEditContent(v || '')}
+                options={{
+                  minimap: { enabled: false },
+                  fontSize: 13,
+                  wordWrap: 'on',
+                  scrollBeyondLastLine: false,
+                  automaticLayout: true,
+                }}
               />
             </div>
             <div className="px-4 py-1.5 bg-slate-800 border-t border-slate-700 text-xs text-slate-400 flex items-center justify-between">
@@ -296,7 +384,44 @@ export function FileManager() {
               onClick={() => deleteTarget && deleteFileMutation.mutate(deleteTarget.path)}
               disabled={deleteFileMutation.isPending}
             >
+              {deleteFileMutation.isPending ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
               Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Rename Dialog */}
+      <Dialog open={!!renameTarget} onOpenChange={() => { setRenameTarget(null); setNewName('') }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Pencil className="w-4 h-4" /> Rename {renameTarget?.type === 'directory' ? 'Folder' : 'File'}
+            </DialogTitle>
+            <DialogDescription>
+              Enter a new name for <strong>{renameTarget?.name}</strong>.
+            </DialogDescription>
+          </DialogHeader>
+          <Input
+            autoFocus
+            value={newName}
+            onChange={e => setNewName(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter' && newName && renameTarget) {
+                renameMutation.mutate({ path: renameTarget.path, name: newName })
+              }
+              if (e.key === 'Escape') { setRenameTarget(null); setNewName('') }
+            }}
+            placeholder="New name"
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setRenameTarget(null); setNewName('') }}>Cancel</Button>
+            <Button
+              onClick={() => renameTarget && renameMutation.mutate({ path: renameTarget.path, name: newName })}
+              disabled={!newName || renameMutation.isPending || newName === renameTarget?.name}
+            >
+              {renameMutation.isPending ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              Rename
             </Button>
           </DialogFooter>
         </DialogContent>

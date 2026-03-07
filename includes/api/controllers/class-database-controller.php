@@ -9,6 +9,24 @@ use WP_Error;
 
 class Database_Controller {
 
+    /**
+     * Validate that a table exists in the current database.
+     * Returns true on success, WP_Error on failure.
+     */
+    private static function validate_table_exists( string $table ) {
+        global $wpdb;
+
+        $exists = $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s",
+                $wpdb->dbname,
+                $table
+            )
+        );
+
+        return (bool) $exists;
+    }
+
     public static function get_tables( WP_REST_Request $request ) {
         global $wpdb;
 
@@ -57,16 +75,7 @@ class Database_Controller {
             return new WP_Error( 'missing_param', 'Table name is required.', [ 'status' => 400 ] );
         }
 
-        // Validate table exists in this DB.
-        $exists = $wpdb->get_var(
-            $wpdb->prepare(
-                "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s",
-                $wpdb->dbname,
-                $table
-            )
-        );
-
-        if ( ! $exists ) {
+        if ( ! self::validate_table_exists( $table ) ) {
             return new WP_Error( 'table_not_found', 'Table not found.', [ 'status' => 404 ] );
         }
 
@@ -84,7 +93,7 @@ class Database_Controller {
             $columns = array_keys( $rows[0] );
         } else {
             $col_results = $wpdb->get_results( "DESCRIBE `{$table}`", ARRAY_A );
-            $columns = array_column( $col_results, 'Field' );
+            $columns     = array_column( $col_results, 'Field' );
         }
 
         return new WP_REST_Response( [
@@ -101,10 +110,10 @@ class Database_Controller {
     public static function search_replace( WP_REST_Request $request ) {
         global $wpdb;
 
-        $search      = $request->get_param( 'search' );
-        $replace     = $request->get_param( 'replace' );
-        $tables      = $request->get_param( 'tables' );
-        $dry_run     = (bool) $request->get_param( 'dry_run' );
+        $search           = $request->get_param( 'search' );
+        $replace          = $request->get_param( 'replace' );
+        $tables           = $request->get_param( 'tables' );
+        $dry_run          = (bool) $request->get_param( 'dry_run' );
         $case_insensitive = (bool) $request->get_param( 'case_insensitive' );
 
         if ( empty( $search ) ) {
@@ -114,36 +123,28 @@ class Database_Controller {
         if ( ! is_array( $tables ) || empty( $tables ) ) {
             // Default to all WP tables.
             $all_tables = $wpdb->get_col( "SHOW TABLES" );
-            $tables = array_filter( $all_tables, fn( $t ) => strpos( $t, $wpdb->prefix ) === 0 );
+            $tables     = array_filter( $all_tables, fn( $t ) => strpos( $t, $wpdb->prefix ) === 0 );
         }
 
-        $results  = [];
+        $results        = [];
         $total_replaced = 0;
 
         foreach ( $tables as $table ) {
-            // Validate table.
-            $exists = $wpdb->get_var(
-                $wpdb->prepare(
-                    "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s",
-                    $wpdb->dbname,
-                    $table
-                )
-            );
-            if ( ! $exists ) continue;
+            if ( ! self::validate_table_exists( $table ) ) continue;
 
             $table_result = self::do_search_replace( $table, $search, $replace, $dry_run, $case_insensitive );
             if ( $table_result['count'] > 0 ) {
-                $results[] = $table_result;
+                $results[]       = $table_result;
                 $total_replaced += $table_result['count'];
             }
         }
 
         return new WP_REST_Response( [
-            'success'   => true,
-            'dry_run'   => $dry_run,
-            'total'     => $total_replaced,
-            'results'   => $results,
-            'message'   => $dry_run
+            'success' => true,
+            'dry_run' => $dry_run,
+            'total'   => $total_replaced,
+            'results' => $results,
+            'message' => $dry_run
                 ? "Dry run: Found {$total_replaced} replacements across " . count( $results ) . " tables."
                 : "Replaced {$total_replaced} occurrences across " . count( $results ) . " tables.",
         ], 200 );
@@ -152,9 +153,9 @@ class Database_Controller {
     private static function do_search_replace( $table, $search, $replace, $dry_run, $case_insensitive ) {
         global $wpdb;
 
-        $count      = 0;
-        $col_info   = $wpdb->get_results( "DESCRIBE `{$table}`", ARRAY_A );
-        $primary    = '';
+        $count    = 0;
+        $col_info = $wpdb->get_results( "DESCRIBE `{$table}`", ARRAY_A );
+        $primary  = '';
 
         foreach ( $col_info as $col ) {
             if ( $col['Key'] === 'PRI' ) {
@@ -196,7 +197,7 @@ class Database_Controller {
         if ( is_serialized( $value ) ) {
             $unserialized = @unserialize( $value );
             if ( $unserialized !== false ) {
-                $replaced = self::recursive_replace_value( $search, $replace, $unserialized, $case_insensitive );
+                $replaced     = self::recursive_replace_value( $search, $replace, $unserialized, $case_insensitive );
                 $reserialized = serialize( $replaced );
                 // Fix serialized string lengths.
                 return self::fix_serialized_strings( $reserialized );
@@ -247,7 +248,7 @@ class Database_Controller {
 
         $results = [];
         foreach ( $tables as $table ) {
-            $result = $wpdb->query( "OPTIMIZE TABLE `{$table}`" );
+            $result    = $wpdb->query( "OPTIMIZE TABLE `{$table}`" );
             $results[] = [ 'table' => $table, 'optimized' => $result !== false ];
         }
 
@@ -288,5 +289,206 @@ class Database_Controller {
             'rows'    => $results,
             'count'   => count( $results ),
         ], 200 );
+    }
+
+    public static function update_row( WP_REST_Request $request ) {
+        global $wpdb;
+
+        $table         = sanitize_text_field( $request->get_param( 'table' ) );
+        $primary_key   = sanitize_text_field( $request->get_param( 'primary_key' ) );
+        $primary_value = $request->get_param( 'primary_value' );
+        $data          = $request->get_param( 'data' );
+
+        if ( ! $table || ! $primary_key || ! isset( $primary_value ) || ! is_array( $data ) || empty( $data ) ) {
+            return new WP_Error( 'missing_params', 'table, primary_key, primary_value, and data are required.', [ 'status' => 400 ] );
+        }
+
+        if ( ! self::validate_table_exists( $table ) ) {
+            return new WP_Error( 'table_not_found', 'Table not found.', [ 'status' => 404 ] );
+        }
+
+        // Validate primary key column exists.
+        $columns = $wpdb->get_results( "DESCRIBE `{$table}`", ARRAY_A );
+        $column_names = array_column( $columns, 'Field' );
+
+        if ( ! in_array( $primary_key, $column_names, true ) ) {
+            return new WP_Error( 'invalid_primary_key', 'Primary key column not found in table.', [ 'status' => 400 ] );
+        }
+
+        // Sanitize data keys — only allow actual column names.
+        $sanitized_data = [];
+        foreach ( $data as $col => $val ) {
+            $col = sanitize_text_field( $col );
+            if ( in_array( $col, $column_names, true ) ) {
+                $sanitized_data[ $col ] = $val;
+            }
+        }
+
+        if ( empty( $sanitized_data ) ) {
+            return new WP_Error( 'no_valid_columns', 'No valid columns provided in data.', [ 'status' => 400 ] );
+        }
+
+        $result = $wpdb->update(
+            $table,
+            $sanitized_data,
+            [ $primary_key => $primary_value ]
+        );
+
+        if ( $result === false ) {
+            return new WP_Error( 'update_failed', 'Failed to update row: ' . $wpdb->last_error, [ 'status' => 500 ] );
+        }
+
+        return new WP_REST_Response( [
+            'success'       => true,
+            'rows_affected' => $result,
+            'message'       => 'Row updated successfully.',
+        ], 200 );
+    }
+
+    public static function insert_row( WP_REST_Request $request ) {
+        global $wpdb;
+
+        $table = sanitize_text_field( $request->get_param( 'table' ) );
+        $data  = $request->get_param( 'data' );
+
+        if ( ! $table ) {
+            return new WP_Error( 'missing_param', 'Table name is required.', [ 'status' => 400 ] );
+        }
+
+        if ( ! is_array( $data ) || empty( $data ) ) {
+            return new WP_Error( 'missing_data', 'Data array is required and must not be empty.', [ 'status' => 400 ] );
+        }
+
+        if ( ! self::validate_table_exists( $table ) ) {
+            return new WP_Error( 'table_not_found', 'Table not found.', [ 'status' => 404 ] );
+        }
+
+        // Validate and sanitize column names.
+        $columns      = $wpdb->get_results( "DESCRIBE `{$table}`", ARRAY_A );
+        $column_names = array_column( $columns, 'Field' );
+
+        $sanitized_data = [];
+        foreach ( $data as $col => $val ) {
+            $col = sanitize_text_field( $col );
+            if ( in_array( $col, $column_names, true ) ) {
+                $sanitized_data[ $col ] = $val;
+            }
+        }
+
+        if ( empty( $sanitized_data ) ) {
+            return new WP_Error( 'no_valid_columns', 'No valid columns provided in data.', [ 'status' => 400 ] );
+        }
+
+        $result = $wpdb->insert( $table, $sanitized_data );
+
+        if ( $result === false ) {
+            return new WP_Error( 'insert_failed', 'Failed to insert row: ' . $wpdb->last_error, [ 'status' => 500 ] );
+        }
+
+        return new WP_REST_Response( [
+            'success'   => true,
+            'insert_id' => $wpdb->insert_id,
+            'message'   => 'Row inserted successfully.',
+        ], 200 );
+    }
+
+    public static function delete_row( WP_REST_Request $request ) {
+        global $wpdb;
+
+        $table         = sanitize_text_field( $request->get_param( 'table' ) );
+        $primary_key   = sanitize_text_field( $request->get_param( 'primary_key' ) );
+        $primary_value = $request->get_param( 'primary_value' );
+
+        if ( ! $table || ! $primary_key || ! isset( $primary_value ) ) {
+            return new WP_Error( 'missing_params', 'table, primary_key, and primary_value are required.', [ 'status' => 400 ] );
+        }
+
+        if ( ! self::validate_table_exists( $table ) ) {
+            return new WP_Error( 'table_not_found', 'Table not found.', [ 'status' => 404 ] );
+        }
+
+        // Validate primary key column exists.
+        $columns      = $wpdb->get_results( "DESCRIBE `{$table}`", ARRAY_A );
+        $column_names = array_column( $columns, 'Field' );
+
+        if ( ! in_array( $primary_key, $column_names, true ) ) {
+            return new WP_Error( 'invalid_primary_key', 'Primary key column not found in table.', [ 'status' => 400 ] );
+        }
+
+        $result = $wpdb->delete(
+            $table,
+            [ $primary_key => $primary_value ]
+        );
+
+        if ( $result === false ) {
+            return new WP_Error( 'delete_failed', 'Failed to delete row: ' . $wpdb->last_error, [ 'status' => 500 ] );
+        }
+
+        return new WP_REST_Response( [
+            'success'       => true,
+            'rows_affected' => $result,
+            'message'       => 'Row deleted successfully.',
+        ], 200 );
+    }
+
+    public static function export_table( WP_REST_Request $request ) {
+        global $wpdb;
+
+        $table = sanitize_text_field( $request->get_param( 'table' ) );
+
+        if ( ! $table ) {
+            return new WP_Error( 'missing_param', 'Table name is required.', [ 'status' => 400 ] );
+        }
+
+        if ( ! self::validate_table_exists( $table ) ) {
+            return new WP_Error( 'table_not_found', 'Table not found.', [ 'status' => 404 ] );
+        }
+
+        // Get CREATE TABLE statement.
+        $create_row = $wpdb->get_row( "SHOW CREATE TABLE `{$table}`", ARRAY_N );
+        $create_sql = isset( $create_row[1] ) ? $create_row[1] : '';
+
+        if ( empty( $create_sql ) ) {
+            return new WP_Error( 'create_failed', 'Could not retrieve CREATE TABLE statement.', [ 'status' => 500 ] );
+        }
+
+        // Get all rows.
+        $rows = $wpdb->get_results( "SELECT * FROM `{$table}`", ARRAY_A );
+
+        // Build SQL dump.
+        $sql  = "SET NAMES utf8;\n\n";
+        $sql .= "DROP TABLE IF EXISTS `{$table}`;\n\n";
+        $sql .= $create_sql . ";\n\n";
+
+        if ( ! empty( $rows ) ) {
+            $col_names = array_keys( $rows[0] );
+            $cols_list = '`' . implode( '`, `', $col_names ) . '`';
+
+            foreach ( $rows as $row ) {
+                $values = [];
+                foreach ( $row as $val ) {
+                    if ( is_null( $val ) ) {
+                        $values[] = 'NULL';
+                    } else {
+                        $values[] = "'" . esc_sql( $val ) . "'";
+                    }
+                }
+                $values_list = implode( ', ', $values );
+                $sql        .= "INSERT INTO `{$table}` ({$cols_list}) VALUES ({$values_list});\n";
+            }
+        }
+
+        $filename = $table . '.sql';
+
+        @ob_end_clean();
+
+        header( 'Content-Type: text/plain; charset=utf-8' );
+        header( 'Content-Disposition: attachment; filename="' . $filename . '"' );
+        header( 'Content-Length: ' . strlen( $sql ) );
+        header( 'Cache-Control: no-cache, must-revalidate' );
+        header( 'Pragma: public' );
+
+        echo $sql;
+        exit;
     }
 }

@@ -12,6 +12,7 @@ import { Debug } from './pages/Debug'
 import { SystemInfo } from './pages/SystemInfo'
 import { Notes } from './pages/Notes'
 import { ImageTools } from './pages/ImageTools'
+import { Reset } from './pages/Reset'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -40,6 +41,7 @@ export function App() {
             <Route path="images" element={<ImageTools />} />
             <Route path="notes" element={<Notes />} />
             <Route path="system" element={<SystemInfo />} />
+            <Route path="reset" element={<Reset />} />
           </Route>
         </Routes>
       </HashRouter>

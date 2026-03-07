@@ -5,12 +5,13 @@ import { PageLoader } from '@/components/LoadingSpinner'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { toast } from 'sonner'
-import { Bug, RefreshCw, Trash2, AlertTriangle, Download, FileText, CheckCircle2 } from 'lucide-react'
+import { Bug, RefreshCw, Trash2, AlertTriangle, FileText, CheckCircle2, Copy } from 'lucide-react'
 import { useState } from 'react'
 import { formatBytes } from '@/lib/utils'
 
@@ -19,6 +20,7 @@ interface DebugInfo {
   wp_debug_log: boolean
   wp_debug_display: boolean
   savequeries: boolean
+  script_debug: boolean
   log_file: string
   log_exists: boolean
   log_size: number
@@ -39,6 +41,8 @@ export function Debug() {
   const [wpDebugLog, setWpDebugLog] = useState<boolean | null>(null)
   const [wpDebugDisplay, setWpDebugDisplay] = useState<boolean | null>(null)
   const [saveQueries, setSaveQueries] = useState<boolean | null>(null)
+  const [scriptDebug, setScriptDebug] = useState<boolean | null>(null)
+  const [logLevel, setLogLevel] = useState('')
 
   const { data: debugInfo, isLoading } = useQuery<DebugInfo>({
     queryKey: ['debug-info'],
@@ -46,8 +50,8 @@ export function Debug() {
   })
 
   const { data: errorLog, isLoading: logLoading, refetch: refetchLog } = useQuery<ErrorLog>({
-    queryKey: ['error-log'],
-    queryFn: () => api.get('/debug/log'),
+    queryKey: ['error-log', logLevel],
+    queryFn: () => api.get(`/debug/log${logLevel ? `?level=${encodeURIComponent(logLevel)}` : ''}`),
   })
 
   const saveMutation = useMutation({
@@ -56,6 +60,7 @@ export function Debug() {
       wp_debug_log: wpDebugLog ?? debugInfo?.wp_debug_log,
       wp_debug_display: wpDebugDisplay ?? debugInfo?.wp_debug_display,
       savequeries: saveQueries ?? debugInfo?.savequeries,
+      script_debug: scriptDebug ?? debugInfo?.script_debug,
     }),
     onSuccess: () => {
       toast.success('Debug settings saved')
@@ -73,12 +78,20 @@ export function Debug() {
     onError: (err: Error) => toast.error(err.message),
   })
 
+  const handleCopyLog = () => {
+    if (!errorLog?.content) return
+    navigator.clipboard.writeText(errorLog.content)
+      .then(() => toast.success('Log copied to clipboard'))
+      .catch(() => toast.error('Failed to copy log'))
+  }
+
   if (isLoading) return <PageLoader text="Loading debug settings..." />
 
   const currentWpDebug = wpDebug ?? debugInfo?.wp_debug ?? false
   const currentWpDebugLog = wpDebugLog ?? debugInfo?.wp_debug_log ?? false
   const currentWpDebugDisplay = wpDebugDisplay ?? debugInfo?.wp_debug_display ?? false
   const currentSaveQueries = saveQueries ?? debugInfo?.savequeries ?? false
+  const currentScriptDebug = scriptDebug ?? debugInfo?.script_debug ?? false
 
   return (
     <div className="fade-in">
@@ -125,6 +138,7 @@ export function Debug() {
                   desc: 'Save errors to debug.log file',
                   value: currentWpDebugLog,
                   onChange: setWpDebugLog,
+                  danger: false,
                 },
                 {
                   id: 'wp_debug_display',
@@ -140,6 +154,14 @@ export function Debug() {
                   desc: 'Save all DB queries (slows down site)',
                   value: currentSaveQueries,
                   onChange: setSaveQueries,
+                  danger: true,
+                },
+                {
+                  id: 'script_debug',
+                  label: 'SCRIPT_DEBUG',
+                  desc: 'Use unminified scripts and styles for development',
+                  value: currentScriptDebug,
+                  onChange: setScriptDebug,
                   danger: true,
                 },
               ].map(setting => (
@@ -239,22 +261,42 @@ export function Debug() {
               <CardTitle className="text-base">Error Log</CardTitle>
               <CardDescription>Last 200 lines of your WordPress error log</CardDescription>
             </div>
-            {errorLog?.exists && (
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => refetchLog()}>
-                  <RefreshCw className="w-3.5 h-3.5" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => clearLogMutation.mutate()}
-                  disabled={clearLogMutation.isPending}
-                >
-                  <Trash2 className="w-3.5 h-3.5 text-red-500" />
-                  Clear
-                </Button>
-              </div>
-            )}
+            <div className="flex items-center gap-2">
+              {/* Log level filter */}
+              <Select value={logLevel || 'all'} onValueChange={v => setLogLevel(v === 'all' ? '' : v)}>
+                <SelectTrigger className="h-8 w-40 text-xs">
+                  <SelectValue placeholder="All Levels" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Levels</SelectItem>
+                  <SelectItem value="error">Errors only</SelectItem>
+                  <SelectItem value="warning">Warnings</SelectItem>
+                  <SelectItem value="notice">Notices</SelectItem>
+                  <SelectItem value="deprecated">Deprecated</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {errorLog?.exists && (
+                <>
+                  <Button variant="outline" size="sm" onClick={handleCopyLog} disabled={!errorLog?.content} title="Copy log to clipboard">
+                    <Copy className="w-3.5 h-3.5" />
+                    Copy
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => refetchLog()}>
+                    <RefreshCw className="w-3.5 h-3.5" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => clearLogMutation.mutate()}
+                    disabled={clearLogMutation.isPending}
+                  >
+                    <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                    Clear
+                  </Button>
+                </>
+              )}
+            </div>
           </CardHeader>
           <CardContent className="p-0">
             {logLoading ? (

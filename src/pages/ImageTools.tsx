@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { toast } from 'sonner'
-import { Image, RefreshCw, CheckCircle2, XCircle, AlertTriangle, Save } from 'lucide-react'
+import { Image, RefreshCw, CheckCircle2, XCircle, AlertTriangle, Save, ShieldCheck } from 'lucide-react'
 import { useState } from 'react'
 
 interface ImageSettings {
@@ -22,7 +22,15 @@ interface ImageSettings {
   gd_support: boolean
   imagick_support: boolean
   webp_support: boolean
+  svg_enabled: boolean
+  svg_allowed_roles: string[]
 }
+
+const SVG_ROLES = [
+  { key: 'administrator', label: 'Administrator' },
+  { key: 'editor', label: 'Editor' },
+  { key: 'author', label: 'Author' },
+]
 
 export function ImageTools() {
   const queryClient = useQueryClient()
@@ -30,6 +38,8 @@ export function ImageTools() {
   const [maxWidth, setMaxWidth] = useState<number | null>(null)
   const [maxHeight, setMaxHeight] = useState<number | null>(null)
   const [jpegQuality, setJpegQuality] = useState<number | null>(null)
+  const [svgEnabled, setSvgEnabled] = useState<boolean | null>(null)
+  const [svgRoles, setSvgRoles] = useState<string[] | null>(null)
 
   const { data: settings, isLoading } = useQuery<ImageSettings>({
     queryKey: ['image-settings'],
@@ -38,10 +48,12 @@ export function ImageTools() {
 
   const saveMutation = useMutation({
     mutationFn: () => api.post('/images/settings', {
-      webp_enabled: webpEnabled,
-      max_width: maxWidth,
-      max_height: maxHeight,
-      jpeg_quality: jpegQuality,
+      webp_enabled: webpEnabled ?? settings?.webp_enabled,
+      max_width: maxWidth ?? settings?.max_width,
+      max_height: maxHeight ?? settings?.max_height,
+      jpeg_quality: jpegQuality ?? settings?.jpeg_quality,
+      svg_enabled: svgEnabled ?? settings?.svg_enabled,
+      svg_allowed_roles: svgRoles ?? settings?.svg_allowed_roles,
     }),
     onSuccess: () => {
       toast.success('Image settings saved')
@@ -64,6 +76,17 @@ export function ImageTools() {
   const currentMaxWidth = maxWidth ?? settings?.max_width ?? 0
   const currentMaxHeight = maxHeight ?? settings?.max_height ?? 0
   const currentQuality = jpegQuality ?? settings?.jpeg_quality ?? 82
+  const currentSvgEnabled = svgEnabled ?? settings?.svg_enabled ?? false
+  const currentSvgRoles = svgRoles ?? settings?.svg_allowed_roles ?? ['administrator']
+
+  const toggleSvgRole = (role: string) => {
+    const base = svgRoles ?? settings?.svg_allowed_roles ?? ['administrator']
+    if (base.includes(role)) {
+      setSvgRoles(base.filter(r => r !== role))
+    } else {
+      setSvgRoles([...base, role])
+    }
+  }
 
   return (
     <div className="fade-in">
@@ -213,6 +236,67 @@ export function ImageTools() {
             </CardContent>
           </Card>
         </div>
+
+        {/* SVG Support Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4" />
+              SVG Support
+            </CardTitle>
+            <CardDescription>
+              Allow SVG file uploads for selected user roles. SVGs are sanitized on upload.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <Alert>
+              <AlertTriangle className="w-4 h-4" />
+              <AlertDescription className="text-xs">
+                SVGs are sanitized on upload. Restrict to trusted roles only. Malicious SVGs can be a security risk.
+              </AlertDescription>
+            </Alert>
+
+            {/* Enable SVG toggle */}
+            <div className="flex items-center justify-between py-2 border-b border-slate-50">
+              <div>
+                <Label className="text-sm font-medium">Allow SVG Uploads</Label>
+                <p className="text-xs text-slate-500 mt-0.5">Enable SVG file uploads for the selected roles below</p>
+              </div>
+              <Switch
+                checked={currentSvgEnabled}
+                onCheckedChange={setSvgEnabled}
+              />
+            </div>
+
+            {/* Role checkboxes */}
+            <div className={`space-y-3 ${!currentSvgEnabled ? 'opacity-50 pointer-events-none' : ''}`}>
+              <Label className="text-sm font-medium">Allowed Roles</Label>
+              <p className="text-xs text-slate-500">Only users with these roles can upload SVG files.</p>
+              <div className="space-y-2">
+                {SVG_ROLES.map(role => (
+                  <label key={role.key} className="flex items-center gap-3 cursor-pointer select-none py-1">
+                    <input
+                      type="checkbox"
+                      checked={currentSvgRoles.includes(role.key)}
+                      onChange={() => toggleSvgRole(role.key)}
+                      disabled={!currentSvgEnabled}
+                      className="w-4 h-4 accent-blue-600"
+                    />
+                    <span className="text-sm text-slate-700 capitalize">{role.label}</span>
+                    {role.key === 'administrator' && (
+                      <Badge variant="secondary" className="text-[10px]">Recommended</Badge>
+                    )}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <Button className="w-full" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
+              {saveMutation.isPending ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              Save SVG Settings
+            </Button>
+          </CardContent>
+        </Card>
 
         {/* Regenerate Thumbnails */}
         <Card>

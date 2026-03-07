@@ -13,14 +13,16 @@ class Images_Controller {
         $thumbnail_sizes = self::get_all_image_sizes();
 
         return new WP_REST_Response( [
-            'webp_enabled'     => (bool) get_option( 'wmp_webp_enabled', false ),
-            'max_width'        => (int) get_option( 'wmp_max_width', 0 ),
-            'max_height'       => (int) get_option( 'wmp_max_height', 0 ),
-            'jpeg_quality'     => (int) get_option( 'wmp_jpeg_quality', 82 ),
-            'thumbnail_sizes'  => $thumbnail_sizes,
-            'gd_support'       => extension_loaded( 'gd' ),
-            'imagick_support'  => extension_loaded( 'imagick' ),
-            'webp_support'     => function_exists( 'imagewebp' ) || extension_loaded( 'imagick' ),
+            'webp_enabled'      => (bool) get_option( 'wmp_webp_enabled', false ),
+            'max_width'         => (int) get_option( 'wmp_max_width', 0 ),
+            'max_height'        => (int) get_option( 'wmp_max_height', 0 ),
+            'jpeg_quality'      => (int) get_option( 'wmp_jpeg_quality', 82 ),
+            'thumbnail_sizes'   => $thumbnail_sizes,
+            'gd_support'        => extension_loaded( 'gd' ),
+            'imagick_support'   => extension_loaded( 'imagick' ),
+            'webp_support'      => function_exists( 'imagewebp' ) || extension_loaded( 'imagick' ),
+            'svg_enabled'       => (bool) get_option( 'wmp_svg_enabled', false ),
+            'svg_allowed_roles' => get_option( 'wmp_svg_allowed_roles', [ 'administrator' ] ),
         ], 200 );
     }
 
@@ -34,6 +36,13 @@ class Images_Controller {
         update_option( 'wmp_max_width', $max_width );
         update_option( 'wmp_max_height', $max_height );
         update_option( 'wmp_jpeg_quality', $jpeg_quality ?: 82 );
+
+        // SVG settings.
+        $svg_enabled = (bool) $request->get_param( 'svg_enabled' );
+        $svg_roles   = (array) $request->get_param( 'svg_allowed_roles' ) ?: [ 'administrator' ];
+
+        update_option( 'wmp_svg_enabled', $svg_enabled );
+        update_option( 'wmp_svg_allowed_roles', array_map( 'sanitize_text_field', $svg_roles ) );
 
         return new WP_REST_Response( [
             'success' => true,
@@ -80,11 +89,90 @@ class Images_Controller {
         ], 200 );
     }
 
+    /**
+     * Hook: upload_mimes
+     * Conditionally allow SVG uploads based on plugin settings and user role.
+     * Called from the plugin bootstrap via add_filter('upload_mimes', ...).
+     *
+     * @param array $mimes Allowed MIME types.
+     * @return array
+     */
+    public static function maybe_allow_svg( $mimes ) {
+        if ( ! get_option( 'wmp_svg_enabled', false ) ) {
+            return $mimes;
+        }
+
+        $allowed_roles = (array) get_option( 'wmp_svg_allowed_roles', [ 'administrator' ] );
+        $user          = wp_get_current_user();
+
+        if ( ! $user || ! $user->exists() ) {
+            return $mimes;
+        }
+
+        $user_roles = (array) $user->roles;
+
+        foreach ( $user_roles as $role ) {
+            if ( in_array( $role, $allowed_roles, true ) ) {
+                $mimes['svg'] = 'image/svg+xml';
+                break;
+            }
+        }
+
+        return $mimes;
+    }
+
+    /**
+     * Hook: wp_handle_upload_prefilter
+     * Sanitize SVG files on upload to strip dangerous content.
+     * Called from the plugin bootstrap via add_filter('wp_handle_upload_prefilter', ...).
+     *
+     * @param array $file Upload file array.
+     * @return array
+     */
+    public static function sanitize_svg( $file ) {
+        if ( ! isset( $file['type'] ) || $file['type'] !== 'image/svg+xml' ) {
+            return $file;
+        }
+
+        if ( empty( $file['tmp_name'] ) || ! file_exists( $file['tmp_name'] ) ) {
+            return $file;
+        }
+
+        $svg_content = file_get_contents( $file['tmp_name'] );
+
+        if ( $svg_content === false ) {
+            $file['error'] = 'Could not read the uploaded SVG file.';
+            return $file;
+        }
+
+        // Strip <script> blocks entirely.
+        $svg_content = preg_replace( '/<script[\s\S]*?<\/script>/i', '', $svg_content );
+
+        // Strip on* event attributes (onclick, onload, onmouseover, etc.).
+        $svg_content = preg_replace( '/\s+on\w+\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]*)/i', '', $svg_content );
+
+        // Strip xlink:href and href values that use javascript: protocol.
+        $svg_content = preg_replace( '/(xlink:href|href)\s*=\s*["\']?\s*javascript:[^"\'>\s]*/i', '$1=""', $svg_content );
+
+        // Strip <use> elements pointing to external resources (data: or http:).
+        $svg_content = preg_replace( '/<use[^>]+(href|xlink:href)\s*=\s*["\'][^#][^"\']*["\'][^>]*>/i', '', $svg_content );
+
+        // Strip foreignObject elements.
+        $svg_content = preg_replace( '/<foreignObject[\s\S]*?<\/foreignObject>/i', '', $svg_content );
+
+        // Strip base elements.
+        $svg_content = preg_replace( '/<base[\s\S]*?>/i', '', $svg_content );
+
+        file_put_contents( $file['tmp_name'], $svg_content );
+
+        return $file;
+    }
+
     private static function get_all_image_sizes() {
         global $_wp_additional_image_sizes;
 
         $default_sizes = [ 'thumbnail', 'medium', 'medium_large', 'large', 'full' ];
-        $sizes = [];
+        $sizes         = [];
 
         foreach ( $default_sizes as $size ) {
             $sizes[ $size ] = [

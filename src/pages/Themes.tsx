@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { PageHeader } from '@/components/PageHeader'
@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent } from '@/components/ui/card'
 import { toast } from 'sonner'
-import { Search, Trash2, Download, RefreshCw, AlertTriangle, CheckCircle2, Star, Palette } from 'lucide-react'
+import { Search, Trash2, Download, RefreshCw, AlertTriangle, CheckCircle2, Star, Palette, Upload } from 'lucide-react'
 
 interface Theme {
   slug: string
@@ -37,11 +37,18 @@ interface WpTheme {
 
 export function Themes() {
   const queryClient = useQueryClient()
+  const uploadInputRef = useRef<HTMLInputElement>(null)
+
   const [search, setSearch] = useState('')
   const [wpSearch, setWpSearch] = useState('')
   const [wpSearchQuery, setWpSearchQuery] = useState('')
   const [deleteTarget, setDeleteTarget] = useState<Theme | null>(null)
   const [installing, setInstalling] = useState<string | null>(null)
+
+  // Upload tab state
+  const [uploadFile, setUploadFile] = useState<File | null>(null)
+  const [overwrite, setOverwrite] = useState(false)
+  const [isDragging, setIsDragging] = useState(false)
 
   const { data: themesData, isLoading } = useQuery({
     queryKey: ['themes'],
@@ -89,6 +96,44 @@ export function Themes() {
     },
   })
 
+  const uploadMutation = useMutation({
+    mutationFn: (fd: FormData) => api.upload('/themes/upload', fd),
+    onSuccess: () => {
+      toast.success('Theme uploaded and installed successfully')
+      queryClient.invalidateQueries({ queryKey: ['themes'] })
+      setUploadFile(null)
+      setOverwrite(false)
+    },
+    onError: (err: Error) => toast.error(err.message),
+  })
+
+  const exportMutation = useMutation({
+    mutationFn: (slug: string) => api.post<{ download_url: string }>('/themes/export', { slug }),
+    onSuccess: (data) => {
+      window.location.href = data.download_url
+    },
+    onError: (err: Error) => toast.error(err.message),
+  })
+
+  const handleUploadSubmit = () => {
+    if (!uploadFile) return
+    const fd = new FormData()
+    fd.append('file', uploadFile)
+    fd.append('overwrite', overwrite ? '1' : '0')
+    uploadMutation.mutate(fd)
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+    const file = e.dataTransfer.files[0]
+    if (file && file.name.endsWith('.zip')) {
+      setUploadFile(file)
+    } else {
+      toast.error('Please drop a .zip file')
+    }
+  }
+
   const filtered = themesData?.themes.filter(t =>
     t.name.toLowerCase().includes(search.toLowerCase()) ||
     t.author.toLowerCase().includes(search.toLowerCase())
@@ -108,6 +153,7 @@ export function Themes() {
           <TabsList className="mb-4">
             <TabsTrigger value="installed">Installed ({themesData?.themes.length || 0})</TabsTrigger>
             <TabsTrigger value="search">Search & Install</TabsTrigger>
+            <TabsTrigger value="upload">Upload ZIP</TabsTrigger>
           </TabsList>
 
           <TabsContent value="installed" className="mt-0">
@@ -135,7 +181,7 @@ export function Themes() {
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-slate-300">
-                        <Trash2 className="w-8 h-8" />
+                        <Palette className="w-8 h-8" />
                       </div>
                     )}
                     {theme.active && (
@@ -176,11 +222,25 @@ export function Themes() {
                       {theme.active && (
                         <div className="flex-1 text-center text-xs text-slate-500 pt-2">Currently Active</div>
                       )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-slate-500 hover:text-slate-700 hover:bg-slate-50 h-8 w-8 shrink-0"
+                        onClick={() => exportMutation.mutate(theme.slug)}
+                        disabled={exportMutation.isPending}
+                        title="Export theme as ZIP"
+                      >
+                        {exportMutation.isPending ? (
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Download className="w-3.5 h-3.5" />
+                        )}
+                      </Button>
                       {!theme.active && (
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8"
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 shrink-0"
                           onClick={() => setDeleteTarget(theme)}
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -191,6 +251,13 @@ export function Themes() {
                 </Card>
               ))}
             </div>
+
+            {filtered.length === 0 && (
+              <div className="text-center py-12 text-slate-400">
+                <Search className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                <p className="text-sm">No themes found</p>
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="search" className="mt-0">
@@ -260,6 +327,80 @@ export function Themes() {
                 <p className="text-sm">Search for themes to install from WordPress.org</p>
               </div>
             )}
+          </TabsContent>
+
+          {/* Upload ZIP Tab */}
+          <TabsContent value="upload" className="mt-0">
+            <div className="max-w-xl mx-auto space-y-5">
+              <input
+                type="file"
+                ref={uploadInputRef}
+                className="hidden"
+                accept=".zip"
+                onChange={e => {
+                  const file = e.target.files?.[0]
+                  if (file) setUploadFile(file)
+                  e.target.value = ''
+                }}
+              />
+
+              {/* Drop zone */}
+              <div
+                className={`border-2 border-dashed rounded-lg p-10 text-center cursor-pointer transition-colors ${
+                  isDragging ? 'border-blue-400 bg-blue-50' : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                }`}
+                onClick={() => uploadInputRef.current?.click()}
+                onDragOver={e => { e.preventDefault(); setIsDragging(true) }}
+                onDragLeave={() => setIsDragging(false)}
+                onDrop={handleDrop}
+              >
+                <Palette className="w-10 h-10 mx-auto mb-3 text-slate-400" />
+                {uploadFile ? (
+                  <div>
+                    <p className="font-medium text-slate-700">{uploadFile.name}</p>
+                    <p className="text-xs text-slate-400 mt-1">{(uploadFile.size / 1024).toFixed(1)} KB</p>
+                    <button
+                      className="mt-2 text-xs text-blue-500 hover:underline"
+                      onClick={e => { e.stopPropagation(); setUploadFile(null) }}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-sm font-medium text-slate-600">Drop a theme ZIP here or click to browse</p>
+                    <p className="text-xs text-slate-400 mt-1">Only .zip files are accepted</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Overwrite checkbox */}
+              <label className="flex items-center gap-3 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={overwrite}
+                  onChange={e => setOverwrite(e.target.checked)}
+                  className="w-4 h-4 accent-blue-600"
+                />
+                <div>
+                  <p className="text-sm font-medium text-slate-700">Overwrite if exists</p>
+                  <p className="text-xs text-slate-400">Replace theme files if the theme is already installed</p>
+                </div>
+              </label>
+
+              <Button
+                className="w-full"
+                onClick={handleUploadSubmit}
+                disabled={!uploadFile || uploadMutation.isPending}
+              >
+                {uploadMutation.isPending ? (
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Upload className="w-4 h-4" />
+                )}
+                {uploadMutation.isPending ? 'Installing...' : 'Upload & Install Theme'}
+              </Button>
+            </div>
           </TabsContent>
         </Tabs>
       </div>
