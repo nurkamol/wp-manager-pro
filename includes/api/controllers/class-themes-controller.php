@@ -1,0 +1,170 @@
+<?php
+namespace WP_Manager_Pro\API\Controllers;
+
+if ( ! defined( 'ABSPATH' ) ) exit;
+
+use WP_REST_Request;
+use WP_REST_Response;
+use WP_Error;
+
+class Themes_Controller {
+
+    private static function load_theme_functions() {
+        if ( ! function_exists( 'themes_api' ) ) {
+            require_once ABSPATH . 'wp-admin/includes/theme.php';
+            require_once ABSPATH . 'wp-admin/includes/theme-install.php';
+        }
+        if ( ! class_exists( 'Theme_Upgrader' ) ) {
+            require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
+        }
+    }
+
+    public static function get_themes( WP_REST_Request $request ) {
+        $all_themes   = wp_get_themes();
+        $active_theme = get_stylesheet();
+
+        $update_themes = get_site_transient( 'update_themes' );
+        $updates = isset( $update_themes->response ) ? array_keys( $update_themes->response ) : [];
+
+        $themes = [];
+        foreach ( $all_themes as $slug => $theme ) {
+            $screenshot = $theme->get_screenshot( 'relative' );
+            $themes[] = [
+                'slug'        => $slug,
+                'name'        => $theme->get( 'Name' ),
+                'version'     => $theme->get( 'Version' ),
+                'description' => $theme->get( 'Description' ),
+                'author'      => $theme->get( 'Author' ),
+                'author_uri'  => $theme->get( 'AuthorURI' ),
+                'theme_uri'   => $theme->get( 'ThemeURI' ),
+                'screenshot'  => $screenshot ? get_theme_root_uri() . '/' . $slug . '/' . $screenshot : '',
+                'active'      => $slug === $active_theme,
+                'is_child'    => (bool) $theme->parent(),
+                'parent'      => $theme->parent() ? $theme->parent()->get( 'Name' ) : null,
+                'has_update'  => in_array( $slug, $updates ),
+            ];
+        }
+
+        // Sort: active first, then alphabetically.
+        usort( $themes, function( $a, $b ) {
+            if ( $a['active'] ) return -1;
+            if ( $b['active'] ) return 1;
+            return strcmp( $a['name'], $b['name'] );
+        } );
+
+        return new WP_REST_Response( [ 'themes' => $themes, 'total' => count( $themes ) ], 200 );
+    }
+
+    public static function activate_theme( WP_REST_Request $request ) {
+        $slug = sanitize_text_field( $request->get_param( 'slug' ) );
+
+        if ( ! $slug ) {
+            return new WP_Error( 'missing_param', 'Theme slug is required.', [ 'status' => 400 ] );
+        }
+
+        if ( ! wp_get_theme( $slug )->exists() ) {
+            return new WP_Error( 'theme_not_found', 'Theme not found.', [ 'status' => 404 ] );
+        }
+
+        switch_theme( $slug );
+
+        return new WP_REST_Response( [ 'success' => true, 'message' => 'Theme activated successfully.' ], 200 );
+    }
+
+    public static function delete_theme( WP_REST_Request $request ) {
+        $slug = sanitize_text_field( $request->get_param( 'slug' ) );
+
+        if ( ! $slug ) {
+            return new WP_Error( 'missing_param', 'Theme slug is required.', [ 'status' => 400 ] );
+        }
+
+        // Cannot delete active theme.
+        if ( $slug === get_stylesheet() ) {
+            return new WP_Error( 'cannot_delete', 'Cannot delete the active theme.', [ 'status' => 403 ] );
+        }
+
+        if ( ! function_exists( 'delete_theme' ) ) {
+            require_once ABSPATH . 'wp-admin/includes/theme.php';
+        }
+
+        $result = delete_theme( $slug );
+
+        if ( is_wp_error( $result ) ) {
+            return new WP_Error( 'delete_failed', $result->get_error_message(), [ 'status' => 500 ] );
+        }
+
+        return new WP_REST_Response( [ 'success' => true, 'message' => 'Theme deleted successfully.' ], 200 );
+    }
+
+    public static function install_theme( WP_REST_Request $request ) {
+        self::load_theme_functions();
+
+        $slug = sanitize_text_field( $request->get_param( 'slug' ) );
+
+        if ( ! $slug ) {
+            return new WP_Error( 'missing_param', 'Theme slug is required.', [ 'status' => 400 ] );
+        }
+
+        $api = themes_api( 'theme_information', [
+            'slug'   => $slug,
+            'fields' => [ 'sections' => false ],
+        ] );
+
+        if ( is_wp_error( $api ) ) {
+            return new WP_Error( 'theme_not_found', $api->get_error_message(), [ 'status' => 404 ] );
+        }
+
+        $upgrader = new \Theme_Upgrader( new \WP_Ajax_Upgrader_Skin() );
+        $result   = $upgrader->install( $api->download_link );
+
+        if ( is_wp_error( $result ) ) {
+            return new WP_Error( 'install_failed', $result->get_error_message(), [ 'status' => 500 ] );
+        }
+
+        return new WP_REST_Response( [ 'success' => true, 'message' => 'Theme installed successfully.' ], 200 );
+    }
+
+    public static function search_themes( WP_REST_Request $request ) {
+        self::load_theme_functions();
+
+        $search = sanitize_text_field( $request->get_param( 'q' ) );
+        $page   = absint( $request->get_param( 'page' ) ) ?: 1;
+
+        $api = themes_api( 'query_themes', [
+            'search'   => $search,
+            'per_page' => 12,
+            'page'     => $page,
+            'fields'   => [
+                'screenshot_url' => true,
+                'rating'         => true,
+                'num_ratings'    => true,
+                'downloaded'     => true,
+                'last_updated'   => true,
+            ],
+        ] );
+
+        if ( is_wp_error( $api ) ) {
+            return new WP_Error( 'search_failed', $api->get_error_message(), [ 'status' => 500 ] );
+        }
+
+        $results = [];
+        foreach ( $api->themes as $theme ) {
+            $results[] = [
+                'slug'           => $theme->slug,
+                'name'           => $theme->name,
+                'version'        => $theme->version,
+                'description'    => $theme->description ?? '',
+                'author'         => is_array( $theme->author ) ? ( $theme->author['user_nicename'] ?? '' ) : $theme->author,
+                'screenshot_url' => $theme->screenshot_url ?? '',
+                'rating'         => $theme->rating ?? 0,
+                'num_ratings'    => $theme->num_ratings ?? 0,
+                'downloaded'     => $theme->downloaded ?? 0,
+            ];
+        }
+
+        return new WP_REST_Response( [
+            'themes' => $results,
+            'total'  => $api->info['results'] ?? 0,
+        ], 200 );
+    }
+}

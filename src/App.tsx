@@ -1,0 +1,48 @@
+import { BrowserRouter, HashRouter, Routes, Route } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { Layout } from './components/Layout'
+import { Dashboard } from './pages/Dashboard'
+import { Plugins } from './pages/Plugins'
+import { Themes } from './pages/Themes'
+import { FileManager } from './pages/FileManager'
+import { Database } from './pages/Database'
+import { Users } from './pages/Users'
+import { Maintenance } from './pages/Maintenance'
+import { Debug } from './pages/Debug'
+import { SystemInfo } from './pages/SystemInfo'
+import { Notes } from './pages/Notes'
+import { ImageTools } from './pages/ImageTools'
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+      staleTime: 10000,
+    },
+  },
+})
+
+export function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <HashRouter>
+        <Routes>
+          <Route path="/" element={<Layout />}>
+            <Route index element={<Dashboard />} />
+            <Route path="plugins" element={<Plugins />} />
+            <Route path="themes" element={<Themes />} />
+            <Route path="file-manager" element={<FileManager />} />
+            <Route path="database" element={<Database />} />
+            <Route path="users" element={<Users />} />
+            <Route path="maintenance" element={<Maintenance />} />
+            <Route path="debug" element={<Debug />} />
+            <Route path="images" element={<ImageTools />} />
+            <Route path="notes" element={<Notes />} />
+            <Route path="system" element={<SystemInfo />} />
+          </Route>
+        </Routes>
+      </HashRouter>
+    </QueryClientProvider>
+  )
+}
