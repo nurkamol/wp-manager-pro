@@ -108,7 +108,7 @@ All operations happen through a secured REST API (`wp-manager-pro/v1`) that requ
 ## Installation
 
 ### From ZIP
-1. Download `wp-manager-pro.zip` from the [Releases](../../releases) page.
+1. Download `wp-manager-pro.zip` from the [Releases](https://github.com/nurkamol/wp-manager-pro/releases) page.
 2. In WP Admin → **Plugins → Add New → Upload Plugin**.
 3. Upload the ZIP and click **Install Now**, then **Activate**.
 4. Navigate to **WP Manager** in the admin sidebar.
@@ -133,7 +133,7 @@ npm >= 9
 
 ### Setup
 ```bash
-git clone https://github.com/your-org/wp-manager-pro.git
+git clone https://github.com/nurkamol/wp-manager-pro.git
 cd wp-manager-pro
 npm install
 ```

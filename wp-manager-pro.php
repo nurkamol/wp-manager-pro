@@ -1,13 +1,13 @@
 <?php
 /**
  * Plugin Name:       WP Manager Pro
- * Plugin URI:        https://wpmanagerpro.com
+ * Plugin URI:        https://github.com/nurkamol/wp-manager-pro
  * Description:       A comprehensive agency-ready WordPress management suite with plugin/theme management, file manager, database tools, system info, maintenance mode, user management, and more.
  * Version:           1.0.0
  * Requires at least: 5.9
  * Requires PHP:      7.4
- * Author:            WP Manager Pro
- * Author URI:        https://wpmanagerpro.com
+ * Author:            Nurkamol Vakhidov
+ * Author URI:        https://nurkamol.com
  * License:           GPL v2 or later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       wp-manager-pro

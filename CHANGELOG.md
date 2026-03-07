@@ -120,4 +120,4 @@ First public release of WP Manager Pro — a comprehensive, agency-ready WordPre
 
 ---
 
-[1.0.0]: https://github.com/your-org/wp-manager-pro/releases/tag/v1.0.0
+[1.0.0]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v1.0.0
