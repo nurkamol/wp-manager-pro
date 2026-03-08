@@ -68,7 +68,7 @@ class Database_Controller {
 
         $table  = sanitize_text_field( $request->get_param( 'table' ) );
         $page   = absint( $request->get_param( 'page' ) ) ?: 1;
-        $limit  = min( absint( $request->get_param( 'limit' ) ) ?: 50, 200 );
+        $limit  = min( absint( $request->get_param( 'limit' ) ) ?: 50, 500 );
         $offset = ( $page - 1 ) * $limit;
 
         if ( ! $table ) {
@@ -87,23 +87,35 @@ class Database_Controller {
             ARRAY_A
         );
 
-        // Get columns.
-        $columns = [];
-        if ( ! empty( $rows ) ) {
-            $columns = array_keys( $rows[0] );
-        } else {
-            $col_results = $wpdb->get_results( "DESCRIBE `{$table}`", ARRAY_A );
-            $columns     = array_column( $col_results, 'Field' );
+        // Get column metadata.
+        $col_results = $wpdb->get_results( "DESCRIBE `{$table}`", ARRAY_A );
+        $columns     = array_column( $col_results, 'Field' );
+        $primary_key = '';
+        $col_meta    = [];
+
+        foreach ( $col_results as $col ) {
+            if ( $col['Key'] === 'PRI' && ! $primary_key ) {
+                $primary_key = $col['Field'];
+            }
+            $col_meta[ $col['Field'] ] = [
+                'type'    => $col['Type'],
+                'null'    => $col['Null'] === 'YES',
+                'key'     => $col['Key'],
+                'default' => $col['Default'],
+                'extra'   => $col['Extra'],
+            ];
         }
 
         return new WP_REST_Response( [
-            'table'   => $table,
-            'columns' => $columns,
-            'rows'    => $rows,
-            'total'   => (int) $total,
-            'page'    => $page,
-            'limit'   => $limit,
-            'pages'   => ceil( $total / $limit ),
+            'table'       => $table,
+            'columns'     => $columns,
+            'col_meta'    => $col_meta,
+            'primary_key' => $primary_key,
+            'rows'        => $rows,
+            'total'       => (int) $total,
+            'page'        => $page,
+            'limit'       => $limit,
+            'pages'       => (int) ceil( $total / $limit ),
         ], 200 );
     }
 

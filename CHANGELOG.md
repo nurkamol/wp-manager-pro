@@ -21,6 +21,15 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Save Settings without toggle**: Separate "Save Settings" button (POST `/maintenance/settings`) — settings are persisted without affecting maintenance active state
 - **Live Preview pane**: Right-column real-time preview reflecting gradient, logo animation, badge, accent divider, title, message, and countdown
 
+#### Database Manager
+- **Pagination**: Full page controls (first/prev/next/last) with row range indicator (`X–Y of Z rows`)
+- **Per-page selector**: Choose 50 / 100 / 250 / 500 rows per page; backend limit raised from 200 → 500
+- **Edit Row**: Hover any row → pencil icon opens a Dialog with all columns as inputs; primary key shown read-only with type labels; saves via `PUT /database/row`
+- **Delete Row**: Trash icon with inline confirm button (no modal) → `DELETE /database/row`
+- **Add Row**: "+ Add Row" button in table header → Dialog with all editable columns; `auto_increment` fields automatically disabled; saves via `POST /database/row`
+- **Column metadata**: Backend now returns `primary_key` + `col_meta` (type, nullable, key, default, extra) per column — used for PK badges, type hints, and auto-increment detection
+- **Plugin page link**: "Open" shortcut link added to WP Admin Plugins list row
+
 #### Security
 - **Admin URL Protection** (new Security page): Moves WordPress login to a secret URL slug; blocks direct GET access to `wp-login.php` (redirects to homepage); POST/password-reset actions continue to work; custom login URL displayed with copy & open buttons
 - **Security REST routes**: `GET /security`, `POST /security/admin-url`, `DELETE /security/admin-url`
