@@ -9,6 +9,38 @@
 
 ---
 
+## Screenshots
+
+| Dashboard | Plugin Manager |
+|-----------|---------------|
+| ![Dashboard](screenshots/01-dashboard.png) | ![Plugin Manager](screenshots/02-plugin-manager.png) |
+
+| Theme Manager | File Manager |
+|--------------|-------------|
+| ![Theme Manager](screenshots/03-theme-manager.png) | ![File Manager](screenshots/04-file-manager.png) |
+
+| Database Manager | User Manager |
+|-----------------|-------------|
+| ![Database Manager](screenshots/05-database-manager.png) | ![User Manager](screenshots/06-user-manager.png) |
+
+| Maintenance Mode | Debug Tools |
+|-----------------|------------|
+| ![Maintenance Mode](screenshots/07-maintenance-mode.png) | ![Debug Tools](screenshots/08-debug-tools.png) |
+
+| Image Tools | Security |
+|------------|---------|
+| ![Image Tools](screenshots/09-image-tools.png) | ![Security](screenshots/13-security.png) |
+
+| System Info | Reset Tools |
+|------------|------------|
+| ![System Info](screenshots/11-system-info.png) | ![Reset Tools](screenshots/12-reset-tools.png) |
+
+| Notes | Plugin ZIP Upload |
+|-------|-----------------|
+| ![Notes](screenshots/10-notes.png) | ![Plugin ZIP Upload](screenshots/14-plugin-zip-upload.png) |
+
+---
+
 ## Overview
 
 **WP Manager Pro** replaces the need for multiple separate admin plugins by providing a single, fast, modern interface for managing every critical aspect of a WordPress site. It ships as a standard WordPress plugin — install it, activate it, and a full React-powered control panel appears under your WP Admin menu.
@@ -234,7 +266,8 @@ cd ..
 zip -r wp-manager-pro-1.3.0.zip \
   wp-manager-pro/wp-manager-pro.php \
   wp-manager-pro/includes/ \
-  wp-manager-pro/assets/
+  wp-manager-pro/assets/ \
+  --exclude "wp-manager-pro/screenshots/*"
 ```
 
 ---
