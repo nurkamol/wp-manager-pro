@@ -444,6 +444,52 @@ wp-manager-pro/
 
 ---
 
+## FAQ
+
+### How do I open WP Manager Pro?
+After activating the plugin, click **WP Manager** in the WordPress admin sidebar, or click the **Open** link in the Plugins list row next to WP Manager Pro.
+
+### Who can access WP Manager Pro?
+Only WordPress users with the `manage_options` capability (Administrators). Every REST API endpoint enforces this — lower-privileged users receive a `403 Forbidden` response.
+
+### How do I put my site in maintenance mode?
+Go to **Maintenance** in the sidebar. Use the **Content** tab to set your title and message, the **Appearance** tab to choose a gradient and icon, and the **Extras** tab to add a countdown timer. Click **Enable Maintenance** to go live, or **Save Settings** to persist your design without changing the active state. The maintenance page is removed automatically when you disable it or deactivate the plugin.
+
+### How do I downgrade a plugin or theme to an older version?
+In **Plugin Manager** or **Theme Manager**, click the clock/history icon (⏱) on any plugin or theme row. A dialog loads all available versions from WordPress.org. Click **Install** next to the version you want — the plugin/theme stays active after the switch.
+
+### How do I hide the WordPress login page?
+Go to **Security** in the sidebar. Enter a secret slug (e.g. `my-secret-login`) and click **Enable Protection**. Your login page moves to `yoursite.com/my-secret-login`. Direct GET requests to `wp-login.php` are redirected to the homepage. Copy the new URL with the clipboard button before saving. To restore the default, click **Disable Protection**.
+
+### How do I enable WebP or AVIF image uploads?
+Go to **Image Tools** and toggle **WebP Conversion** or **AVIF Support** on. WebP requires GD or ImageMagick. AVIF requires PHP 8.1+ with GD (`imageavif` function) or ImageMagick compiled with the AVIF codec. The support status cards at the top of the page show what your server supports.
+
+### How do I use Login As (admin impersonation)?
+Go to **Users**, find the user you want to impersonate, and click the person/arrow icon. WP Manager Pro generates a secure single-use token (valid for 5 minutes) and redirects you to WP Admin logged in as that user. Only existing admins can trigger this — the token is validated server-side and deleted on first use.
+
+### Is it safe to edit files with the File Manager?
+Yes — all file paths are validated against `ABSPATH` using `realpath()` to prevent path traversal. `wp-config.php`, `.htaccess`, and `index.php` are write-protected from deletion and rename. The editor is limited to text-based file types and a 2 MB read limit. That said, treat it like any code editor: incorrect edits can break your site.
+
+### Can I run custom SQL queries in the Database Manager?
+The **SQL Runner** tab is read-only — it accepts `SELECT`, `SHOW`, `DESCRIBE`, and `EXPLAIN` statements only. Write operations (`INSERT`, `UPDATE`, `DELETE`, `DROP`, etc.) are blocked at the API level. For write operations, use the **Table Data** tab to insert, edit, or delete individual rows via the UI.
+
+### How do I check for plugin/theme updates without leaving WP Manager Pro?
+Click the **Check Updates** button (top-right of Plugin Manager or Theme Manager). This forces WordPress to re-query WordPress.org for fresh update data and immediately refreshes the list — no page reload needed.
+
+### Does WP Manager Pro support WordPress Multisite?
+The plugin works on Multisite but is designed for single-site use. It installs and activates on a per-site basis. Network-level management (network activation, super-admin actions) is not currently supported.
+
+### How do I uninstall WP Manager Pro?
+Deactivate the plugin from WP Admin → Plugins. On deactivation, the maintenance file (`wp-content/maintenance.php`) is automatically removed. Deactivating does **not** delete your notes or settings stored in `wp_options` — these are cleaned up if you manually delete the plugin afterward.
+
+### Where are notes stored?
+Notes are stored in a custom `wp_wmp_notes` database table created on plugin activation. They persist across plugin updates.
+
+### Why does the page look unstyled or show a blank white area?
+This can happen if another plugin or theme loads conflicting scripts on the WP Manager Pro page. Check the browser console for JavaScript errors. If you see a Content Security Policy (CSP) violation, your server's CSP headers may be blocking the inline React app. You may need to whitelist the plugin's script.
+
+---
+
 ## Security
 
 - All REST endpoints are protected by `manage_options` capability check

@@ -6,9 +6,20 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 class Admin {
 
     public static function add_plugin_links( $links ) {
-        $settings_link = '<a href="' . admin_url( 'admin.php?page=wp-manager-pro' ) . '">' . __( 'Open', 'wp-manager-pro' ) . '</a>';
-        array_unshift( $links, $settings_link );
+        $open_link = '<a href="' . admin_url( 'admin.php?page=wp-manager-pro' ) . '">' . __( 'Open', 'wp-manager-pro' ) . '</a>';
+        array_unshift( $links, $open_link );
         return $links;
+    }
+
+    public static function add_plugin_meta( $plugin_meta, $plugin_file ) {
+        if ( WP_MANAGER_PRO_BASENAME !== $plugin_file ) {
+            return $plugin_meta;
+        }
+
+        $plugin_meta[] = '<a href="https://github.com/nurkamol/wp-manager-pro#faq" target="_blank" rel="noopener">' . __( 'FAQ', 'wp-manager-pro' ) . '</a>';
+        $plugin_meta[] = '<a href="https://github.com/nurkamol/wp-manager-pro/blob/main/CHANGELOG.md" target="_blank" rel="noopener">' . __( 'Changelog', 'wp-manager-pro' ) . '</a>';
+
+        return $plugin_meta;
     }
 
     public static function register_menu() {

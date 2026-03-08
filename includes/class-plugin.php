@@ -54,6 +54,7 @@ class Plugin {
         add_action( 'admin_menu', [ Admin::class, 'register_menu' ] );
         add_action( 'admin_enqueue_scripts', [ Admin::class, 'enqueue_assets' ] );
         add_filter( 'plugin_action_links_' . WP_MANAGER_PRO_BASENAME, [ Admin::class, 'add_plugin_links' ] );
+        add_filter( 'plugin_row_meta', [ Admin::class, 'add_plugin_meta' ], 10, 2 );
         add_action( 'rest_api_init', [ API\Routes::class, 'register_routes' ] );
 
         // Admin URL protection (conditional on settings).
