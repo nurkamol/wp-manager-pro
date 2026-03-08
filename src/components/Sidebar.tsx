@@ -3,11 +3,11 @@ import { cn } from '@/lib/utils'
 import {
   LayoutDashboard, Puzzle, Palette, FolderOpen, Database, Server,
   Construction, Users, Bug, Image, StickyNote, ChevronLeft, ChevronRight,
-  ExternalLink, Settings, RotateCcw
+  ExternalLink, Settings, RotateCcw, Sun, Moon, Shield,
 } from 'lucide-react'
 import { getConfig } from '@/lib/api'
-import { useState } from 'react'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import type { Theme } from '@/hooks/useTheme'
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard', end: true },
@@ -22,14 +22,17 @@ const navItems = [
   { to: '/notes', icon: StickyNote, label: 'Notes' },
   { to: '/system', icon: Server, label: 'System Info' },
   { to: '/reset', icon: RotateCcw, label: 'Reset Tools' },
+  { to: '/security', icon: Shield, label: 'Security' },
 ]
 
 interface SidebarProps {
   collapsed: boolean
   onToggle: () => void
+  theme: Theme
+  onToggleTheme: () => void
 }
 
-export function Sidebar({ collapsed, onToggle }: SidebarProps) {
+export function Sidebar({ collapsed, onToggle, theme, onToggleTheme }: SidebarProps) {
   const config = getConfig()
 
   return (
@@ -143,6 +146,21 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
               <p className="text-xs font-medium text-white truncate">{config.user.name}</p>
               <p className="text-[10px] text-slate-400 truncate">{config.user.email}</p>
             </div>
+            {/* Dark mode toggle */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={onToggleTheme}
+                  className="p-1.5 rounded-md text-slate-400 hover:text-white hover:bg-slate-700/50 transition-colors shrink-0"
+                  aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+                >
+                  {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top">
+                {theme === 'dark' ? 'Light mode' : 'Dark mode'}
+              </TooltipContent>
+            </Tooltip>
           </div>
           <a
             href={config.adminUrl}
@@ -153,6 +171,26 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
             <ExternalLink className="w-3 h-3" />
             WordPress Admin
           </a>
+        </div>
+      )}
+
+      {/* Collapsed dark mode toggle */}
+      {collapsed && (
+        <div className="p-2 border-t border-slate-700/50 shrink-0 flex justify-center">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={onToggleTheme}
+                className="p-2 rounded-md text-slate-400 hover:text-white hover:bg-slate-700/50 transition-colors"
+                aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+              >
+                {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              {theme === 'dark' ? 'Light mode' : 'Dark mode'}
+            </TooltipContent>
+          </Tooltip>
         </div>
       )}
 

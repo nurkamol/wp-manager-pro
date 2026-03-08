@@ -7,6 +7,62 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [1.3.0] — 2026-03-08
+
+### Added
+
+#### Maintenance Mode
+- **Professional Appearance Customization**: Tabs-based settings panel (Content, Appearance, Extras)
+- **Gradient Presets**: 6 one-click presets (Midnight, Sunset, Forest, Royal, Slate, Candy)
+- **Custom Color Pickers**: Native color + hex inputs for background start, background end, accent/divider, and text color
+- **Page Icon Picker**: 8 emoji presets + custom emoji/text input for the floating page icon
+- **Status Badge**: Toggle + custom badge text with pulse indicator
+- **Countdown Timer**: Toggle + datetime-local input for an animated live countdown; preview shows placeholder countdown blocks
+- **Save Settings without toggle**: Separate "Save Settings" button (POST `/maintenance/settings`) — settings are persisted without affecting maintenance active state
+- **Live Preview pane**: Right-column real-time preview reflecting gradient, logo animation, badge, accent divider, title, message, and countdown
+
+#### Security
+- **Admin URL Protection** (new Security page): Moves WordPress login to a secret URL slug; blocks direct GET access to `wp-login.php` (redirects to homepage); POST/password-reset actions continue to work; custom login URL displayed with copy & open buttons
+- **Security REST routes**: `GET /security`, `POST /security/admin-url`, `DELETE /security/admin-url`
+- **Security nav item** in sidebar (Shield icon)
+
+#### Image Tools
+- **AVIF Support**: Toggle to allow AVIF image uploads (`image/avif`, `image/avifs` MIME types); requires PHP 8.1+ GD (`imageavif`) or ImageMagick with AVIF codec
+- **AVIF support status card** added to support status row (now 4 columns)
+
+---
+
+## [1.2.0] — 2026-03-08
+
+### Added
+
+#### Plugin Manager
+- **Update**: One-click update button (amber) appears on plugin rows and in WP.org search when an update is available; uses `Plugin_Upgrader::upgrade()` with WordPress update transients
+- **Version History & Downgrade**: History icon button opens a version dialog fetching all available versions from `api.wordpress.org/plugins/info/1.2/?action=plugin_information&fields[versions]=1`; installs any version via `https://downloads.wordpress.org/plugin/{slug}.{version}.zip` with `overwrite_package: true`
+- **Smart WP.org Search Buttons**: Search tab now detects installed plugins via `installedMap` (useMemo); shows amber "Update" if update available, green "Installed ✓" (disabled) if current, or blue "Install" for new plugins
+- **Updates count in header**: Description shows `X updates available` when plugins have pending updates
+
+#### Theme Manager
+- **Update**: Same update mechanism as plugins — `Theme_Upgrader::upgrade($slug)` (POST `/themes/update`)
+- **Version History & Downgrade**: Theme version dialog fetching from `api.wordpress.org/themes/info/1.2/?action=theme_information&fields[versions]=1`; installs via `https://downloads.wordpress.org/theme/{slug}.{version}.zip`
+- **Smart WP.org Search Buttons**: Same smart button logic as plugins based on `installedMap`
+- **Updates count in header**: Same update count display as Plugin Manager
+
+#### UI / UX
+- **Light/Dark Mode Toggle**: Sun/Moon button in the sidebar footer (and collapsed sidebar footer); persists selection via `localStorage`; applies `.dark` class to `#wp-manager-pro-root`; full dark palette for sidebar (always dark), main content, page headers, cards, dialogs, inputs
+- **WordPress footer hidden**: Fixed CSS selector — `#wpfooter { display: none }` (was incorrectly scoped as a descendant of `.wp-manager-pro-page`)
+
+### Fixed
+- **ZIP download 401 (`rest_forbidden`)**: Export endpoints now append `&_wpnonce=wp_create_nonce('wp_rest')` to the download URL so browser navigation is authenticated without `X-WP-Nonce` header
+- **ZIP filename includes version**: Exported ZIPs are named `{slug}-{version}.zip` (e.g. `woocommerce-8.6.1.zip`) instead of just `{slug}.zip`
+- **WP.org search unreliable on local dev**: Removed PHP backend `plugins_api()` / `themes_api()` calls (which fail in air-gapped local environments); browser now fetches directly from the public CORS-enabled WP.org API
+
+### Changed
+- WP.org plugin/theme search now performs direct browser-to-`api.wordpress.org` fetch (bypasses PHP backend entirely) — more reliable, no server-to-server HTTP dependency
+- Version bumped to `1.2.0` in plugin header and `WP_MANAGER_PRO_VERSION` constant
+
+---
+
 ## [1.1.0] — 2026-03-08
 
 ### Added

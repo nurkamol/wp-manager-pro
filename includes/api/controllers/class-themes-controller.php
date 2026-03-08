@@ -239,7 +239,9 @@ class Themes_Controller {
         wp_mkdir_p( $export_dir );
 
         $key          = wp_generate_password( 16, false );
-        $zip_filename = $export_dir . $slug . '-' . $key . '.zip';
+        $version      = wp_get_theme( $slug )->get( 'Version' );
+        $name_base    = $slug . ( $version ? '-' . $version : '' );
+        $zip_filename = $export_dir . $name_base . '-' . $key . '.zip';
 
         $zip = new \ZipArchive();
         if ( $zip->open( $zip_filename, \ZipArchive::CREATE | \ZipArchive::OVERWRITE ) !== true ) {
@@ -256,7 +258,8 @@ class Themes_Controller {
         // Store transient for download.
         set_transient( 'wmp_export_' . $key, $zip_filename, 300 );
 
-        $download_url = rest_url( 'wp-manager-pro/v1/themes/download' ) . '?key=' . $key;
+        $nonce        = wp_create_nonce( 'wp_rest' );
+        $download_url = rest_url( 'wp-manager-pro/v1/themes/download' ) . '?key=' . $key . '&_wpnonce=' . $nonce;
 
         return new WP_REST_Response( [
             'success'      => true,
@@ -296,6 +299,65 @@ class Themes_Controller {
         readfile( $zip_file );
         @unlink( $zip_file );
         exit;
+    }
+
+    public static function update_theme( WP_REST_Request $request ) {
+        self::load_theme_functions();
+
+        $slug = sanitize_text_field( $request->get_param( 'slug' ) );
+
+        if ( ! $slug ) {
+            return new WP_Error( 'missing_param', 'Theme slug is required.', [ 'status' => 400 ] );
+        }
+
+        $update_themes = get_site_transient( 'update_themes' );
+
+        if ( ! isset( $update_themes->response[ $slug ] ) ) {
+            return new WP_Error( 'no_update', 'No update available for this theme.', [ 'status' => 400 ] );
+        }
+
+        $upgrader = new \Theme_Upgrader( new \WP_Ajax_Upgrader_Skin() );
+        $result   = $upgrader->upgrade( $slug );
+
+        if ( is_wp_error( $result ) ) {
+            return new WP_Error( 'update_failed', $result->get_error_message(), [ 'status' => 500 ] );
+        }
+
+        if ( ! $result ) {
+            return new WP_Error( 'update_failed', 'Theme update failed.', [ 'status' => 500 ] );
+        }
+
+        return new WP_REST_Response( [ 'success' => true, 'message' => 'Theme updated successfully.' ], 200 );
+    }
+
+    public static function install_theme_version( WP_REST_Request $request ) {
+        self::load_theme_functions();
+
+        $slug    = sanitize_text_field( $request->get_param( 'slug' ) );
+        $version = sanitize_text_field( $request->get_param( 'version' ) );
+
+        if ( ! $slug || ! $version ) {
+            return new WP_Error( 'missing_param', 'Slug and version are required.', [ 'status' => 400 ] );
+        }
+
+        if ( ! preg_match( '/^[a-z0-9-]+$/', $slug ) || ! preg_match( '/^[a-zA-Z0-9.\-]+$/', $version ) ) {
+            return new WP_Error( 'invalid_param', 'Invalid slug or version format.', [ 'status' => 400 ] );
+        }
+
+        $download_url = 'https://downloads.wordpress.org/theme/' . $slug . '.' . $version . '.zip';
+
+        $upgrader = new \Theme_Upgrader( new \WP_Ajax_Upgrader_Skin() );
+        $result   = $upgrader->install( $download_url, [ 'overwrite_package' => true ] );
+
+        if ( is_wp_error( $result ) ) {
+            return new WP_Error( 'install_failed', $result->get_error_message(), [ 'status' => 500 ] );
+        }
+
+        if ( ! $result ) {
+            return new WP_Error( 'install_failed', "Version {$version} installation failed.", [ 'status' => 500 ] );
+        }
+
+        return new WP_REST_Response( [ 'success' => true, 'message' => "Theme v{$version} installed successfully." ], 200 );
     }
 
     private static function add_folder_to_zip( \ZipArchive $zip, string $base_path, string $folder ) {

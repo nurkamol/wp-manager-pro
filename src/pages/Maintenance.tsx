@@ -6,38 +6,112 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Switch } from '@/components/ui/switch'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { toast } from 'sonner'
-import { Construction, Power, CheckCircle2, AlertTriangle, Eye, RefreshCw } from 'lucide-react'
-import { useState } from 'react'
+import {
+  Construction, Power, CheckCircle2, AlertTriangle, Eye,
+  RefreshCw, Save, Palette, FileText, Clock, Smile,
+} from 'lucide-react'
+import { useState, useEffect } from 'react'
 
 interface MaintenanceStatus {
   active: boolean
   message: string
   title: string
   end_time: string
+  bg_start: string
+  bg_end: string
+  accent: string
+  text_color: string
+  logo: string
+  badge_text: string
+  show_badge: boolean
+  show_countdown: boolean
 }
+
+const GRADIENT_PRESETS = [
+  { label: 'Midnight', start: '#1e1e2e', end: '#0f3460', accent: '#4f8ef7' },
+  { label: 'Sunset', start: '#ff6b6b', end: '#ffa500', accent: '#fff' },
+  { label: 'Forest', start: '#1a3a2a', end: '#2d6a4f', accent: '#95d5b2' },
+  { label: 'Royal', start: '#2d1b69', end: '#11998e', accent: '#c9b1ff' },
+  { label: 'Slate', start: '#1e293b', end: '#334155', accent: '#94a3b8' },
+  { label: 'Candy', start: '#833ab4', end: '#fd1d1d', accent: '#fcb045' },
+]
+
+const LOGO_PRESETS = ['⚙️', '🔧', '🚀', '🛠️', '⚡', '🌙', '🔒', '🎯']
 
 export function Maintenance() {
   const queryClient = useQueryClient()
+
+  // Local state for settings
+  const [title, setTitle] = useState('')
+  const [message, setMessage] = useState('')
+  const [endTime, setEndTime] = useState('')
+  const [bgStart, setBgStart] = useState('#1e1e2e')
+  const [bgEnd, setBgEnd] = useState('#0f3460')
+  const [accent, setAccent] = useState('#4f8ef7')
+  const [textColor, setTextColor] = useState('#ffffff')
+  const [logo, setLogo] = useState('⚙️')
+  const [badgeText, setBadgeText] = useState('Maintenance Mode')
+  const [showBadge, setShowBadge] = useState(true)
+  const [showCountdown, setShowCountdown] = useState(false)
+  const [initialized, setInitialized] = useState(false)
 
   const { data, isLoading } = useQuery<MaintenanceStatus>({
     queryKey: ['maintenance'],
     queryFn: () => api.get('/maintenance'),
   })
 
-  const [title, setTitle] = useState('')
-  const [message, setMessage] = useState('')
-  const [endTime, setEndTime] = useState('')
+  // Populate local state from server on first load
+  useEffect(() => {
+    if (data && !initialized) {
+      setTitle(data.title || '')
+      setMessage(data.message || '')
+      setEndTime(data.end_time || '')
+      setBgStart(data.bg_start || '#1e1e2e')
+      setBgEnd(data.bg_end || '#0f3460')
+      setAccent(data.accent || '#4f8ef7')
+      setTextColor(data.text_color || '#ffffff')
+      setLogo(data.logo || '⚙️')
+      setBadgeText(data.badge_text || 'Maintenance Mode')
+      setShowBadge(data.show_badge ?? true)
+      setShowCountdown(data.show_countdown ?? false)
+      setInitialized(true)
+    }
+  }, [data, initialized])
+
+  // Helper to get current settings merged with server defaults
+  const currentSettings = () => ({
+    title: title || data?.title || 'Site Under Maintenance',
+    message: message || data?.message || 'We are performing scheduled maintenance. We will be back shortly.',
+    end_time: endTime || data?.end_time || '',
+    bg_start: bgStart,
+    bg_end: bgEnd,
+    accent,
+    text_color: textColor,
+    logo,
+    badge_text: badgeText,
+    show_badge: showBadge,
+    show_countdown: showCountdown,
+  })
+
+  const saveSettingsMutation = useMutation({
+    mutationFn: () => api.post('/maintenance/settings', currentSettings()),
+    onSuccess: () => {
+      toast.success('Maintenance settings saved')
+      queryClient.invalidateQueries({ queryKey: ['maintenance'] })
+    },
+    onError: (err: Error) => toast.error(err.message),
+  })
 
   const toggleMutation = useMutation({
     mutationFn: (enable: boolean) => api.post('/maintenance/toggle', {
       enable,
-      title: title || data?.title,
-      message: message || data?.message,
-      end_time: endTime || data?.end_time,
+      ...currentSettings(),
     }),
     onSuccess: (_, enable) => {
       toast[enable ? 'success' : 'info'](enable ? 'Maintenance mode enabled' : 'Maintenance mode disabled')
@@ -47,7 +121,15 @@ export function Maintenance() {
     onError: (err: Error) => toast.error(err.message),
   })
 
+  const applyPreset = (preset: typeof GRADIENT_PRESETS[0]) => {
+    setBgStart(preset.start)
+    setBgEnd(preset.end)
+    setAccent(preset.accent)
+  }
+
   if (isLoading) return <PageLoader text="Loading maintenance settings..." />
+
+  const preview = currentSettings()
 
   return (
     <div className="fade-in">
@@ -56,18 +138,19 @@ export function Maintenance() {
         description="Control when your site shows a maintenance page to visitors"
       />
 
-      <div className="p-6 max-w-3xl space-y-6">
-        {/* Status Card */}
-        <Card className={data?.active ? 'border-amber-300 bg-amber-50' : ''}>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+      <div className="p-6 space-y-6">
+        {/* Status Banner */}
+        <Card className={data?.active ? 'border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-700' : ''}>
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between flex-wrap gap-4">
               <div className="flex items-center gap-4">
-                <div className={`p-3 rounded-full ${data?.active ? 'bg-amber-100' : 'bg-slate-100'}`}>
+                <div className={`p-3 rounded-full ${data?.active ? 'bg-amber-100 dark:bg-amber-900/50' : 'bg-slate-100 dark:bg-slate-800'}`}>
                   <Construction className={`w-6 h-6 ${data?.active ? 'text-amber-600' : 'text-slate-400'}`} />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-slate-900">
-                    Maintenance Mode is {data?.active ? (
+                  <h3 className="font-semibold text-slate-900 dark:text-slate-100">
+                    Maintenance Mode is{' '}
+                    {data?.active ? (
                       <span className="text-amber-600">Active</span>
                     ) : (
                       <span className="text-green-600">Inactive</span>
@@ -80,66 +163,38 @@ export function Maintenance() {
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                {data?.active && (
+              <div className="flex items-center gap-3">
+                {data?.active ? (
                   <Badge variant="warning" className="gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse inline-block" />
                     Live
                   </Badge>
-                )}
-                {!data?.active && (
+                ) : (
                   <Badge variant="success" className="gap-1">
                     <CheckCircle2 className="w-3 h-3" />
                     Online
                   </Badge>
                 )}
+                <Button
+                  onClick={() => toggleMutation.mutate(!data?.active)}
+                  disabled={toggleMutation.isPending}
+                  variant={data?.active ? 'outline' : 'default'}
+                  size="sm"
+                >
+                  {toggleMutation.isPending ? (
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                  ) : data?.active ? (
+                    <Power className="w-4 h-4" />
+                  ) : (
+                    <Construction className="w-4 h-4" />
+                  )}
+                  {data?.active ? 'Disable' : 'Enable'}
+                </Button>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Settings */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Maintenance Page Settings</CardTitle>
-            <CardDescription>Customize what visitors see during maintenance</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="title">Page Title</Label>
-              <Input
-                id="title"
-                placeholder={data?.title || 'Site Under Maintenance'}
-                value={title}
-                onChange={e => setTitle(e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="message">Message</Label>
-              <Textarea
-                id="message"
-                placeholder={data?.message || 'We are performing scheduled maintenance. We will be back shortly.'}
-                value={message}
-                onChange={e => setMessage(e.target.value)}
-                rows={3}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="endtime">Expected End Time (optional)</Label>
-              <Input
-                id="endtime"
-                type="datetime-local"
-                value={endTime}
-                onChange={e => setEndTime(e.target.value)}
-              />
-              <p className="text-xs text-slate-500">This is informational only — shown in the message if you include it.</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Warning when active */}
         {data?.active && (
           <Alert variant="warning">
             <AlertTriangle className="w-4 h-4" />
@@ -150,61 +205,404 @@ export function Maintenance() {
           </Alert>
         )}
 
-        {/* Action Buttons */}
-        <div className="flex gap-3">
-          <Button
-            onClick={() => toggleMutation.mutate(!data?.active)}
-            disabled={toggleMutation.isPending}
-            variant={data?.active ? 'outline' : 'default'}
-            className="flex-1"
-            size="lg"
-          >
-            {toggleMutation.isPending ? (
-              <RefreshCw className="w-4 h-4 animate-spin" />
-            ) : data?.active ? (
-              <Power className="w-4 h-4" />
-            ) : (
-              <Construction className="w-4 h-4" />
-            )}
-            {data?.active ? 'Disable Maintenance Mode' : 'Enable Maintenance Mode'}
-          </Button>
-        </div>
+        {/* Two-column layout: Settings + Preview */}
+        <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
+          {/* Settings (left) */}
+          <div className="xl:col-span-3">
+            <Card>
+              <CardHeader>
+                <CardTitle>Maintenance Page Settings</CardTitle>
+                <CardDescription>Customize content and appearance of the maintenance page</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Tabs defaultValue="content">
+                  <TabsList className="mb-5 w-full">
+                    <TabsTrigger value="content" className="flex-1 gap-1.5">
+                      <FileText className="w-3.5 h-3.5" />
+                      Content
+                    </TabsTrigger>
+                    <TabsTrigger value="appearance" className="flex-1 gap-1.5">
+                      <Palette className="w-3.5 h-3.5" />
+                      Appearance
+                    </TabsTrigger>
+                    <TabsTrigger value="extras" className="flex-1 gap-1.5">
+                      <Clock className="w-3.5 h-3.5" />
+                      Extras
+                    </TabsTrigger>
+                  </TabsList>
 
-        {/* Preview */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Eye className="w-4 h-4" />
-              Maintenance Page Preview
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="rounded-b-lg overflow-hidden">
-              <div
-                style={{
-                  background: 'linear-gradient(135deg, #1e1e2e 0%, #16213e 50%, #0f3460 100%)',
-                  minHeight: '200px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'white',
-                  textAlign: 'center',
-                  padding: '40px',
-                }}
-              >
-                <div>
-                  <div style={{ fontSize: '48px', marginBottom: '12px' }}>⚙️</div>
-                  <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '8px' }}>
-                    {title || data?.title || 'Site Under Maintenance'}
-                  </h2>
-                  <p style={{ opacity: 0.8, maxWidth: '400px' }}>
-                    {message || data?.message || 'We are performing scheduled maintenance. We will be back shortly.'}
-                  </p>
+                  {/* Content Tab */}
+                  <TabsContent value="content" className="space-y-4 mt-0">
+                    <div className="space-y-2">
+                      <Label htmlFor="title">Page Title</Label>
+                      <Input
+                        id="title"
+                        placeholder="Site Under Maintenance"
+                        value={title}
+                        onChange={e => setTitle(e.target.value)}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="message">Message</Label>
+                      <Textarea
+                        id="message"
+                        placeholder="We are performing scheduled maintenance. We will be back shortly."
+                        value={message}
+                        onChange={e => setMessage(e.target.value)}
+                        rows={4}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between py-2 border-b border-slate-100 dark:border-slate-700">
+                      <div>
+                        <Label className="text-sm font-medium">Show Badge</Label>
+                        <p className="text-xs text-slate-500 mt-0.5">Display a status pill at the top of the page</p>
+                      </div>
+                      <Switch checked={showBadge} onCheckedChange={setShowBadge} />
+                    </div>
+
+                    {showBadge && (
+                      <div className="space-y-2">
+                        <Label htmlFor="badge-text">Badge Text</Label>
+                        <Input
+                          id="badge-text"
+                          placeholder="Maintenance Mode"
+                          value={badgeText}
+                          onChange={e => setBadgeText(e.target.value)}
+                          maxLength={30}
+                        />
+                      </div>
+                    )}
+                  </TabsContent>
+
+                  {/* Appearance Tab */}
+                  <TabsContent value="appearance" className="space-y-5 mt-0">
+                    {/* Gradient Presets */}
+                    <div className="space-y-2">
+                      <Label>Gradient Presets</Label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {GRADIENT_PRESETS.map(preset => (
+                          <button
+                            key={preset.label}
+                            onClick={() => applyPreset(preset)}
+                            className="relative h-14 rounded-lg overflow-hidden border-2 border-transparent hover:border-blue-500 transition-all group"
+                            style={{ background: `linear-gradient(135deg, ${preset.start} 0%, ${preset.end} 100%)` }}
+                            title={preset.label}
+                          >
+                            <span className="absolute inset-0 flex items-center justify-center text-white text-xs font-medium opacity-0 group-hover:opacity-100 bg-black/20 transition-opacity">
+                              {preset.label}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Custom Colors */}
+                    <div className="space-y-3">
+                      <Label>Custom Colors</Label>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <Label htmlFor="bg-start" className="text-xs text-slate-500">Background Start</Label>
+                          <div className="flex gap-2">
+                            <input
+                              type="color"
+                              id="bg-start"
+                              value={bgStart}
+                              onChange={e => setBgStart(e.target.value)}
+                              className="w-10 h-9 rounded border border-slate-200 cursor-pointer p-0.5"
+                            />
+                            <Input
+                              value={bgStart}
+                              onChange={e => setBgStart(e.target.value)}
+                              className="font-mono text-sm"
+                              maxLength={7}
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label htmlFor="bg-end" className="text-xs text-slate-500">Background End</Label>
+                          <div className="flex gap-2">
+                            <input
+                              type="color"
+                              id="bg-end"
+                              value={bgEnd}
+                              onChange={e => setBgEnd(e.target.value)}
+                              className="w-10 h-9 rounded border border-slate-200 cursor-pointer p-0.5"
+                            />
+                            <Input
+                              value={bgEnd}
+                              onChange={e => setBgEnd(e.target.value)}
+                              className="font-mono text-sm"
+                              maxLength={7}
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label htmlFor="accent" className="text-xs text-slate-500">Accent / Divider</Label>
+                          <div className="flex gap-2">
+                            <input
+                              type="color"
+                              id="accent"
+                              value={accent}
+                              onChange={e => setAccent(e.target.value)}
+                              className="w-10 h-9 rounded border border-slate-200 cursor-pointer p-0.5"
+                            />
+                            <Input
+                              value={accent}
+                              onChange={e => setAccent(e.target.value)}
+                              className="font-mono text-sm"
+                              maxLength={7}
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label htmlFor="text-color" className="text-xs text-slate-500">Text Color</Label>
+                          <div className="flex gap-2">
+                            <input
+                              type="color"
+                              id="text-color"
+                              value={textColor}
+                              onChange={e => setTextColor(e.target.value)}
+                              className="w-10 h-9 rounded border border-slate-200 cursor-pointer p-0.5"
+                            />
+                            <Input
+                              value={textColor}
+                              onChange={e => setTextColor(e.target.value)}
+                              className="font-mono text-sm"
+                              maxLength={7}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Icon / Logo */}
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-1.5">
+                        <Smile className="w-3.5 h-3.5" />
+                        Page Icon
+                      </Label>
+                      <div className="flex flex-wrap gap-2 mb-2">
+                        {LOGO_PRESETS.map(emoji => (
+                          <button
+                            key={emoji}
+                            onClick={() => setLogo(emoji)}
+                            className={`w-10 h-10 rounded-lg text-xl flex items-center justify-center border-2 transition-all ${
+                              logo === emoji
+                                ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/30'
+                                : 'border-slate-200 hover:border-slate-400 dark:border-slate-700'
+                            }`}
+                          >
+                            {emoji}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="custom-logo" className="text-xs text-slate-500">Or type any emoji</Label>
+                        <Input
+                          id="custom-logo"
+                          value={logo}
+                          onChange={e => setLogo(e.target.value)}
+                          placeholder="⚙️"
+                          maxLength={8}
+                          className="max-w-[120px] text-2xl text-center"
+                        />
+                      </div>
+                    </div>
+                  </TabsContent>
+
+                  {/* Extras Tab */}
+                  <TabsContent value="extras" className="space-y-4 mt-0">
+                    <div className="flex items-center justify-between py-2 border-b border-slate-100 dark:border-slate-700">
+                      <div>
+                        <Label className="text-sm font-medium">Show Countdown Timer</Label>
+                        <p className="text-xs text-slate-500 mt-0.5">Display a live countdown clock on the maintenance page</p>
+                      </div>
+                      <Switch checked={showCountdown} onCheckedChange={setShowCountdown} />
+                    </div>
+
+                    {showCountdown && (
+                      <div className="space-y-2">
+                        <Label htmlFor="endtime">Countdown End Time</Label>
+                        <Input
+                          id="endtime"
+                          type="datetime-local"
+                          value={endTime}
+                          onChange={e => setEndTime(e.target.value)}
+                        />
+                        <p className="text-xs text-slate-500">The countdown will tick down to this date/time.</p>
+                      </div>
+                    )}
+
+                    {!showCountdown && (
+                      <div className="space-y-2">
+                        <Label htmlFor="endtime-info">Expected End Time (informational)</Label>
+                        <Input
+                          id="endtime-info"
+                          type="datetime-local"
+                          value={endTime}
+                          onChange={e => setEndTime(e.target.value)}
+                        />
+                        <p className="text-xs text-slate-500">Optional. Can be referenced in your message text.</p>
+                      </div>
+                    )}
+                  </TabsContent>
+                </Tabs>
+
+                {/* Save Button */}
+                <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-700">
+                  <Button
+                    className="w-full"
+                    onClick={() => saveSettingsMutation.mutate()}
+                    disabled={saveSettingsMutation.isPending}
+                  >
+                    {saveSettingsMutation.isPending ? (
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Save className="w-4 h-4" />
+                    )}
+                    Save Settings
+                  </Button>
                 </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Live Preview (right) */}
+          <div className="xl:col-span-2">
+            <Card className="sticky top-6">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Eye className="w-4 h-4" />
+                  Live Preview
+                </CardTitle>
+                <CardDescription className="text-xs">Updates as you change settings</CardDescription>
+              </CardHeader>
+              <CardContent className="p-0">
+                <style>{`
+                  @keyframes wmpFloat {
+                    0%, 100% { transform: translateY(0); }
+                    50% { transform: translateY(-8px); }
+                  }
+                  @keyframes wmpFadeIn {
+                    from { opacity: 0; transform: translateY(12px); }
+                    to { opacity: 1; transform: translateY(0); }
+                  }
+                `}</style>
+                <div
+                  className="rounded-b-lg overflow-hidden"
+                  style={{
+                    background: `linear-gradient(135deg, ${preview.bg_start} 0%, ${preview.bg_end} 100%)`,
+                    minHeight: '340px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: preview.text_color,
+                    padding: '32px 24px',
+                  }}
+                >
+                  <div style={{ textAlign: 'center', animation: 'wmpFadeIn 0.4s ease', maxWidth: '320px', width: '100%' }}>
+                    {/* Badge */}
+                    {preview.show_badge && (
+                      <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'center' }}>
+                        <span style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '4px 14px',
+                          borderRadius: '9999px',
+                          border: `1px solid ${preview.accent}50`,
+                          background: `${preview.accent}20`,
+                          color: preview.text_color,
+                          fontSize: '11px',
+                          fontWeight: 600,
+                          letterSpacing: '0.05em',
+                          textTransform: 'uppercase' as const,
+                        }}>
+                          <span style={{
+                            width: '6px',
+                            height: '6px',
+                            borderRadius: '50%',
+                            background: preview.accent,
+                            display: 'inline-block',
+                          }} />
+                          {preview.badge_text}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Logo */}
+                    <div style={{
+                      fontSize: '48px',
+                      marginBottom: '16px',
+                      animation: 'wmpFloat 3s ease-in-out infinite',
+                      display: 'inline-block',
+                    }}>
+                      {preview.logo}
+                    </div>
+
+                    {/* Accent divider */}
+                    <div style={{
+                      width: '40px',
+                      height: '3px',
+                      borderRadius: '9999px',
+                      background: preview.accent,
+                      margin: '0 auto 16px',
+                    }} />
+
+                    {/* Title */}
+                    <h2 style={{
+                      fontSize: '1.25rem',
+                      fontWeight: 700,
+                      marginBottom: '10px',
+                      color: preview.text_color,
+                      lineHeight: 1.3,
+                    }}>
+                      {preview.title}
+                    </h2>
+
+                    {/* Message */}
+                    <p style={{
+                      fontSize: '0.8125rem',
+                      opacity: 0.75,
+                      lineHeight: 1.6,
+                      marginBottom: showCountdown && endTime ? '16px' : '0',
+                    }}>
+                      {preview.message}
+                    </p>
+
+                    {/* Countdown preview */}
+                    {preview.show_countdown && endTime && (
+                      <div style={{
+                        marginTop: '16px',
+                        display: 'flex',
+                        gap: '8px',
+                        justifyContent: 'center',
+                      }}>
+                        {['00d', '00h', '00m', '00s'].map((unit, i) => (
+                          <div key={i} style={{
+                            background: `${preview.accent}20`,
+                            border: `1px solid ${preview.accent}40`,
+                            borderRadius: '8px',
+                            padding: '8px 6px',
+                            minWidth: '44px',
+                            textAlign: 'center',
+                          }}>
+                            <div style={{ fontSize: '1.1rem', fontWeight: 700, color: preview.accent }}>{unit.slice(0, 2)}</div>
+                            <div style={{ fontSize: '9px', opacity: 0.6, marginTop: '2px', textTransform: 'uppercase' as const }}>
+                              {['Days', 'Hrs', 'Min', 'Sec'][i]}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </div>
     </div>
   )

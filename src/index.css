@@ -121,3 +121,80 @@
 .spinner {
   animation: spin 1s linear infinite;
 }
+
+/* ─── Dark mode structural overrides ─── */
+/* Page content backgrounds */
+.dark .fade-in {
+  color: hsl(210 40% 98%);
+}
+
+/* Plugin/theme rows that use hardcoded bg-white */
+.dark .bg-white {
+  background-color: hsl(217.2 32.6% 17.5%);
+  border-color: hsl(217.2 32.6% 25%);
+}
+
+/* Slate-50 surfaces (search dropdowns, hover states) */
+.dark .hover\:bg-slate-50:hover {
+  background-color: hsl(217.2 32.6% 22%);
+}
+
+/* Input/textarea backgrounds in dark mode */
+.dark input:not([type="checkbox"]):not([type="radio"]),
+.dark textarea,
+.dark select {
+  background-color: hsl(217.2 32.6% 17.5%);
+  color: hsl(210 40% 98%);
+  border-color: hsl(217.2 32.6% 25%);
+}
+
+/* Scrollbar in dark mode */
+.dark ::-webkit-scrollbar-thumb {
+  background: hsl(217.2 32.6% 30%);
+}
+
+/* Table rows in dark mode */
+.dark tr:hover td {
+  background-color: hsl(217.2 32.6% 20%) !important;
+}
+
+/* Code editor in dark mode */
+.dark .code-editor {
+  background-color: hsl(222.2 84% 8%);
+  color: hsl(210 40% 90%);
+}
+
+/* Drop zone in dark mode */
+.dark .border-dashed {
+  border-color: hsl(217.2 32.6% 30%);
+}
+.dark .border-dashed:hover {
+  background-color: hsl(217.2 32.6% 20%);
+}
+
+/* Blue-50 highlights become dark blue tints */
+.dark .bg-blue-50 {
+  background-color: hsl(217 50% 15%);
+}
+.dark .border-blue-100 {
+  border-color: hsl(217 50% 25%);
+}
+
+/* Slate-100 subtle surfaces */
+.dark .bg-slate-100 {
+  background-color: hsl(217.2 32.6% 20%);
+}
+
+/* Text color fixes in dark mode */
+.dark .text-slate-900 {
+  color: hsl(210 40% 95%);
+}
+.dark .text-slate-700 {
+  color: hsl(210 40% 85%);
+}
+.dark .text-slate-600 {
+  color: hsl(210 40% 75%);
+}
+.dark .text-slate-500 {
+  color: hsl(210 40% 60%);
+}

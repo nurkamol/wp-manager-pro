@@ -40,6 +40,7 @@ class Plugin {
             'class-debug-controller',
             'class-images-controller',
             'class-reset-controller',
+            'class-security-controller',
         ];
 
         foreach ( $controllers as $controller ) {
@@ -52,9 +53,15 @@ class Plugin {
         add_action( 'init', [ $this, 'handle_login_as' ] );
         add_action( 'admin_menu', [ Admin::class, 'register_menu' ] );
         add_action( 'admin_enqueue_scripts', [ Admin::class, 'enqueue_assets' ] );
+        add_filter( 'plugin_action_links_' . WP_MANAGER_PRO_BASENAME, [ Admin::class, 'add_plugin_links' ] );
         add_action( 'rest_api_init', [ API\Routes::class, 'register_routes' ] );
 
+        // Admin URL protection (conditional on settings).
+        add_action( 'login_init', [ API\Controllers\Security_Controller::class, 'protect_login' ] );
+        add_action( 'init', [ API\Controllers\Security_Controller::class, 'handle_custom_login_url' ] );
+
         // SVG support (conditional on settings).
+        add_filter( 'upload_mimes', [ API\Controllers\Images_Controller::class, 'maybe_allow_avif' ] );
         add_filter( 'upload_mimes', [ API\Controllers\Images_Controller::class, 'maybe_allow_svg' ] );
         add_filter( 'wp_handle_upload_prefilter', [ API\Controllers\Images_Controller::class, 'sanitize_svg' ] );
     }

@@ -66,6 +66,16 @@ class Routes {
             'callback'            => [ Plugins_Controller::class, 'upload_plugin' ],
             'permission_callback' => [ self::class, 'admin_permission' ],
         ] );
+        register_rest_route( $namespace, '/plugins/update', [
+            'methods'             => 'POST',
+            'callback'            => [ Plugins_Controller::class, 'update_plugin' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/plugins/install-version', [
+            'methods'             => 'POST',
+            'callback'            => [ Plugins_Controller::class, 'install_plugin_version' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
         register_rest_route( $namespace, '/plugins/export', [
             'methods'             => 'POST',
             'callback'            => [ Plugins_Controller::class, 'export_plugin' ],
@@ -106,6 +116,16 @@ class Routes {
         register_rest_route( $namespace, '/themes/upload', [
             'methods'             => 'POST',
             'callback'            => [ Themes_Controller::class, 'upload_theme' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/themes/update', [
+            'methods'             => 'POST',
+            'callback'            => [ Themes_Controller::class, 'update_theme' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/themes/install-version', [
+            'methods'             => 'POST',
+            'callback'            => [ Themes_Controller::class, 'install_theme_version' ],
             'permission_callback' => [ self::class, 'admin_permission' ],
         ] );
         register_rest_route( $namespace, '/themes/export', [
@@ -222,6 +242,12 @@ class Routes {
             'permission_callback' => [ self::class, 'admin_permission' ],
         ] );
 
+        register_rest_route( $namespace, '/maintenance/settings', [
+            'methods'             => 'POST',
+            'callback'            => [ Maintenance_Controller::class, 'save_settings' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+
         // Users.
         register_rest_route( $namespace, '/users', [
             'methods'             => 'GET',
@@ -316,6 +342,24 @@ class Routes {
             'callback'            => [ Reset_Controller::class, 'get_status' ],
             'permission_callback' => [ self::class, 'admin_permission' ],
         ] );
+
+        // Security.
+        register_rest_route( $namespace, '/security', [
+            'methods'             => 'GET',
+            'callback'            => [ Security_Controller::class, 'get_status' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/security/admin-url', [
+            'methods'             => 'POST',
+            'callback'            => [ Security_Controller::class, 'update_slug' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/security/admin-url', [
+            'methods'             => 'DELETE',
+            'callback'            => [ Security_Controller::class, 'disable_protection' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+
         register_rest_route( $namespace, '/reset/execute', [
             'methods'             => 'POST',
             'callback'            => [ Reset_Controller::class, 'execute_reset' ],

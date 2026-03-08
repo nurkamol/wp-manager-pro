@@ -5,6 +5,12 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 
 class Admin {
 
+    public static function add_plugin_links( $links ) {
+        $settings_link = '<a href="' . admin_url( 'admin.php?page=wp-manager-pro' ) . '">' . __( 'Open', 'wp-manager-pro' ) . '</a>';
+        array_unshift( $links, $settings_link );
+        return $links;
+    }
+
     public static function register_menu() {
         add_menu_page(
             __( 'WP Manager Pro', 'wp-manager-pro' ),
@@ -67,7 +73,7 @@ class Admin {
                 #wpbody-content { padding-bottom: 0 !important; }
                 .wp-manager-pro-page #wpcontent,
                 .wp-manager-pro-page #wpbody { padding: 0 !important; }
-                .wp-manager-pro-page #wpfooter { display: none; }
+                #wpfooter { display: none; }
                 #wpwrap { background: #f0f2f5; }
             </style>';
         } );

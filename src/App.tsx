@@ -13,6 +13,7 @@ import { SystemInfo } from './pages/SystemInfo'
 import { Notes } from './pages/Notes'
 import { ImageTools } from './pages/ImageTools'
 import { Reset } from './pages/Reset'
+import { Security } from './pages/Security'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -42,6 +43,7 @@ export function App() {
             <Route path="notes" element={<Notes />} />
             <Route path="system" element={<SystemInfo />} />
             <Route path="reset" element={<Reset />} />
+            <Route path="security" element={<Security />} />
           </Route>
         </Routes>
       </HashRouter>

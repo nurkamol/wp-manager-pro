@@ -15,6 +15,8 @@ import { useState } from 'react'
 
 interface ImageSettings {
   webp_enabled: boolean
+  avif_enabled: boolean
+  avif_support: boolean
   max_width: number
   max_height: number
   jpeg_quality: number
@@ -38,6 +40,7 @@ export function ImageTools() {
   const [maxWidth, setMaxWidth] = useState<number | null>(null)
   const [maxHeight, setMaxHeight] = useState<number | null>(null)
   const [jpegQuality, setJpegQuality] = useState<number | null>(null)
+  const [avifEnabled, setAvifEnabled] = useState<boolean | null>(null)
   const [svgEnabled, setSvgEnabled] = useState<boolean | null>(null)
   const [svgRoles, setSvgRoles] = useState<string[] | null>(null)
 
@@ -49,6 +52,7 @@ export function ImageTools() {
   const saveMutation = useMutation({
     mutationFn: () => api.post('/images/settings', {
       webp_enabled: webpEnabled ?? settings?.webp_enabled,
+      avif_enabled: avifEnabled ?? settings?.avif_enabled,
       max_width: maxWidth ?? settings?.max_width,
       max_height: maxHeight ?? settings?.max_height,
       jpeg_quality: jpegQuality ?? settings?.jpeg_quality,
@@ -73,6 +77,7 @@ export function ImageTools() {
   if (isLoading) return <PageLoader text="Loading image settings..." />
 
   const currentWebp = webpEnabled ?? settings?.webp_enabled ?? false
+  const currentAvif = avifEnabled ?? settings?.avif_enabled ?? false
   const currentMaxWidth = maxWidth ?? settings?.max_width ?? 0
   const currentMaxHeight = maxHeight ?? settings?.max_height ?? 0
   const currentQuality = jpegQuality ?? settings?.jpeg_quality ?? 82
@@ -97,11 +102,12 @@ export function ImageTools() {
 
       <div className="p-6 space-y-6">
         {/* Support Status */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-4 gap-4">
           {[
             { label: 'GD Library', value: settings?.gd_support },
             { label: 'ImageMagick', value: settings?.imagick_support },
             { label: 'WebP Support', value: settings?.webp_support },
+            { label: 'AVIF Support', value: settings?.avif_support },
           ].map(item => (
             <Card key={item.label}>
               <CardContent className="p-4 flex items-center gap-3">
@@ -148,6 +154,28 @@ export function ImageTools() {
                   <AlertTriangle className="w-4 h-4" />
                   <AlertDescription className="text-xs">
                     WebP support requires GD with WebP support or ImageMagick.
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {/* AVIF */}
+              <div className="flex items-center justify-between py-2 border-b border-slate-50">
+                <div>
+                  <Label className="text-sm">Allow AVIF Uploads</Label>
+                  <p className="text-xs text-slate-500 mt-0.5">Enable AVIF image format support (requires PHP 8.1+ or ImageMagick)</p>
+                </div>
+                <Switch
+                  checked={currentAvif}
+                  onCheckedChange={setAvifEnabled}
+                  disabled={!settings?.avif_support}
+                />
+              </div>
+
+              {!settings?.avif_support && (
+                <Alert variant="warning">
+                  <AlertTriangle className="w-4 h-4" />
+                  <AlertDescription className="text-xs">
+                    AVIF support requires PHP 8.1+ with GD (imageavif) or ImageMagick with AVIF codec.
                   </AlertDescription>
                 </Alert>
               )}

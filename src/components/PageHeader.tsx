@@ -9,10 +9,10 @@ interface PageHeaderProps {
 
 export function PageHeader({ title, description, className, actions }: PageHeaderProps) {
   return (
-    <div className={cn('flex items-center justify-between px-6 py-5 border-b bg-white', className)}>
+    <div className={cn('flex items-center justify-between px-6 py-5 border-b bg-white dark:bg-slate-800 dark:border-slate-700', className)}>
       <div>
-        <h1 className="text-xl font-semibold text-slate-900">{title}</h1>
-        {description && <p className="text-sm text-slate-500 mt-0.5">{description}</p>}
+        <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">{title}</h1>
+        {description && <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{description}</p>}
       </div>
       {actions && <div className="flex items-center gap-2">{actions}</div>}
     </div>

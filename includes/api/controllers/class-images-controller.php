@@ -21,6 +21,8 @@ class Images_Controller {
             'gd_support'        => extension_loaded( 'gd' ),
             'imagick_support'   => extension_loaded( 'imagick' ),
             'webp_support'      => function_exists( 'imagewebp' ) || extension_loaded( 'imagick' ),
+            'avif_enabled'      => (bool) get_option( 'wmp_avif_enabled', false ),
+            'avif_support'      => function_exists( 'imageavif' ) || ( extension_loaded( 'imagick' ) && count( Imagick::queryFormats( 'AVIF' ) ) > 0 ),
             'svg_enabled'       => (bool) get_option( 'wmp_svg_enabled', false ),
             'svg_allowed_roles' => get_option( 'wmp_svg_allowed_roles', [ 'administrator' ] ),
         ], 200 );
@@ -36,6 +38,10 @@ class Images_Controller {
         update_option( 'wmp_max_width', $max_width );
         update_option( 'wmp_max_height', $max_height );
         update_option( 'wmp_jpeg_quality', $jpeg_quality ?: 82 );
+
+        // AVIF settings.
+        $avif_enabled = (bool) $request->get_param( 'avif_enabled' );
+        update_option( 'wmp_avif_enabled', $avif_enabled );
 
         // SVG settings.
         $svg_enabled = (bool) $request->get_param( 'svg_enabled' );
@@ -87,6 +93,19 @@ class Images_Controller {
             'errors'    => $errors,
             'message'   => "Regenerated thumbnails for {$processed} images.",
         ], 200 );
+    }
+
+
+    /**
+     * Hook: upload_mimes
+     * Allow AVIF uploads when enabled.
+     */
+    public static function maybe_allow_avif( $mimes ) {
+        if ( get_option( 'wmp_avif_enabled', false ) ) {
+            $mimes['avif']  = 'image/avif';
+            $mimes['avifs'] = 'image/avif';
+        }
+        return $mimes;
     }
 
     /**
