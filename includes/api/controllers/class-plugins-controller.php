@@ -370,6 +370,9 @@ class Plugins_Controller {
             return new WP_Error( 'no_update', 'No update available for this plugin.', [ 'status' => 400 ] );
         }
 
+        // Remember active state — Plugin_Upgrader::upgrade() deactivates but does not re-activate.
+        $was_active = is_plugin_active( $plugin_file );
+
         $upgrader = new \Plugin_Upgrader( new \WP_Ajax_Upgrader_Skin() );
         $result   = $upgrader->upgrade( $plugin_file );
 
@@ -379,6 +382,11 @@ class Plugins_Controller {
 
         if ( ! $result ) {
             return new WP_Error( 'update_failed', 'Plugin update failed.', [ 'status' => 500 ] );
+        }
+
+        // Re-activate if it was active before the upgrade.
+        if ( $was_active && ! is_plugin_active( $plugin_file ) ) {
+            activate_plugin( $plugin_file );
         }
 
         return new WP_REST_Response( [ 'success' => true, 'message' => 'Plugin updated successfully.' ], 200 );
@@ -398,6 +406,24 @@ class Plugins_Controller {
             return new WP_Error( 'invalid_param', 'Invalid slug or version format.', [ 'status' => 400 ] );
         }
 
+        // Snapshot active state before install (install() doesn't re-activate).
+        $all_plugins    = get_plugins();
+        $active_plugins = get_option( 'active_plugins', [] );
+        $plugin_file    = null;
+
+        foreach ( $all_plugins as $file => $data ) {
+            $file_slug = dirname( $file );
+            if ( '.' === $file_slug ) {
+                $file_slug = basename( $file, '.php' );
+            }
+            if ( $file_slug === $slug ) {
+                $plugin_file = $file;
+                break;
+            }
+        }
+
+        $was_active = $plugin_file && in_array( $plugin_file, $active_plugins );
+
         $download_url = 'https://downloads.wordpress.org/plugin/' . $slug . '.' . $version . '.zip';
 
         $upgrader = new \Plugin_Upgrader( new \WP_Ajax_Upgrader_Skin() );
@@ -411,7 +437,29 @@ class Plugins_Controller {
             return new WP_Error( 'install_failed', "Version {$version} installation failed.", [ 'status' => 500 ] );
         }
 
+        // Re-activate if it was active before the install.
+        if ( $was_active && $plugin_file ) {
+            activate_plugin( $plugin_file );
+        }
+
+        // Remove stale update entry for this plugin so the badge disappears.
+        $update_plugins = get_site_transient( 'update_plugins' );
+        if ( $update_plugins && $plugin_file && isset( $update_plugins->response[ $plugin_file ] ) ) {
+            unset( $update_plugins->response[ $plugin_file ] );
+            set_site_transient( 'update_plugins', $update_plugins );
+        }
+
         return new WP_REST_Response( [ 'success' => true, 'message' => "Plugin v{$version} installed successfully." ], 200 );
+    }
+
+    public static function check_updates( WP_REST_Request $request ) {
+        self::load_plugin_functions();
+
+        // Force WordPress to re-fetch update data from WordPress.org.
+        delete_site_transient( 'update_plugins' );
+        wp_update_plugins();
+
+        return self::get_plugins( $request );
     }
 
     private static function add_folder_to_zip( \ZipArchive $zip, string $base_path, string $folder ) {

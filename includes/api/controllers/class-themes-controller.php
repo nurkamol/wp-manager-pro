@@ -357,7 +357,24 @@ class Themes_Controller {
             return new WP_Error( 'install_failed', "Version {$version} installation failed.", [ 'status' => 500 ] );
         }
 
+        // Remove stale update entry so the badge disappears after a downgrade.
+        $update_themes = get_site_transient( 'update_themes' );
+        if ( $update_themes && isset( $update_themes->response[ $slug ] ) ) {
+            unset( $update_themes->response[ $slug ] );
+            set_site_transient( 'update_themes', $update_themes );
+        }
+
         return new WP_REST_Response( [ 'success' => true, 'message' => "Theme v{$version} installed successfully." ], 200 );
+    }
+
+    public static function check_updates( WP_REST_Request $request ) {
+        self::load_theme_functions();
+
+        // Force WordPress to re-fetch update data from WordPress.org.
+        delete_site_transient( 'update_themes' );
+        wp_update_themes();
+
+        return self::get_themes( $request );
     }
 
     private static function add_folder_to_zip( \ZipArchive $zip, string $base_path, string $folder ) {

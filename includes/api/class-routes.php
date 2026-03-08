@@ -76,6 +76,11 @@ class Routes {
             'callback'            => [ Plugins_Controller::class, 'install_plugin_version' ],
             'permission_callback' => [ self::class, 'admin_permission' ],
         ] );
+        register_rest_route( $namespace, '/plugins/check-updates', [
+            'methods'             => 'POST',
+            'callback'            => [ Plugins_Controller::class, 'check_updates' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
         register_rest_route( $namespace, '/plugins/export', [
             'methods'             => 'POST',
             'callback'            => [ Plugins_Controller::class, 'export_plugin' ],
@@ -126,6 +131,11 @@ class Routes {
         register_rest_route( $namespace, '/themes/install-version', [
             'methods'             => 'POST',
             'callback'            => [ Themes_Controller::class, 'install_theme_version' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/themes/check-updates', [
+            'methods'             => 'POST',
+            'callback'            => [ Themes_Controller::class, 'check_updates' ],
             'permission_callback' => [ self::class, 'admin_permission' ],
         ] );
         register_rest_route( $namespace, '/themes/export', [

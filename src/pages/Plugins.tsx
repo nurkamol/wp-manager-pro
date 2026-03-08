@@ -167,7 +167,7 @@ export function Plugins() {
     onSuccess: (_, plugin) => {
       const name = pluginsData?.plugins.find(p => p.file === plugin)?.name || plugin
       toast.success(`Updated: ${name}`)
-      queryClient.invalidateQueries({ queryKey: ['plugins'] })
+      queryClient.refetchQueries({ queryKey: ['plugins'] })
     },
     onError: (err: Error) => toast.error(err.message),
   })
@@ -177,8 +177,17 @@ export function Plugins() {
       api.post('/plugins/install-version', { slug, version }),
     onSuccess: (_, { version }) => {
       toast.success(`Plugin v${version} installed`)
-      queryClient.invalidateQueries({ queryKey: ['plugins'] })
+      queryClient.refetchQueries({ queryKey: ['plugins'] })
       setVersionsPlugin(null)
+    },
+    onError: (err: Error) => toast.error(err.message),
+  })
+
+  const checkUpdatesMutation = useMutation({
+    mutationFn: () => api.post<{ plugins: Plugin[]; total: number }>('/plugins/check-updates', {}),
+    onSuccess: (data) => {
+      queryClient.setQueryData(['plugins'], data)
+      toast.success('Update check complete')
     },
     onError: (err: Error) => toast.error(err.message),
   })
@@ -238,8 +247,14 @@ export function Plugins() {
         title="Plugin Manager"
         description={`${pluginsData?.plugins.length || 0} plugins installed${updatesAvailable > 0 ? ` · ${updatesAvailable} update${updatesAvailable > 1 ? 's' : ''} available` : ''}`}
         actions={
-          <Button variant="outline" size="sm" onClick={() => queryClient.invalidateQueries({ queryKey: ['plugins'] })}>
-            <RefreshCw className="w-4 h-4" /> Refresh
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => checkUpdatesMutation.mutate()}
+            disabled={checkUpdatesMutation.isPending}
+          >
+            <RefreshCw className={`w-4 h-4 ${checkUpdatesMutation.isPending ? 'animate-spin' : ''}`} />
+            {checkUpdatesMutation.isPending ? 'Checking...' : 'Check Updates'}
           </Button>
         }
       />

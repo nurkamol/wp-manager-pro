@@ -162,7 +162,7 @@ export function Themes() {
     onSuccess: (_, slug) => {
       const name = themesData?.themes.find(t => t.slug === slug)?.name || slug
       toast.success(`Updated: ${name}`)
-      queryClient.invalidateQueries({ queryKey: ['themes'] })
+      queryClient.refetchQueries({ queryKey: ['themes'] })
     },
     onError: (err: Error) => toast.error(err.message),
   })
@@ -172,8 +172,17 @@ export function Themes() {
       api.post('/themes/install-version', { slug, version }),
     onSuccess: (_, { version }) => {
       toast.success(`Theme v${version} installed`)
-      queryClient.invalidateQueries({ queryKey: ['themes'] })
+      queryClient.refetchQueries({ queryKey: ['themes'] })
       setVersionsTheme(null)
+    },
+    onError: (err: Error) => toast.error(err.message),
+  })
+
+  const checkUpdatesMutation = useMutation({
+    mutationFn: () => api.post<{ themes: Theme[]; total: number }>('/themes/check-updates', {}),
+    onSuccess: (data) => {
+      queryClient.setQueryData(['themes'], data)
+      toast.success('Update check complete')
     },
     onError: (err: Error) => toast.error(err.message),
   })
@@ -229,8 +238,14 @@ export function Themes() {
         title="Theme Manager"
         description={`${themesData?.themes.length || 0} themes installed${updatesAvailable > 0 ? ` · ${updatesAvailable} update${updatesAvailable > 1 ? 's' : ''} available` : ''}`}
         actions={
-          <Button variant="outline" size="sm" onClick={() => queryClient.invalidateQueries({ queryKey: ['themes'] })}>
-            <RefreshCw className="w-4 h-4" /> Refresh
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => checkUpdatesMutation.mutate()}
+            disabled={checkUpdatesMutation.isPending}
+          >
+            <RefreshCw className={`w-4 h-4 ${checkUpdatesMutation.isPending ? 'animate-spin' : ''}`} />
+            {checkUpdatesMutation.isPending ? 'Checking...' : 'Check Updates'}
           </Button>
         }
       />
