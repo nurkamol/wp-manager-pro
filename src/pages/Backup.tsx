@@ -1,12 +1,16 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { PageHeader } from '@/components/PageHeader'
 import { PageLoader } from '@/components/LoadingSpinner'
 import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { toast } from 'sonner'
-import { HardDrive, Plus, Download, Trash2, RefreshCw, Database } from 'lucide-react'
+import { HardDrive, Plus, Download, Trash2, RefreshCw, Database, Clock, Save } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
 
 interface Backup {
@@ -16,14 +20,52 @@ interface Backup {
   created_at: string
 }
 
+interface BackupSchedule {
+  enabled: boolean
+  frequency: string
+  retain: number
+  next_run: string | null
+}
+
 export function Backup() {
   const queryClient = useQueryClient()
   const [deleteTarget, setDeleteTarget] = useState<Backup | null>(null)
   const [isCreating, setIsCreating] = useState(false)
 
+  // Schedule state
+  const [schedEnabled, setSchedEnabled]   = useState(false)
+  const [schedFreq,    setSchedFreq]      = useState('daily')
+  const [schedRetain,  setSchedRetain]    = useState('5')
+  const [schedInit,    setSchedInit]      = useState(false)
+
   const { data, isLoading, refetch } = useQuery<{ backups: Backup[] }>({
     queryKey: ['backups'],
     queryFn: () => api.get('/backup'),
+  })
+
+  const { data: schedData } = useQuery<BackupSchedule>({
+    queryKey: ['backup-schedule'],
+    queryFn: () => api.get('/backup/schedule'),
+  })
+
+  // Initialize schedule form state once data arrives
+  useEffect(() => {
+    if (schedData && !schedInit) {
+      setSchedEnabled(schedData.enabled)
+      setSchedFreq(schedData.frequency)
+      setSchedRetain(String(schedData.retain))
+      setSchedInit(true)
+    }
+  }, [schedData, schedInit])
+
+  const saveScheduleMutation = useMutation({
+    mutationFn: (d: { enabled: boolean; frequency: string; retain: number }) =>
+      api.post<BackupSchedule>('/backup/schedule', d),
+    onSuccess: (res: BackupSchedule) => {
+      toast.success(res.enabled ? `Scheduled backup enabled (${res.frequency})` : 'Scheduled backup disabled')
+      queryClient.invalidateQueries({ queryKey: ['backup-schedule'] })
+    },
+    onError: (err: Error) => toast.error(err.message),
   })
 
   const createMutation = useMutation({
@@ -168,6 +210,91 @@ export function Backup() {
             </table>
           </div>
         )}
+
+        {/* Scheduled Backups Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="w-4 h-4" />
+              Scheduled Backups
+            </CardTitle>
+            <CardDescription>
+              Automatically create backups on a recurring schedule. Old backups beyond the retain
+              limit are pruned automatically.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium">Enable Auto-Backup</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Runs via WordPress Cron in the background
+                </p>
+              </div>
+              <Switch
+                checked={schedEnabled}
+                onCheckedChange={setSchedEnabled}
+              />
+            </div>
+
+            {schedEnabled && (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Frequency</Label>
+                  <Select value={schedFreq} onValueChange={setSchedFreq}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="daily">Daily</SelectItem>
+                      <SelectItem value="weekly">Weekly</SelectItem>
+                      <SelectItem value="monthly">Monthly</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Retain last</Label>
+                  <Select value={schedRetain} onValueChange={setSchedRetain}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="3">3 backups</SelectItem>
+                      <SelectItem value="5">5 backups</SelectItem>
+                      <SelectItem value="10">10 backups</SelectItem>
+                      <SelectItem value="30">30 backups</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+
+            {schedData?.next_run && schedEnabled && (
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Next run: <span className="font-medium">{formatDate(schedData.next_run)}</span>
+              </p>
+            )}
+
+            <Button
+              size="sm"
+              onClick={() =>
+                saveScheduleMutation.mutate({
+                  enabled: schedEnabled,
+                  frequency: schedFreq,
+                  retain: parseInt(schedRetain, 10),
+                })
+              }
+              disabled={saveScheduleMutation.isPending}
+            >
+              {saveScheduleMutation.isPending ? (
+                <RefreshCw className="w-4 h-4 animate-spin" />
+              ) : (
+                <Save className="w-4 h-4" />
+              )}
+              Save Schedule
+            </Button>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Delete Confirm */}

@@ -46,6 +46,7 @@ class Plugin {
             'class-redirects-controller',
             'class-email-controller',
             'class-backup-controller',
+            'class-settings-controller',
         ];
 
         foreach ( $controllers as $controller ) {
@@ -106,6 +107,23 @@ class Plugin {
         add_action( 'phpmailer_init', [ API\Controllers\Email_Controller::class, 'configure_smtp' ] );
         add_action( 'wp_mail',        [ API\Controllers\Email_Controller::class, 'log_sent_email' ] );
         add_action( 'wp_mail_failed', [ API\Controllers\Email_Controller::class, 'log_failed_email' ] );
+
+        // Scheduled Backups — cron action + custom monthly recurrence.
+        add_action( 'wmp_run_scheduled_backup', [ API\Controllers\Backup_Controller::class, 'run_scheduled_backup' ] );
+        add_filter( 'cron_schedules', [ $this, 'add_monthly_schedule' ] );
+    }
+
+    /**
+     * Register a monthly WP-Cron recurrence if not already defined.
+     */
+    public function add_monthly_schedule( array $schedules ): array {
+        if ( ! isset( $schedules['monthly'] ) ) {
+            $schedules['monthly'] = [
+                'interval' => MONTH_IN_SECONDS,
+                'display'  => __( 'Once Monthly', 'wp-manager-pro' ),
+            ];
+        }
+        return $schedules;
     }
 
     public function load_textdomain() {

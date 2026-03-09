@@ -13,9 +13,10 @@ import { Progress } from '@/components/ui/progress'
 import { toast } from 'sonner'
 import {
   Image, RefreshCw, CheckCircle2, XCircle, AlertTriangle, Save,
-  ShieldCheck, Zap, Trash2, Globe, Replace,
+  ShieldCheck, Zap, Trash2, Globe, Replace, Copy, Server,
 } from 'lucide-react'
 import { useState, useRef } from 'react'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 interface ImageSettings {
   webp_enabled: boolean
@@ -42,6 +43,31 @@ const SVG_ROLES = [
   { key: 'editor', label: 'Editor' },
   { key: 'author', label: 'Author' },
 ]
+
+function ServerConfigBlock({ label, description, code }: { label: string; description: string; code: string }) {
+  const copy = () => {
+    navigator.clipboard.writeText(code).then(
+      () => toast.success(`"${label}" config copied to clipboard`),
+      () => toast.error('Copy failed — please select the text manually'),
+    )
+  }
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-medium">{label}</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">{description}</p>
+        </div>
+        <Button size="sm" variant="outline" onClick={copy} className="shrink-0 gap-1.5">
+          <Copy className="w-3.5 h-3.5" /> Copy
+        </Button>
+      </div>
+      <pre className="text-xs bg-slate-900 text-slate-100 dark:bg-slate-950 rounded-md p-3 overflow-x-auto font-mono leading-relaxed whitespace-pre">
+        {code}
+      </pre>
+    </div>
+  )
+}
 
 export function ImageTools() {
   const queryClient = useQueryClient()
@@ -422,6 +448,94 @@ export function ImageTools() {
               {saveMutation.isPending ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
               Save Delivery Settings
             </Button>
+          </CardContent>
+        </Card>
+
+        {/* Server Config Generator */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Server className="w-4 h-4" />
+              Server Config Generator
+            </CardTitle>
+            <CardDescription>
+              Ready-to-use server configuration snippets for WebP serving, caching, and security headers.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Tabs defaultValue="nginx">
+              <TabsList className="mb-4">
+                <TabsTrigger value="nginx">Nginx</TabsTrigger>
+                <TabsTrigger value="apache">Apache</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="nginx" className="space-y-4">
+                <ServerConfigBlock
+                  label="WebP Serving"
+                  description="Add inside your server {} block to serve .webp sidecars to supported browsers."
+                  code={`# WebP serving — inside server {} block
+location ~* \\.(jpe?g|png|gif|bmp|tiff?)$ {
+    add_header Vary Accept;
+    try_files $uri.webp $uri =404;
+}`}
+                />
+                <ServerConfigBlock
+                  label="Security Headers"
+                  description="Recommended security headers — add inside your server {} or location / block."
+                  code={`# Security headers
+add_header X-Content-Type-Options "nosniff" always;
+add_header X-Frame-Options "SAMEORIGIN" always;
+add_header X-XSS-Protection "1; mode=block" always;
+add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;`}
+                />
+                <ServerConfigBlock
+                  label="Browser Cache Rules"
+                  description="Cache static assets aggressively to improve page speed scores."
+                  code={`# Browser caching for static assets
+location ~* \\.(js|css|png|jpg|jpeg|gif|ico|svg|woff2?)$ {
+    expires 1y;
+    add_header Cache-Control "public, immutable";
+    access_log off;
+}`}
+                />
+              </TabsContent>
+
+              <TabsContent value="apache" className="space-y-4">
+                <ServerConfigBlock
+                  label="WebP Serving (.htaccess)"
+                  description="WP Manager Pro writes this automatically when 'Serve WebP' is enabled. Add manually if needed."
+                  code={`# WebP serving — inside <IfModule mod_rewrite.c>
+RewriteEngine On
+RewriteCond %{HTTP_ACCEPT} image/webp
+RewriteCond %{REQUEST_FILENAME} \\.(jpe?g|png|gif|bmp|tiff?)$
+RewriteCond %{REQUEST_FILENAME}\\.webp -f
+RewriteRule ^ %{REQUEST_URI}.webp [L,T=image/webp]`}
+                />
+                <ServerConfigBlock
+                  label="Security Headers (.htaccess)"
+                  description="Add inside <IfModule mod_headers.c>."
+                  code={`<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>`}
+                />
+                <ServerConfigBlock
+                  label="Browser Cache Rules (.htaccess)"
+                  description="Cache static assets — add inside <IfModule mod_expires.c>."
+                  code={`<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/webp "access plus 1 year"
+    ExpiresByType image/png  "access plus 1 year"
+    ExpiresByType text/css   "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+</IfModule>`}
+                />
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
 

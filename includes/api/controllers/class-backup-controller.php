@@ -142,6 +142,98 @@ class Backup_Controller {
         return new WP_REST_Response( [ 'success' => true ], 200 );
     }
 
+    // ── Scheduled Backup ─────────────────────────────────────────────────────
+
+    /**
+     * GET /backup/schedule — return current schedule settings.
+     */
+    public static function get_schedule( WP_REST_Request $request ): WP_REST_Response {
+        $enabled   = (bool) get_option( 'wmp_backup_schedule_enabled', false );
+        $frequency = get_option( 'wmp_backup_schedule_frequency', 'daily' );
+        $retain    = (int) get_option( 'wmp_backup_retain', 5 );
+        $next_run  = wp_next_scheduled( 'wmp_run_scheduled_backup' );
+
+        return new WP_REST_Response( [
+            'enabled'   => $enabled,
+            'frequency' => $frequency,
+            'retain'    => $retain,
+            'next_run'  => $next_run ? date( 'Y-m-d H:i:s', $next_run ) : null,
+        ] );
+    }
+
+    /**
+     * POST /backup/schedule — save schedule settings and register/clear cron.
+     */
+    public static function save_schedule( WP_REST_Request $request ): WP_REST_Response {
+        $enabled   = (bool) $request->get_param( 'enabled' );
+        $frequency = sanitize_text_field( $request->get_param( 'frequency' ) ?: 'daily' );
+        $retain    = absint( $request->get_param( 'retain' ) ?: 5 );
+
+        // Validate frequency.
+        $valid_frequencies = [ 'daily', 'weekly', 'monthly' ];
+        if ( ! in_array( $frequency, $valid_frequencies, true ) ) {
+            $frequency = 'daily';
+        }
+
+        update_option( 'wmp_backup_schedule_enabled',   $enabled );
+        update_option( 'wmp_backup_schedule_frequency', $frequency );
+        update_option( 'wmp_backup_retain',             $retain );
+
+        // Clear any existing scheduled event.
+        $timestamp = wp_next_scheduled( 'wmp_run_scheduled_backup' );
+        if ( $timestamp ) {
+            wp_unschedule_event( $timestamp, 'wmp_run_scheduled_backup' );
+        }
+
+        $next_run = null;
+        if ( $enabled ) {
+            wp_schedule_event( time(), $frequency, 'wmp_run_scheduled_backup' );
+            $next_run = date( 'Y-m-d H:i:s', wp_next_scheduled( 'wmp_run_scheduled_backup' ) );
+        }
+
+        return new WP_REST_Response( [
+            'success'   => true,
+            'enabled'   => $enabled,
+            'frequency' => $frequency,
+            'retain'    => $retain,
+            'next_run'  => $next_run,
+        ] );
+    }
+
+    /**
+     * WP Cron action callback — create a backup and prune old files beyond retain limit.
+     */
+    public static function run_scheduled_backup(): void {
+        global $wpdb;
+
+        // Create backup.
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+        $tables   = $wpdb->get_col( 'SHOW TABLES' );
+        $filename = 'backup-' . date( 'Y-m-d-His' ) . '.sql';
+        $dir      = self::backup_dir();
+        $filepath = $dir . $filename;
+        $sql      = self::generate_dump( $tables );
+
+        // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
+        file_put_contents( $filepath, $sql );
+
+        Audit_Controller::log( 'backup.scheduled', 'backup', $filename );
+
+        // Prune old backups beyond retain count.
+        $retain = (int) get_option( 'wmp_backup_retain', 5 );
+        $files  = glob( $dir . '*.sql' ) ?: [];
+
+        if ( count( $files ) > $retain ) {
+            // Sort by mtime ascending (oldest first).
+            usort( $files, fn( $a, $b ) => filemtime( $a ) - filemtime( $b ) );
+            $to_delete = array_slice( $files, 0, count( $files ) - $retain );
+            foreach ( $to_delete as $old_file ) {
+                // phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
+                @unlink( $old_file );
+            }
+        }
+    }
+
     // ── SQL Dump Generator ────────────────────────────────────────────────────
 
     private static function generate_dump( array $tables ): string {

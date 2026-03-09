@@ -33,9 +33,14 @@ class Admin {
             . '<rect fill="#a0a5aa" x="1" y="17" width="15" height="2" rx="1"/>'
             . '</svg>';
 
+        $menu_label = get_option( 'wmp_menu_label', '' );
+        if ( empty( $menu_label ) ) {
+            $menu_label = __( 'WP Manager', 'wp-manager-pro' );
+        }
+
         add_menu_page(
             __( 'WP Manager Pro', 'wp-manager-pro' ),
-            __( 'WP Manager', 'wp-manager-pro' ),
+            $menu_label,
             'manage_options',
             'wp-manager-pro',
             [ self::class, 'render_page' ],
@@ -83,6 +88,11 @@ class Admin {
                     'name'   => wp_get_current_user()->display_name,
                     'email'  => wp_get_current_user()->user_email,
                     'avatar' => get_avatar_url( get_current_user_id(), [ 'size' => 40 ] ),
+                ],
+                'branding' => [
+                    'pluginName' => get_option( 'wmp_plugin_name', '' ),
+                    'menuLabel'  => get_option( 'wmp_menu_label', '' ),
+                    'logoUrl'    => get_option( 'wmp_logo_url', '' ),
                 ],
             ] );
         }

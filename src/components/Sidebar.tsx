@@ -6,7 +6,7 @@ import {
   ChevronLeft, ChevronRight, ExternalLink, Settings, RotateCcw,
   Sun, Moon, Shield, Activity, Code2, ArrowLeftRight, Mail, HardDrive,
 } from 'lucide-react'
-import { getConfig } from '@/lib/api'
+import { getConfig, getBranding } from '@/lib/api'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import type { Theme } from '@/hooks/useTheme'
 
@@ -69,6 +69,7 @@ const navGroups: NavGroup[] = [
       { to: '/system', icon: Server, label: 'System Info' },
       { to: '/security', icon: Shield, label: 'Security' },
       { to: '/reset', icon: RotateCcw, label: 'Reset Tools' },
+      { to: '/settings', icon: Settings, label: 'Settings' },
     ],
   },
 ]
@@ -82,6 +83,12 @@ interface SidebarProps {
 
 export function Sidebar({ collapsed, onToggle, theme, onToggleTheme }: SidebarProps) {
   const config = getConfig()
+  const branding = getBranding()
+  const pluginName = branding.pluginName || 'WP Manager Pro'
+  // Split: first word(s) = main label, last word = sub-badge (e.g. "WP Manager" + "Pro")
+  const nameParts = pluginName.split(' ')
+  const nameSub  = nameParts.length > 1 ? nameParts.pop()! : ''
+  const nameMain = nameParts.join(' ')
 
   return (
     <aside
@@ -97,12 +104,16 @@ export function Sidebar({ collapsed, onToggle, theme, onToggleTheme }: SidebarPr
       )}>
         {!collapsed && (
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 bg-blue-500 rounded-lg flex items-center justify-center shrink-0">
-              <Settings className="w-4 h-4 text-white" />
+            <div className="w-7 h-7 bg-blue-500 rounded-lg flex items-center justify-center shrink-0 overflow-hidden">
+              {branding.logoUrl ? (
+                <img src={branding.logoUrl} alt={pluginName} className="w-full h-full object-cover" />
+              ) : (
+                <Settings className="w-4 h-4 text-white" />
+              )}
             </div>
             <div>
-              <p className="text-sm font-bold text-white leading-tight">WP Manager</p>
-              <p className="text-[10px] text-slate-400">Pro</p>
+              <p className="text-sm font-bold text-white leading-tight">{nameMain}</p>
+              {nameSub && <p className="text-[10px] text-slate-400">{nameSub}</p>}
             </div>
           </div>
         )}
@@ -133,7 +144,7 @@ export function Sidebar({ collapsed, onToggle, theme, onToggleTheme }: SidebarPr
             {/* Group separator */}
             {gi > 0 && (
               collapsed ? (
-                <div className="mx-2 my-1.5 border-t border-slate-700/60" />
+                <div className="mx-2 my-2 border-t border-slate-700/60" />
               ) : (
                 group.label && (
                   <div className="px-4 pt-3 pb-0.5">
@@ -145,7 +156,7 @@ export function Sidebar({ collapsed, onToggle, theme, onToggleTheme }: SidebarPr
               )
             )}
 
-            <ul className={cn('space-y-0.5', collapsed ? 'px-1.5' : 'px-2')}>
+            <ul className={cn(collapsed ? 'space-y-1 px-1.5' : 'space-y-0.5 px-2')}>
               {group.items.map((item) => (
                 <li key={item.to}>
                   {collapsed ? (
@@ -156,7 +167,7 @@ export function Sidebar({ collapsed, onToggle, theme, onToggleTheme }: SidebarPr
                           end={item.end}
                           className={({ isActive }) =>
                             cn(
-                              'flex items-center justify-center w-full h-9 rounded-md transition-colors',
+                              'flex items-center justify-center w-full h-8 rounded-md transition-colors',
                               isActive
                                 ? 'bg-blue-600 text-white'
                                 : 'text-slate-400 hover:text-white hover:bg-slate-700/60'

@@ -6,8 +6,8 @@ import { PageLoader } from '@/components/LoadingSpinner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import Editor from '@monaco-editor/react'
 import { Switch } from '@/components/ui/switch'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
@@ -30,6 +30,15 @@ const TYPE_COLORS: Record<string, string> = {
   php: 'bg-purple-100 text-purple-700 border-purple-200',
   css: 'bg-blue-100 text-blue-700 border-blue-200',
   js:  'bg-yellow-100 text-yellow-700 border-yellow-200',
+}
+
+function getSnippetLang(type: string): string {
+  switch (type) {
+    case 'php': return 'php'
+    case 'css': return 'css'
+    case 'js':  return 'javascript'
+    default:    return 'plaintext'
+  }
 }
 
 type SnippetType = 'php' | 'css' | 'js'
@@ -199,7 +208,7 @@ export function Snippets() {
           if (!open) { setShowForm(false); setEditSnippet(null) }
         }}
       >
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>{editSnippet ? 'Edit Snippet' : 'New Snippet'}</DialogTitle>
           </DialogHeader>
@@ -242,15 +251,25 @@ export function Snippets() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="snippet-code">Code</Label>
-              <Textarea
-                id="snippet-code"
-                placeholder={form.type === 'php' ? '<?php\n// Your PHP code here\nadd_filter( ... );' : form.type === 'css' ? '/* Your CSS here */\nbody { ... }' : '// Your JavaScript here\nconsole.log("Hello");'}
-                value={form.code}
-                onChange={e => setForm(f => ({ ...f, code: e.target.value }))}
-                rows={10}
-                className="font-mono text-sm"
-              />
+              <Label>Code</Label>
+              <div className="border rounded-md overflow-hidden" style={{ height: '300px' }}>
+                <Editor
+                  height="300px"
+                  language={getSnippetLang(form.type)}
+                  theme="vs-dark"
+                  value={form.code}
+                  onChange={v => setForm(f => ({ ...f, code: v || '' }))}
+                  options={{
+                    minimap: { enabled: false },
+                    fontSize: 13,
+                    wordWrap: 'on',
+                    scrollBeyondLastLine: false,
+                    automaticLayout: true,
+                    lineNumbers: 'on',
+                    renderWhitespace: 'none',
+                  }}
+                />
+              </div>
             </div>
           </div>
 

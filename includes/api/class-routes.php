@@ -20,6 +20,7 @@ use WP_Manager_Pro\API\Controllers\Snippets_Controller;
 use WP_Manager_Pro\API\Controllers\Redirects_Controller;
 use WP_Manager_Pro\API\Controllers\Email_Controller;
 use WP_Manager_Pro\API\Controllers\Backup_Controller;
+use WP_Manager_Pro\API\Controllers\Settings_Controller;
 
 class Routes {
 
@@ -538,6 +539,30 @@ class Routes {
         register_rest_route( $namespace, '/backup/delete', [
             'methods'             => 'DELETE',
             'callback'            => [ Backup_Controller::class, 'delete_backup' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+
+        // Backup Schedule.
+        register_rest_route( $namespace, '/backup/schedule', [
+            'methods'             => 'GET',
+            'callback'            => [ Backup_Controller::class, 'get_schedule' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/backup/schedule', [
+            'methods'             => 'POST',
+            'callback'            => [ Backup_Controller::class, 'save_schedule' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+
+        // Settings (Branding / White-label).
+        register_rest_route( $namespace, '/settings', [
+            'methods'             => 'GET',
+            'callback'            => [ Settings_Controller::class, 'get_settings' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/settings', [
+            'methods'             => 'POST',
+            'callback'            => [ Settings_Controller::class, 'save_settings' ],
             'permission_callback' => [ self::class, 'admin_permission' ],
         ] );
     }

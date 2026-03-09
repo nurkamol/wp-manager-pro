@@ -12,7 +12,21 @@ declare global {
         email: string
         avatar: string
       }
+      branding?: {
+        pluginName: string
+        menuLabel: string
+        logoUrl: string
+      }
     }
+  }
+}
+
+export function getBranding() {
+  const b = typeof window !== 'undefined' ? window.wpManagerPro?.branding : undefined
+  return {
+    pluginName: b?.pluginName || '',
+    menuLabel:  b?.menuLabel  || '',
+    logoUrl:    b?.logoUrl    || '',
   }
 }
 

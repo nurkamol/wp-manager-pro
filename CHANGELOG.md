@@ -7,6 +7,41 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [1.7.0] — 2026-03-09
+
+### Added
+
+#### Code Snippets — Monaco Editor
+- Replaced plain `<Textarea>` in the create/edit dialog with the full Monaco editor (`@monaco-editor/react`)
+- Syntax highlighting per snippet type: PHP, CSS, JavaScript
+- Line numbers, word-wrap, and `automaticLayout` — editor resizes correctly inside the dialog
+
+#### Scheduled Backups
+- New "Scheduled Backups" card in the Database Backup page
+- Enable toggle + Frequency selector (Daily / Weekly / Monthly) + Retain last N select (3 / 5 / 10 / 30)
+- Backend: `GET /backup/schedule` and `POST /backup/schedule` REST routes
+- WP Cron action `wmp_run_scheduled_backup` calls the existing `generate_dump()` pipeline and prunes old backups automatically
+- Custom `monthly` cron recurrence registered via `cron_schedules` filter
+- Next-run timestamp shown in the UI when schedule is active
+
+#### Server Config Generator (Image Tools)
+- New "Server Config Generator" card in Image Tools with **Nginx** and **Apache** tabs
+- Three snippets per server: WebP Serving, Security Headers, Browser Cache Rules
+- One-click **Copy** button per snippet (Clipboard API)
+
+#### White-label / Branding (Settings)
+- New **Settings** page (`/settings` route, Cog icon in System nav group)
+- Branding tab: Plugin Name, Admin Menu Label, Custom Logo URL with live preview
+- Logo URL replaces the blue icon in the sidebar header; plugin name is split into main + badge (e.g. "My Manager" + "Pro")
+- `GET /settings` and `POST /settings` REST routes backed by new `class-settings-controller.php`
+- `wp_localize_script` now exposes `branding.{ pluginName, menuLabel, logoUrl }` to the React app
+- `add_menu_page()` uses `get_option('wmp_menu_label')` so the WP admin menu label is dynamic
+
+### Changed
+- Sidebar imports `getBranding()` from `api.ts`; logo area and plugin name are now driven by saved branding options
+
+---
+
 ## [1.6.0] — 2026-03-09
 
 ### Added
@@ -336,6 +371,7 @@ First public release of WP Manager Pro — a comprehensive, agency-ready WordPre
 
 ---
 
+[1.7.0]: https://github.com/nurkamol/wp-manager-pro/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/nurkamol/wp-manager-pro/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/nurkamol/wp-manager-pro/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/nurkamol/wp-manager-pro/compare/v1.3.0...v1.4.0
