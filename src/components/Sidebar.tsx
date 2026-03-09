@@ -94,7 +94,7 @@ export function Sidebar({ collapsed, onToggle, theme, onToggleTheme }: SidebarPr
     <aside
       className={cn(
         'flex flex-col bg-slate-900 text-white transition-all duration-300 shrink-0',
-        collapsed ? 'w-14' : 'w-60'
+        collapsed ? 'w-[52px]' : 'w-60'
       )}
     >
       {/* Logo / Header */}
@@ -144,7 +144,7 @@ export function Sidebar({ collapsed, onToggle, theme, onToggleTheme }: SidebarPr
             {/* Group separator */}
             {gi > 0 && (
               collapsed ? (
-                <div className="mx-2 my-2 border-t border-slate-700/60" />
+                <div className="h-2.5" />
               ) : (
                 group.label && (
                   <div className="px-4 pt-3 pb-0.5">
@@ -156,7 +156,7 @@ export function Sidebar({ collapsed, onToggle, theme, onToggleTheme }: SidebarPr
               )
             )}
 
-            <ul className={cn(collapsed ? 'space-y-1 px-1.5' : 'space-y-0.5 px-2')}>
+            <ul className={cn(collapsed ? 'space-y-0.5 px-1.5' : 'space-y-0.5 px-2')}>
               {group.items.map((item) => (
                 <li key={item.to}>
                   {collapsed ? (
@@ -167,14 +167,14 @@ export function Sidebar({ collapsed, onToggle, theme, onToggleTheme }: SidebarPr
                           end={item.end}
                           className={({ isActive }) =>
                             cn(
-                              'flex items-center justify-center w-full h-8 rounded-md transition-colors',
+                              'flex items-center justify-center w-full h-9 rounded-md transition-colors',
                               isActive
                                 ? 'bg-blue-600 text-white'
                                 : 'text-slate-400 hover:text-white hover:bg-slate-700/60'
                             )
                           }
                         >
-                          <item.icon className="w-[18px] h-[18px]" />
+                          <item.icon className="w-5 h-5" />
                         </NavLink>
                       </TooltipTrigger>
                       <TooltipContent side="right" className="text-xs">
