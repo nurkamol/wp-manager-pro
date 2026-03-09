@@ -1,0 +1,126 @@
+name: Bug Report
+description: Report a bug or unexpected behavior in WP Manager Pro
+title: "[Bug]: "
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. Please fill in as much detail as possible.
+
+  - type: input
+    id: plugin-version
+    attributes:
+      label: Plugin Version
+      description: Which version of WP Manager Pro are you using?
+      placeholder: "e.g. 1.6.0"
+    validations:
+      required: true
+
+  - type: input
+    id: wp-version
+    attributes:
+      label: WordPress Version
+      description: What version of WordPress is installed?
+      placeholder: "e.g. 6.4.3"
+    validations:
+      required: true
+
+  - type: input
+    id: php-version
+    attributes:
+      label: PHP Version
+      description: What PHP version is running on your server?
+      placeholder: "e.g. 8.2.10"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: affected-module
+    attributes:
+      label: Affected Module
+      description: Which part of WP Manager Pro is affected?
+      options:
+        - Dashboard
+        - Plugin Manager
+        - Theme Manager
+        - File Manager
+        - Database Manager
+        - User Manager
+        - Maintenance Mode
+        - Debug Tools
+        - Image Tools (WebP/AVIF)
+        - Code Snippets
+        - Redirect Manager
+        - Email / SMTP
+        - Database Backup
+        - Audit Log
+        - Security
+        - Reset Tools
+        - Notes
+        - System Info
+        - Other / General
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is.
+      placeholder: "When I click X, Y happens instead of Z..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: Step-by-step instructions to reproduce the issue.
+      placeholder: |
+        1. Go to '...'
+        2. Click on '...'
+        3. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What actually happened? Include any error messages or console output.
+    validations:
+      required: true
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots / Screen Recording
+      description: Drag and drop screenshots or a screen recording here if applicable.
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Additional Environment Details
+      description: Server type (Apache/Nginx), hosting provider, active theme/plugins that may conflict.
+      placeholder: "Apache 2.4, cPanel, Astra theme, WooCommerce 8.x active"
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I have searched existing issues and this bug has not been reported before.
+          required: true
+        - label: I am using the latest version of WP Manager Pro.
+          required: false
+        - label: I have checked the browser console for JavaScript errors.
+          required: false

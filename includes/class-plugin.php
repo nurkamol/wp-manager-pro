@@ -41,6 +41,11 @@ class Plugin {
             'class-images-controller',
             'class-reset-controller',
             'class-security-controller',
+            'class-audit-controller',
+            'class-snippets-controller',
+            'class-redirects-controller',
+            'class-email-controller',
+            'class-backup-controller',
         ];
 
         foreach ( $controllers as $controller ) {
@@ -61,10 +66,46 @@ class Plugin {
         add_action( 'login_init', [ API\Controllers\Security_Controller::class, 'protect_login' ] );
         add_action( 'init', [ API\Controllers\Security_Controller::class, 'handle_custom_login_url' ] );
 
-        // SVG support (conditional on settings).
+        // SVG / AVIF support (conditional on settings).
         add_filter( 'upload_mimes', [ API\Controllers\Images_Controller::class, 'maybe_allow_avif' ] );
         add_filter( 'upload_mimes', [ API\Controllers\Images_Controller::class, 'maybe_allow_svg' ] );
         add_filter( 'wp_handle_upload_prefilter', [ API\Controllers\Images_Controller::class, 'sanitize_svg' ] );
+
+        // WebP / AVIF conversion on upload (fires after the file is saved to disk).
+        add_filter( 'wp_handle_upload', [ API\Controllers\Images_Controller::class, 'convert_on_upload' ] );
+
+        // Delete sidecar WebP/AVIF files when the original attachment is deleted.
+        add_action( 'delete_attachment', [ API\Controllers\Images_Controller::class, 'delete_sidecar_files' ] );
+
+        // Transparently serve WebP sidecar when browser supports it (PHP fallback).
+        add_filter( 'wp_get_attachment_url', [ API\Controllers\Images_Controller::class, 'maybe_serve_webp' ], 10, 2 );
+
+        // Audit log — WordPress event tracking.
+        add_action( 'activated_plugin',       [ API\Controllers\Audit_Controller::class, 'on_plugin_activated' ] );
+        add_action( 'deactivated_plugin',     [ API\Controllers\Audit_Controller::class, 'on_plugin_deactivated' ] );
+        add_action( 'deleted_plugin',         [ API\Controllers\Audit_Controller::class, 'on_plugin_deleted' ], 10, 2 );
+        add_action( 'switch_theme',           [ API\Controllers\Audit_Controller::class, 'on_theme_switched' ] );
+        add_action( 'wp_login',               [ API\Controllers\Audit_Controller::class, 'on_user_login' ] );
+        add_action( 'wp_logout',              [ API\Controllers\Audit_Controller::class, 'on_user_logout' ] );
+        add_action( 'wp_login_failed',        [ API\Controllers\Audit_Controller::class, 'on_login_failed' ] );
+        add_action( 'user_register',          [ API\Controllers\Audit_Controller::class, 'on_user_registered' ] );
+        add_action( 'transition_post_status', [ API\Controllers\Audit_Controller::class, 'on_post_published' ], 10, 3 );
+
+        // Code Snippets — execution hooks.
+        add_action( 'init',      [ API\Controllers\Snippets_Controller::class, 'run_php_snippets' ] );
+        add_action( 'wp_head',   [ API\Controllers\Snippets_Controller::class, 'output_css_snippets' ] );
+        add_action( 'wp_footer', [ API\Controllers\Snippets_Controller::class, 'output_js_snippets' ] );
+
+        // Maintenance mode — template_redirect fires only for frontend, never for REST API.
+        add_action( 'template_redirect', [ API\Controllers\Maintenance_Controller::class, 'handle_maintenance' ] );
+
+        // Redirects — template_redirect hook.
+        add_action( 'template_redirect', [ API\Controllers\Redirects_Controller::class, 'handle_redirects' ] );
+
+        // Email — SMTP configuration + logging.
+        add_action( 'phpmailer_init', [ API\Controllers\Email_Controller::class, 'configure_smtp' ] );
+        add_action( 'wp_mail',        [ API\Controllers\Email_Controller::class, 'log_sent_email' ] );
+        add_action( 'wp_mail_failed', [ API\Controllers\Email_Controller::class, 'log_failed_email' ] );
     }
 
     public function load_textdomain() {

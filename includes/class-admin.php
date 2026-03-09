@@ -23,13 +23,23 @@ class Admin {
     }
 
     public static function register_menu() {
+        // Custom SVG: 3 stat cards + 3 management bars — clean dashboard icon.
+        $icon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">'
+            . '<rect fill="#a0a5aa" x="1" y="1" width="5" height="5" rx="1"/>'
+            . '<rect fill="#a0a5aa" x="7.5" y="1" width="5" height="5" rx="1"/>'
+            . '<rect fill="#a0a5aa" x="14" y="1" width="5" height="5" rx="1"/>'
+            . '<rect fill="#a0a5aa" x="1" y="9" width="18" height="2" rx="1"/>'
+            . '<rect fill="#a0a5aa" x="1" y="13" width="12" height="2" rx="1"/>'
+            . '<rect fill="#a0a5aa" x="1" y="17" width="15" height="2" rx="1"/>'
+            . '</svg>';
+
         add_menu_page(
             __( 'WP Manager Pro', 'wp-manager-pro' ),
             __( 'WP Manager', 'wp-manager-pro' ),
             'manage_options',
             'wp-manager-pro',
             [ self::class, 'render_page' ],
-            'dashicons-admin-tools',
+            'data:image/svg+xml;base64,' . base64_encode( $icon ),
             2
         );
     }

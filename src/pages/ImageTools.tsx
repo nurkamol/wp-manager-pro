@@ -9,9 +9,13 @@ import { Switch } from '@/components/ui/switch'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Progress } from '@/components/ui/progress'
 import { toast } from 'sonner'
-import { Image, RefreshCw, CheckCircle2, XCircle, AlertTriangle, Save, ShieldCheck } from 'lucide-react'
-import { useState } from 'react'
+import {
+  Image, RefreshCw, CheckCircle2, XCircle, AlertTriangle, Save,
+  ShieldCheck, Zap, Trash2, Globe, Replace,
+} from 'lucide-react'
+import { useState, useRef } from 'react'
 
 interface ImageSettings {
   webp_enabled: boolean
@@ -26,7 +30,12 @@ interface ImageSettings {
   webp_support: boolean
   svg_enabled: boolean
   svg_allowed_roles: string[]
+  webp_serve_webp: boolean
+  webp_delete_originals: boolean
 }
+
+interface ConvertStatsResponse { total: number; converted: number; remaining: number }
+interface ConvertBatchResponse { converted: number; skipped: number; errors: number; has_more: boolean; next_offset: number }
 
 const SVG_ROLES = [
   { key: 'administrator', label: 'Administrator' },
@@ -43,6 +52,14 @@ export function ImageTools() {
   const [avifEnabled, setAvifEnabled] = useState<boolean | null>(null)
   const [svgEnabled, setSvgEnabled] = useState<boolean | null>(null)
   const [svgRoles, setSvgRoles] = useState<string[] | null>(null)
+  const [serveWebp, setServeWebp] = useState<boolean | null>(null)
+  const [deleteOriginals, setDeleteOriginals] = useState<boolean | null>(null)
+
+  // Batch convert state
+  const [converting, setConverting] = useState(false)
+  const [convertDone, setConvertDone] = useState(0)
+  const [convertTotal, setConvertTotal] = useState(0)
+  const stopRef = useRef(false)
 
   const { data: settings, isLoading } = useQuery<ImageSettings>({
     queryKey: ['image-settings'],
@@ -58,6 +75,8 @@ export function ImageTools() {
       jpeg_quality: jpegQuality ?? settings?.jpeg_quality,
       svg_enabled: svgEnabled ?? settings?.svg_enabled,
       svg_allowed_roles: svgRoles ?? settings?.svg_allowed_roles,
+      webp_serve_webp: serveWebp ?? settings?.webp_serve_webp,
+      webp_delete_originals: deleteOriginals ?? settings?.webp_delete_originals,
     }),
     onSuccess: () => {
       toast.success('Image settings saved')
@@ -68,8 +87,73 @@ export function ImageTools() {
 
   const regenerateMutation = useMutation({
     mutationFn: () => api.post('/images/regenerate', {}),
-    onSuccess: (data: any) => {
+    onSuccess: (data: any) => toast.success(data.message),
+    onError: (err: Error) => toast.error(err.message),
+  })
+
+  const { data: webpStats, refetch: refetchWebpStats } = useQuery<ConvertStatsResponse>({
+    queryKey: ['convert-stats-webp'],
+    queryFn: () => api.get('/images/convert-stats?format=webp'),
+    enabled: !!settings?.webp_support,
+  })
+
+  const { data: avifStats, refetch: refetchAvifStats } = useQuery<ConvertStatsResponse>({
+    queryKey: ['convert-stats-avif'],
+    queryFn: () => api.get('/images/convert-stats?format=avif'),
+    enabled: !!settings?.avif_support,
+  })
+
+  const startBatchConvert = async (format: 'webp' | 'avif') => {
+    setConverting(true)
+    setConvertDone(0)
+    stopRef.current = false
+    const replaceOriginal = (deleteOriginals ?? settings?.webp_delete_originals ?? false) && format === 'webp'
+
+    try {
+      const stats = await api.get(`/images/convert-stats?format=${format}`) as ConvertStatsResponse
+      const total = stats.total
+      setConvertTotal(total)
+      if (total === 0) {
+        toast.info('No images found to convert.')
+        setConverting(false)
+        return
+      }
+
+      let offset = 0
+      let done = 0
+      const limit = 10
+
+      while (!stopRef.current) {
+        const result = await api.post('/images/convert', {
+          format,
+          offset,
+          limit,
+          delete_original: replaceOriginal,
+        }) as ConvertBatchResponse
+        done += result.converted + result.skipped
+        setConvertDone(done)
+        if (!result.has_more) break
+        offset = result.next_offset
+      }
+
+      if (!stopRef.current) {
+        toast.success(`${format.toUpperCase()} conversion complete!`)
+        format === 'webp' ? refetchWebpStats() : refetchAvifStats()
+      }
+    } catch (err: any) {
+      toast.error(err.message)
+    } finally {
+      setConverting(false)
+      stopRef.current = false
+    }
+  }
+
+  const deleteConvertedMutation = useMutation({
+    mutationFn: (format: 'webp' | 'avif') =>
+      api.delete(`/images/convert?format=${format}`, {}),
+    onSuccess: (data: any, format) => {
       toast.success(data.message)
+      format === 'webp' ? refetchWebpStats() : refetchAvifStats()
     },
     onError: (err: Error) => toast.error(err.message),
   })
@@ -83,6 +167,8 @@ export function ImageTools() {
   const currentQuality = jpegQuality ?? settings?.jpeg_quality ?? 82
   const currentSvgEnabled = svgEnabled ?? settings?.svg_enabled ?? false
   const currentSvgRoles = svgRoles ?? settings?.svg_allowed_roles ?? ['administrator']
+  const currentServeWebp = serveWebp ?? settings?.webp_serve_webp ?? false
+  const currentDeleteOriginals = deleteOriginals ?? settings?.webp_delete_originals ?? false
 
   const toggleSvgRole = (role: string) => {
     const base = svgRoles ?? settings?.svg_allowed_roles ?? ['administrator']
@@ -265,6 +351,80 @@ export function ImageTools() {
           </Card>
         </div>
 
+        {/* WebP Serving & Replace Options */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Globe className="w-4 h-4" />
+              WebP Delivery Options
+            </CardTitle>
+            <CardDescription>
+              Control how WebP files are served to visitors and how conversions are applied.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            {/* Serve WebP */}
+            <div className="flex items-center justify-between py-2 border-b border-slate-50">
+              <div>
+                <Label className="text-sm font-medium">Serve WebP Automatically</Label>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  When a .webp sidecar exists, serve it to browsers that support WebP (via PHP filter + .htaccess on Apache).
+                  Images are fetched faster with no quality loss.
+                </p>
+              </div>
+              <Switch
+                checked={currentServeWebp}
+                onCheckedChange={setServeWebp}
+                disabled={!settings?.webp_support}
+              />
+            </div>
+
+            {currentServeWebp && (
+              <Alert>
+                <CheckCircle2 className="w-4 h-4" />
+                <AlertDescription className="text-xs">
+                  <strong>Apache:</strong> Rewrite rules are written to <code className="font-mono">wp-content/uploads/.htaccess</code> for server-level serving (no PHP overhead).{' '}
+                  <strong>Nginx:</strong> The PHP filter is used as fallback — add the equivalent rewrite rule to your Nginx config manually.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* Replace Original */}
+            <div className="flex items-center justify-between py-2 border-b border-slate-50">
+              <div className="flex items-center gap-2">
+                <Replace className="w-4 h-4 text-amber-500" />
+                <div>
+                  <Label className="text-sm font-medium">Replace Original with WebP</Label>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    On upload and batch convert: delete the original JPEG/PNG and replace it with the .webp version.
+                    The media library entry is updated automatically. <span className="text-amber-600 font-medium">Irreversible.</span>
+                  </p>
+                </div>
+              </div>
+              <Switch
+                checked={currentDeleteOriginals}
+                onCheckedChange={setDeleteOriginals}
+                disabled={!settings?.webp_support}
+              />
+            </div>
+
+            {currentDeleteOriginals && (
+              <Alert variant="warning">
+                <AlertTriangle className="w-4 h-4" />
+                <AlertDescription className="text-xs">
+                  <strong>Warning:</strong> Original files will be permanently deleted after conversion.
+                  Make sure you have a backup before running batch convert with this option enabled.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            <Button className="w-full" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
+              {saveMutation.isPending ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              Save Delivery Settings
+            </Button>
+          </CardContent>
+        </Card>
+
         {/* SVG Support Card */}
         <Card>
           <CardHeader>
@@ -353,6 +513,130 @@ export function ImageTools() {
               )}
               {regenerateMutation.isPending ? 'Regenerating...' : 'Regenerate All Thumbnails'}
             </Button>
+          </CardContent>
+        </Card>
+
+        {/* Batch Convert to WebP / AVIF */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Zap className="w-4 h-4" />
+              Batch Convert Existing Images
+            </CardTitle>
+            <CardDescription>
+              Convert your existing media library images to WebP or AVIF format.
+              {currentDeleteOriginals
+                ? ' Originals will be replaced and removed after conversion.'
+                : ' Converted files are saved alongside originals.'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            {!currentDeleteOriginals && (
+              <Alert>
+                <AlertTriangle className="w-4 h-4" />
+                <AlertDescription className="text-xs">
+                  Converted files are saved as <code className="font-mono">image.webp</code> / <code className="font-mono">image.avif</code> alongside the original.
+                  Enable <strong>Replace Original with WebP</strong> above to delete originals after conversion.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* Progress bar */}
+            {converting && convertTotal > 0 && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-slate-600">Converting…</span>
+                  <span className="font-mono text-blue-600">{convertDone} / {convertTotal}</span>
+                </div>
+                <Progress value={Math.round((convertDone / convertTotal) * 100)} className="h-2" />
+              </div>
+            )}
+
+            {/* WebP row */}
+            <div className="flex items-center justify-between py-3 border rounded-lg px-4">
+              <div>
+                <p className="text-sm font-medium">WebP</p>
+                {webpStats && (
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    {webpStats.converted} of {webpStats.total} images converted
+                    {webpStats.remaining > 0 && ` · ${webpStats.remaining} remaining`}
+                  </p>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                {webpStats && webpStats.converted > 0 && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                    disabled={converting || deleteConvertedMutation.isPending}
+                    onClick={() => {
+                      if (confirm(`Delete all ${webpStats.converted} converted .webp sidecar files?`)) {
+                        deleteConvertedMutation.mutate('webp')
+                      }
+                    }}
+                    title="Delete all .webp sidecar files"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={converting || !settings?.webp_support || webpStats?.remaining === 0}
+                  onClick={() => startBatchConvert('webp')}
+                >
+                  {converting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
+                  {webpStats?.remaining === 0 ? 'All Converted' : currentDeleteOriginals ? 'Convert & Replace' : 'Convert to WebP'}
+                </Button>
+              </div>
+            </div>
+
+            {/* AVIF row */}
+            <div className="flex items-center justify-between py-3 border rounded-lg px-4">
+              <div>
+                <p className="text-sm font-medium">AVIF</p>
+                {avifStats && (
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    {avifStats.converted} of {avifStats.total} images converted
+                    {avifStats.remaining > 0 && ` · ${avifStats.remaining} remaining`}
+                  </p>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                {avifStats && avifStats.converted > 0 && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                    disabled={converting || deleteConvertedMutation.isPending}
+                    onClick={() => {
+                      if (confirm(`Delete all ${avifStats.converted} converted .avif sidecar files?`)) {
+                        deleteConvertedMutation.mutate('avif')
+                      }
+                    }}
+                    title="Delete all .avif sidecar files"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={converting || !settings?.avif_support || avifStats?.remaining === 0}
+                  onClick={() => startBatchConvert('avif')}
+                >
+                  {converting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
+                  {avifStats?.remaining === 0 ? 'All Converted' : 'Convert to AVIF'}
+                </Button>
+              </div>
+            </div>
+
+            {converting && (
+              <Button variant="outline" size="sm" onClick={() => { stopRef.current = true }}>
+                Stop Conversion
+              </Button>
+            )}
           </CardContent>
         </Card>
       </div>

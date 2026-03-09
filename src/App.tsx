@@ -14,6 +14,11 @@ import { Notes } from './pages/Notes'
 import { ImageTools } from './pages/ImageTools'
 import { Reset } from './pages/Reset'
 import { Security } from './pages/Security'
+import { AuditLog } from './pages/AuditLog'
+import { Snippets } from './pages/Snippets'
+import { Redirects } from './pages/Redirects'
+import { Email } from './pages/Email'
+import { Backup } from './pages/Backup'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -44,6 +49,11 @@ export function App() {
             <Route path="system" element={<SystemInfo />} />
             <Route path="reset" element={<Reset />} />
             <Route path="security" element={<Security />} />
+            <Route path="audit-log" element={<AuditLog />} />
+            <Route path="snippets" element={<Snippets />} />
+            <Route path="redirects" element={<Redirects />} />
+            <Route path="email" element={<Email />} />
+            <Route path="backup" element={<Backup />} />
           </Route>
         </Routes>
       </HashRouter>

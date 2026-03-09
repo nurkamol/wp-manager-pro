@@ -8,7 +8,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import {
   Puzzle, Palette, Users, FileText, Database, Server,
   AlertTriangle, CheckCircle2, RefreshCw, ArrowRight,
-  Construction, Bug, HardDrive, Upload
+  Construction, Bug, HardDrive, Upload, Image, Code2, Mail, ArchiveRestore,
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { timeAgo } from '@/lib/utils'
@@ -241,6 +241,10 @@ export function Dashboard() {
                 { label: 'File Manager', icon: FileText, to: '/file-manager', desc: 'Browse & edit files' },
                 { label: 'Database', icon: Database, to: '/database', desc: 'Search & replace' },
                 { label: 'User Manager', icon: Users, to: '/users', desc: 'Manage users & roles' },
+                { label: 'Code Snippets', icon: Code2, to: '/snippets', desc: 'PHP, CSS & JS snippets' },
+                { label: 'Image Tools', icon: Image, to: '/images', desc: 'WebP, AVIF & thumbnails' },
+                { label: 'Email / SMTP', icon: Mail, to: '/email', desc: 'Configure & test SMTP' },
+                { label: 'Backup', icon: ArchiveRestore, to: '/backup', desc: 'Database backups' },
                 { label: 'Maintenance', icon: Construction, to: '/maintenance', desc: 'Toggle maintenance mode' },
                 { label: 'Debug Tools', icon: Bug, to: '/debug', desc: 'WP_DEBUG & error log' },
                 { label: 'System Info', icon: Server, to: '/system', desc: 'PHP & server info' },

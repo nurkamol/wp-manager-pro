@@ -7,6 +7,92 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [1.6.0] — 2026-03-09
+
+### Added
+
+#### Image Tools — WebP Delivery
+- **Serve WebP Automatically**: `wp_get_attachment_url` filter transparently returns `.webp` URL when browser sends `Accept: image/webp` and a sidecar exists
+- **Apache .htaccess rules**: `write_htaccess_webp()` writes `insert_with_markers()` rewrite block to `uploads/.htaccess` on save; removed cleanly when option disabled
+- **Nginx info tip** shown in the UI for non-Apache users
+
+#### Image Tools — Replace Original with WebP
+- New "Replace Original with WebP" toggle: on upload, deletes original JPEG/PNG and redirects the upload array to the `.webp` file
+- On batch convert: updates `_wp_attached_file`, `post_mime_type`, and regenerates attachment metadata from the new `.webp`
+- Works only for WebP (not AVIF); irreversible — warning shown in UI
+
+#### Image Tools — Auto-Delete Sidecar Files
+- `delete_attachment` hook → `delete_sidecar_files()`: removes `.webp` and `.avif` sidecar for full-size image and all registered thumbnail sizes when an attachment is deleted
+- New REST route: `DELETE /images/convert` → `delete_all_converted()` — bulk-delete all `.webp` or `.avif` sidecar files with per-format trash buttons in the UI
+
+### Changed
+- `save_as_format()` return type changed from `void` to `?string` (returns path on success, `null` on failure)
+- `batch_convert()` accepts new `delete_original` boolean param; conditionally updates attachment record after converting
+- Version bumped to `1.6.0` in plugin header, `WP_MANAGER_PRO_VERSION` constant, and `package.json`
+- Build: `index.js` 687 kB / `style.css` 47 kB
+
+---
+
+## [1.5.0] — 2026-03-09
+
+### Added
+
+#### Image Tools
+- **WebP Conversion on Upload**: `wp_handle_upload` filter converts every uploaded raster image to `.webp` alongside the original when "Convert to WebP on Upload" is enabled
+- **AVIF Conversion on Upload**: same pipeline for AVIF when enabled and server supports it
+- **Batch Convert**: `POST /images/convert` processes existing media in paginated batches of 10; `GET /images/convert-stats` returns total/converted/remaining counts per format
+- **Progress bar** with live counter and Stop button in the Batch Convert card
+
+#### Maintenance Mode
+- **Real-time preview countdown**: replaced static hardcoded `['00d','00h','00m','00s']` with `useEffect` + `setInterval` ticking from the saved end datetime
+- **Scope control**: apply maintenance to whole site / home page only / specific URL paths (fnmatch wildcard support)
+- **Secret bypass URL**: 16-char key (`wp_generate_password`); `?wmp_preview=KEY` sets 7-day httpOnly cookie; `hash_equals()` comparison
+- New API fields: `bypass_key`, `scope`, `scope_paths`, `home_url` in `GET /maintenance`
+
+#### Dashboard
+- Added 4 Quick Actions: Code Snippets (`/snippets`), Image Tools (`/images`), Email/SMTP (`/email`), Backup (`/backup`) — grid is now 3×4 (12 actions)
+
+### Fixed
+- **Maintenance countdown live preview** showed static zeros — fixed with real-time `setInterval` state
+- **Snippets toggle** broken by `!!"0" === true` in JS — `enabled` cast to `(int)` before JSON encoding in `get_snippets()`, `create_snippet()`, `update_snippet()`
+
+---
+
+## [1.4.0] — 2026-03-09
+
+### Added
+
+#### Code Snippets Manager
+- PHP, CSS, JS snippet CRUD with per-snippet enable/disable toggle
+- PHP runs on `init`; CSS on `wp_head`; JS on `wp_footer`
+- Custom DB table `wp_wmp_snippets`; toggled `enabled` stored as `TINYINT(1)`
+
+#### Redirect Manager
+- CRUD for 301/302/307/308 redirects with wildcard `*` source paths
+- Hit counter, active/inactive toggle, CSV import/export
+- Runs on `template_redirect` hook (frontend only)
+
+#### Email / SMTP
+- Configure SMTP host, port, auth, encryption via `phpmailer_init` hook
+- Send test email endpoint, email log (last 100 entries), clear log
+- REST routes: `GET /email/settings`, `POST /email/settings`, `POST /email/test`, `GET /email/log`, `DELETE /email/log/clear`
+
+#### Database Backup
+- Full or table-specific SQL dumps via PHP `$wpdb` row iteration
+- Backup list with filename, size, creation date; download and delete
+- Stored in `wp-content/wmp-backups/` with `.htaccess` blocking direct access
+- REST routes: `GET /backup`, `POST /backup/create`, `POST /backup/download`, `GET /backup/serve`, `DELETE /backup/delete`
+
+#### Audit Log
+- Tracks: plugin activated/deactivated/deleted, theme switched, user login/logout/failed-login, user registered, post published
+- Filter by action type, CSV export, clear log
+- Custom DB table `wp_wmp_audit_log`
+
+### Fixed
+- **Snippets `enabled` toggle**: `$wpdb->get_results()` returns string `"0"` — cast to `(int)` before returning JSON
+
+---
+
 ## [1.3.0] — 2026-03-08
 
 ### Added
@@ -250,5 +336,10 @@ First public release of WP Manager Pro — a comprehensive, agency-ready WordPre
 
 ---
 
+[1.6.0]: https://github.com/nurkamol/wp-manager-pro/compare/v1.5.0...v1.6.0
+[1.5.0]: https://github.com/nurkamol/wp-manager-pro/compare/v1.4.0...v1.5.0
+[1.4.0]: https://github.com/nurkamol/wp-manager-pro/compare/v1.3.0...v1.4.0
+[1.3.0]: https://github.com/nurkamol/wp-manager-pro/compare/v1.2.0...v1.3.0
+[1.2.0]: https://github.com/nurkamol/wp-manager-pro/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/nurkamol/wp-manager-pro/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v1.0.0

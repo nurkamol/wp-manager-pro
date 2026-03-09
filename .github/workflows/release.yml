@@ -1,0 +1,59 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    name: Build & Publish Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Extract version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+
+      - name: Package plugin ZIP
+        run: |
+          zip -r wp-manager-pro-${{ steps.version.outputs.VERSION }}.zip \
+            wp-manager-pro.php \
+            includes/ \
+            assets/build/
+
+      - name: Read release notes
+        id: release_notes
+        run: |
+          if [ -f "releases/v${{ steps.version.outputs.VERSION }}.md" ]; then
+            echo "NOTES_FILE=releases/v${{ steps.version.outputs.VERSION }}.md" >> $GITHUB_OUTPUT
+          else
+            echo "NOTES_FILE=" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: WP Manager Pro v${{ steps.version.outputs.VERSION }}
+          body_path: ${{ steps.release_notes.outputs.NOTES_FILE }}
+          files: wp-manager-pro-${{ steps.version.outputs.VERSION }}.zip
+          draft: false
+          prerelease: false

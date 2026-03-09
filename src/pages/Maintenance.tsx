@@ -11,10 +11,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from 'sonner'
 import {
   Construction, Power, CheckCircle2, AlertTriangle, Eye,
-  RefreshCw, Save, Palette, FileText, Clock, Smile,
+  RefreshCw, Save, Palette, FileText, Clock, Smile, Users, Copy, Globe,
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 
@@ -31,6 +32,12 @@ interface MaintenanceStatus {
   badge_text: string
   show_badge: boolean
   show_countdown: boolean
+  bypass_roles: string[]
+  available_roles: Record<string, string>
+  bypass_key: string
+  scope: string
+  scope_paths: string
+  home_url: string
 }
 
 const GRADIENT_PRESETS = [
@@ -59,7 +66,33 @@ export function Maintenance() {
   const [badgeText, setBadgeText] = useState('Maintenance Mode')
   const [showBadge, setShowBadge] = useState(true)
   const [showCountdown, setShowCountdown] = useState(false)
+  const [bypassRoles, setBypassRoles] = useState<string[]>([])
+  const [bypassKey, setBypassKey] = useState('')
+  const [scope, setScope] = useState('all')
+  const [scopePaths, setScopePaths] = useState('')
   const [initialized, setInitialized] = useState(false)
+
+  // Live countdown for the preview panel — ticks every second
+  const [previewCountdown, setPreviewCountdown] = useState({ d: 0, h: 0, m: 0, s: 0 })
+
+  useEffect(() => {
+    if (!showCountdown || !endTime) {
+      setPreviewCountdown({ d: 0, h: 0, m: 0, s: 0 })
+      return
+    }
+    const tick = () => {
+      const diff = Math.max(0, new Date(endTime).getTime() - Date.now())
+      setPreviewCountdown({
+        d: Math.floor(diff / 864e5),
+        h: Math.floor(diff % 864e5 / 36e5),
+        m: Math.floor(diff % 36e5 / 6e4),
+        s: Math.floor(diff % 6e4 / 1e3),
+      })
+    }
+    tick()
+    const id = setInterval(tick, 1000)
+    return () => clearInterval(id)
+  }, [showCountdown, endTime])
 
   const { data, isLoading } = useQuery<MaintenanceStatus>({
     queryKey: ['maintenance'],
@@ -80,11 +113,25 @@ export function Maintenance() {
       setBadgeText(data.badge_text || 'Maintenance Mode')
       setShowBadge(data.show_badge ?? true)
       setShowCountdown(data.show_countdown ?? false)
+      setBypassRoles(data.bypass_roles ?? [])
+      setBypassKey(data.bypass_key ?? '')
+      setScope(data.scope ?? 'all')
+      setScopePaths(data.scope_paths ?? '')
       setInitialized(true)
     }
   }, [data, initialized])
 
   // Helper to get current settings merged with server defaults
+  const generateBypassKey = () => {
+    const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789'
+    return Array.from({ length: 16 }, () => chars[Math.floor(Math.random() * chars.length)]).join('')
+  }
+
+  const copyBypassUrl = () => {
+    const url = `${data?.home_url ?? '/'}?wmp_preview=${bypassKey}`
+    navigator.clipboard.writeText(url).then(() => toast.success('Bypass URL copied!')).catch(() => toast.error('Copy failed'))
+  }
+
   const currentSettings = () => ({
     title: title || data?.title || 'Site Under Maintenance',
     message: message || data?.message || 'We are performing scheduled maintenance. We will be back shortly.',
@@ -97,6 +144,10 @@ export function Maintenance() {
     badge_text: badgeText,
     show_badge: showBadge,
     show_countdown: showCountdown,
+    bypass_roles: bypassRoles,
+    bypass_key: bypassKey,
+    scope,
+    scope_paths: scopePaths,
   })
 
   const saveSettingsMutation = useMutation({
@@ -158,7 +209,7 @@ export function Maintenance() {
                   </h3>
                   <p className="text-sm text-slate-500">
                     {data?.active
-                      ? 'Visitors see the maintenance page. Admins can still access the site.'
+                      ? `Visitors see the maintenance page. Admins${bypassRoles.length ? ` and ${bypassRoles.map(r => data?.available_roles?.[r] ?? r).join(', ')}` : ''} can still access the site.`
                       : 'Your site is accessible to all visitors.'}
                   </p>
                 </div>
@@ -226,8 +277,8 @@ export function Maintenance() {
                       Appearance
                     </TabsTrigger>
                     <TabsTrigger value="extras" className="flex-1 gap-1.5">
-                      <Clock className="w-3.5 h-3.5" />
-                      Extras
+                      <Users className="w-3.5 h-3.5" />
+                      Access & Extras
                     </TabsTrigger>
                   </TabsList>
 
@@ -447,6 +498,123 @@ export function Maintenance() {
                         <p className="text-xs text-slate-500">Optional. Can be referenced in your message text.</p>
                       </div>
                     )}
+
+                    {/* Bypass Roles */}
+                    {data?.available_roles && Object.keys(data.available_roles).length > 0 && (
+                      <div className="space-y-3 pt-2 border-t border-slate-100 dark:border-slate-700">
+                        <div>
+                          <Label className="text-sm font-medium flex items-center gap-1.5">
+                            <Users className="w-3.5 h-3.5" />
+                            Bypass Roles
+                          </Label>
+                          <p className="text-xs text-slate-500 mt-0.5">
+                            Logged-in users with these roles can view the site normally during maintenance.
+                            Administrators always bypass.
+                          </p>
+                        </div>
+                        <div className="space-y-2">
+                          {Object.entries(data.available_roles).map(([slug, label]) => {
+                            const checked = bypassRoles.includes(slug)
+                            return (
+                              <label
+                                key={slug}
+                                className="flex items-center gap-3 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer transition-colors"
+                              >
+                                <input
+                                  type="checkbox"
+                                  className="w-4 h-4 rounded accent-blue-600"
+                                  checked={checked}
+                                  onChange={() =>
+                                    setBypassRoles(prev =>
+                                      checked ? prev.filter(r => r !== slug) : [...prev, slug]
+                                    )
+                                  }
+                                />
+                                <span className="text-sm text-slate-700 dark:text-slate-300">{label}</span>
+                                <span className="ml-auto text-xs font-mono text-slate-400">{slug}</span>
+                              </label>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Maintenance Scope */}
+                    <div className="space-y-3 pt-2 border-t border-slate-100 dark:border-slate-700">
+                      <div>
+                        <Label className="text-sm font-medium">Maintenance Scope</Label>
+                        <p className="text-xs text-slate-500 mt-0.5">Choose which pages show the maintenance screen.</p>
+                      </div>
+                      <Select value={scope} onValueChange={setScope}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Whole Site</SelectItem>
+                          <SelectItem value="home">Home Page Only</SelectItem>
+                          <SelectItem value="paths">Specific Paths</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {scope === 'paths' && (
+                        <div className="space-y-2">
+                          <Label htmlFor="scope-paths" className="text-xs text-slate-500">URL paths to block (one per line)</Label>
+                          <Textarea
+                            id="scope-paths"
+                            value={scopePaths}
+                            onChange={e => setScopePaths(e.target.value)}
+                            placeholder={'/shop/*\n/checkout\n/product/*'}
+                            rows={4}
+                            className="font-mono text-sm"
+                          />
+                          <p className="text-xs text-slate-500">
+                            Supports wildcards: <code className="font-mono text-xs bg-slate-100 dark:bg-slate-800 px-1 rounded">/shop/*</code>
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Secret Bypass URL */}
+                    <div className="space-y-3 pt-2 border-t border-slate-100 dark:border-slate-700">
+                      <div>
+                        <Label className="text-sm font-medium flex items-center gap-1.5">
+                          <Globe className="w-3.5 h-3.5" />
+                          Secret Bypass URL
+                        </Label>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          Share this URL to let someone preview the site during maintenance. Sets a 7-day cookie.
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Input
+                          readOnly
+                          value={bypassKey ? `${data?.home_url ?? '/'}?wmp_preview=${bypassKey}` : ''}
+                          className="font-mono text-xs flex-1"
+                          placeholder="Save settings to generate a key…"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          onClick={copyBypassUrl}
+                          title="Copy URL"
+                          disabled={!bypassKey}
+                        >
+                          <Copy className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          onClick={() => setBypassKey(generateBypassKey())}
+                          title="Regenerate key"
+                        >
+                          <RefreshCw className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      <p className="text-xs text-slate-400">
+                        Click <RefreshCw className="w-3 h-3 inline" /> to generate a new key (old links will stop working). Then save settings.
+                      </p>
+                    </div>
                   </TabsContent>
                 </Tabs>
 
@@ -572,7 +740,7 @@ export function Maintenance() {
                       {preview.message}
                     </p>
 
-                    {/* Countdown preview */}
+                    {/* Countdown preview — live ticking */}
                     {preview.show_countdown && endTime && (
                       <div style={{
                         marginTop: '16px',
@@ -580,21 +748,26 @@ export function Maintenance() {
                         gap: '8px',
                         justifyContent: 'center',
                       }}>
-                        {['00d', '00h', '00m', '00s'].map((unit, i) => (
-                          <div key={i} style={{
-                            background: `${preview.accent}20`,
-                            border: `1px solid ${preview.accent}40`,
-                            borderRadius: '8px',
-                            padding: '8px 6px',
-                            minWidth: '44px',
-                            textAlign: 'center',
-                          }}>
-                            <div style={{ fontSize: '1.1rem', fontWeight: 700, color: preview.accent }}>{unit.slice(0, 2)}</div>
-                            <div style={{ fontSize: '9px', opacity: 0.6, marginTop: '2px', textTransform: 'uppercase' as const }}>
-                              {['Days', 'Hrs', 'Min', 'Sec'][i]}
+                        {(['Days', 'Hrs', 'Min', 'Sec'] as const).map((lbl, i) => {
+                          const val = [previewCountdown.d, previewCountdown.h, previewCountdown.m, previewCountdown.s][i]
+                          return (
+                            <div key={lbl} style={{
+                              background: `${preview.accent}20`,
+                              border: `1px solid ${preview.accent}40`,
+                              borderRadius: '8px',
+                              padding: '8px 6px',
+                              minWidth: '44px',
+                              textAlign: 'center',
+                            }}>
+                              <div style={{ fontSize: '1.1rem', fontWeight: 700, color: preview.accent }}>
+                                {String(val).padStart(2, '0')}
+                              </div>
+                              <div style={{ fontSize: '9px', opacity: 0.6, marginTop: '2px', textTransform: 'uppercase' as const }}>
+                                {lbl}
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          )
+                        })}
                       </div>
                     )}
                   </div>

@@ -1,0 +1,67 @@
+name: Feature Request
+description: Suggest a new feature or enhancement for WP Manager Pro
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a new feature! Please describe your idea clearly.
+
+  - type: dropdown
+    id: module
+    attributes:
+      label: Related Module (if applicable)
+      options:
+        - Dashboard
+        - Plugin Manager
+        - Theme Manager
+        - File Manager
+        - Database Manager
+        - User Manager
+        - Maintenance Mode
+        - Debug Tools
+        - Image Tools
+        - Code Snippets
+        - Redirect Manager
+        - Email / SMTP
+        - Database Backup
+        - Audit Log
+        - Security
+        - Reset Tools
+        - Notes
+        - System Info
+        - New Module / Feature
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / Use Case
+      description: What problem does this feature solve? Who benefits from it?
+      placeholder: "As a WordPress developer, I often need to..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: Describe the feature you'd like to see.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Have you considered any alternative solutions or workarounds?
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I have searched existing issues and this feature has not been requested before.
+          required: true

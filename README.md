@@ -2,7 +2,7 @@
 
 > A comprehensive, agency-ready WordPress management suite — built with React 19, TypeScript, and the WordPress REST API.
 
-![Version](https://img.shields.io/badge/version-1.3.0-blue)
+![Version](https://img.shields.io/badge/version-1.6.0-blue)
 ![WordPress](https://img.shields.io/badge/WordPress-5.9%2B-21759b)
 ![PHP](https://img.shields.io/badge/PHP-7.4%2B-8892be)
 ![License](https://img.shields.io/badge/license-GPL--2.0%2B-green)
@@ -48,6 +48,36 @@
 All operations happen through a secured REST API (`wp-manager-pro/v1`) that requires the `manage_options` capability on every route.
 
 ---
+
+## What's New in v1.6.0
+
+| Feature | Description |
+|---------|-------------|
+| 🌐 Serve WebP Automatically | Filter `wp_get_attachment_url` to return `.webp` for supporting browsers; writes Apache `.htaccess` rewrite rules |
+| 🔄 Replace Original with WebP | On upload or batch convert: delete original JPEG/PNG and update attachment DB record to `.webp` |
+| 🗑️ Auto-Delete Sidecar Files | Hook `delete_attachment` to remove all `.webp` / `.avif` sidecars (full-size + thumbnails) when originals are deleted |
+| 🗑️ Delete All Converted | Trash button per format in Batch Convert — bulk-delete all sidecar files |
+
+## What's New in v1.5.0
+
+| Feature | Description |
+|---------|-------------|
+| ⚡ WebP/AVIF Conversion on Upload | Auto-convert uploaded images to WebP/AVIF sidecar files via `wp_handle_upload` |
+| 📦 Batch Convert Existing Media | Convert the full media library with progress bar and stop button |
+| 🔑 Maintenance Bypass URL | Secret `?wmp_preview=KEY` sets a 7-day cookie to bypass maintenance for developers |
+| 🎯 Maintenance Scope Control | Apply maintenance to: whole site / home page only / specific URL paths |
+| ⏱️ Maintenance Countdown Fix | Live preview countdown now ticks in real-time (was showing static zeros) |
+| 🏠 Dashboard Quick Actions | Added Code Snippets, Image Tools, Email/SMTP, Backup — grid is now 12 actions |
+
+## What's New in v1.4.0
+
+| Feature | Description |
+|---------|-------------|
+| 🧩 Code Snippets | Run custom PHP/CSS/JS snippets with per-snippet enable/disable toggle |
+| 🔀 Redirect Manager | Full 301/302/307/308 redirect CRUD with wildcard paths, hit counter, CSV import/export |
+| 📧 Email / SMTP | Configure SMTP, send test emails, and view an email log with sent/failed status |
+| 💾 Database Backup | Browser-based SQL dump — create, download, and delete full or table-specific backups |
+| 📋 Audit Log | Track plugin, theme, user, and post events — filter, export CSV, clear log |
 
 ## What's New in v1.3.0
 
@@ -181,6 +211,38 @@ All operations happen through a secured REST API (`wp-manager-pro/v1`) that requ
 - Enable SVG uploads with per-role permission control (administrator, editor, author)
 - Server-side SVG sanitization (strips `<script>`, `on*` events, `javascript:` hrefs, `<foreignObject>`, `<base>`)
 - Support status cards: GD, ImageMagick, WebP, AVIF
+- **v1.5.0** Batch convert existing media library images to WebP or AVIF with live progress bar
+- **v1.6.0** Serve WebP automatically via `wp_get_attachment_url` filter + Apache `.htaccess` rewrite rules
+- **v1.6.0** Replace Original with WebP — delete original after conversion and update attachment metadata
+- **v1.6.0** Auto-delete `.webp` / `.avif` sidecar files when the original attachment is deleted
+- **v1.6.0** Delete all converted sidecars per format with a single button
+
+### Code Snippets *(New in v1.4.0)*
+- Run custom PHP, CSS, and JavaScript directly from the dashboard without editing files
+- PHP snippets execute on `init`; CSS outputs to `wp_head`; JS outputs to `wp_footer`
+- Per-snippet enable/disable toggle — no deletion required to disable
+- Stored in the custom `wp_wmp_snippets` database table
+
+### Redirect Manager *(New in v1.4.0)*
+- Full 301/302/307/308 redirect CRUD with source → destination mapping
+- Wildcard `*` support in source paths
+- Hit counter, active/inactive toggle per rule
+- CSV import/export for migrating from other redirect plugins
+
+### Email / SMTP *(New in v1.4.0)*
+- Configure SMTP host, port, authentication, and encryption from the dashboard
+- Send a test email to verify your configuration
+- Email log: recipient, subject, status (Sent / Failed), timestamp, error message
+
+### Database Backup *(New in v1.4.0)*
+- Full or table-specific SQL dump via the browser
+- Backup list with filename, size, and creation date
+- One-click download and delete
+- Stored in a protected `wp-content/wmp-backups/` directory
+
+### Audit Log *(New in v1.4.0)*
+- Tracks plugin, theme, user, and post events automatically
+- Filter by action type; export to CSV; clear log
 
 ### Security *(New in v1.3.0)*
 - **Admin URL Protection**: Move `wp-login.php` to a secret URL slug of your choice
@@ -218,14 +280,14 @@ All operations happen through a secured REST API (`wp-manager-pro/v1`) that requ
 ## Installation
 
 ### From ZIP
-1. Download `wp-manager-pro-1.3.0.zip` from the [Releases](https://github.com/nurkamol/wp-manager-pro/releases) page.
+1. Download `wp-manager-pro-1.6.0.zip` from the [Releases](https://github.com/nurkamol/wp-manager-pro/releases) page.
 2. In WP Admin → **Plugins → Add New → Upload Plugin**.
 3. Upload the ZIP and click **Install Now**, then **Activate**.
 4. Navigate to **WP Manager** in the admin sidebar (or click **Open** in the Plugins list).
 
 ### Manual
 ```bash
-unzip wp-manager-pro-1.3.0.zip -d /path/to/wp-content/plugins/
+unzip wp-manager-pro-1.6.0.zip -d /path/to/wp-content/plugins/
 ```
 
 Then activate via WP Admin → **Plugins**.
@@ -256,18 +318,17 @@ npm run dev
 ```bash
 npm run build
 # Outputs:
-#   assets/build/index.js   (~623 kB, ~182 kB gzipped)
-#   assets/build/style.css  (~42 kB, ~8 kB gzipped)
+#   assets/build/index.js   (~688 kB, ~196 kB gzipped)
+#   assets/build/style.css  (~47 kB, ~9 kB gzipped)
 ```
 
 ### Package Plugin ZIP
 ```bash
 cd ..
-zip -r wp-manager-pro-1.3.0.zip \
+zip -r wp-manager-pro-1.6.0.zip \
   wp-manager-pro/wp-manager-pro.php \
   wp-manager-pro/includes/ \
-  wp-manager-pro/assets/ \
-  --exclude "wp-manager-pro/screenshots/*"
+  wp-manager-pro/assets/
 ```
 
 ---
@@ -364,11 +425,41 @@ All endpoints require a valid WordPress nonce in the `X-WP-Nonce` header.
 | GET | `/images/settings` | Image settings |
 | POST | `/images/settings` | Save image settings |
 | POST | `/images/regenerate` | Regenerate thumbnails |
+| POST | `/images/convert` | **v1.5.0** Batch convert images to WebP/AVIF |
+| GET | `/images/convert-stats` | **v1.5.0** Conversion stats (total/converted/remaining) |
+| DELETE | `/images/convert` | **v1.6.0** Delete all sidecar files for a format |
 | GET | `/reset/status` | Get content counts |
 | POST | `/reset/execute` | Execute site reset |
 | GET | `/security` | **v1.3.0** Admin URL protection status |
 | POST | `/security/admin-url` | **v1.3.0** Enable/update custom login slug |
 | DELETE | `/security/admin-url` | **v1.3.0** Disable admin URL protection |
+| GET | `/snippets` | **v1.4.0** List snippets |
+| POST | `/snippets` | **v1.4.0** Create snippet |
+| PUT | `/snippets/{id}` | **v1.4.0** Update snippet |
+| POST | `/snippets/{id}/toggle` | **v1.4.0** Toggle snippet enabled state |
+| DELETE | `/snippets/{id}` | **v1.4.0** Delete snippet |
+| GET | `/redirects` | **v1.4.0** List redirects |
+| POST | `/redirects` | **v1.4.0** Create redirect |
+| PUT | `/redirects/{id}` | **v1.4.0** Update redirect |
+| DELETE | `/redirects/{id}` | **v1.4.0** Delete redirect |
+| POST | `/redirects/export` | **v1.4.0** Export redirects as CSV |
+| GET | `/redirects/download` | **v1.4.0** Download CSV export |
+| POST | `/redirects/import` | **v1.4.0** Import redirects from CSV |
+| GET | `/email/settings` | **v1.4.0** SMTP settings |
+| POST | `/email/settings` | **v1.4.0** Save SMTP settings |
+| POST | `/email/test` | **v1.4.0** Send test email |
+| GET | `/email/log` | **v1.4.0** Email log |
+| DELETE | `/email/log/clear` | **v1.4.0** Clear email log |
+| GET | `/backup` | **v1.4.0** List backups |
+| POST | `/backup/create` | **v1.4.0** Create backup |
+| POST | `/backup/download` | **v1.4.0** Prepare backup for download |
+| GET | `/backup/serve` | **v1.4.0** Stream backup file |
+| DELETE | `/backup/delete` | **v1.4.0** Delete backup |
+| GET | `/audit` | **v1.4.0** Audit log entries |
+| DELETE | `/audit/clear` | **v1.4.0** Clear audit log |
+| POST | `/audit/export` | **v1.4.0** Export audit log as CSV |
+| GET | `/audit/download` | **v1.4.0** Download CSV export |
+| GET | `/audit/action-types` | **v1.4.0** Available action type filters |
 
 ---
 
@@ -395,11 +486,16 @@ wp-manager-pro/
 │           ├── class-images-controller.php
 │           ├── class-notes-controller.php
 │           ├── class-reset-controller.php
-│           └── class-security-controller.php  # v1.3.0
+│           ├── class-security-controller.php   # v1.3.0
+│           ├── class-snippets-controller.php   # v1.4.0
+│           ├── class-redirects-controller.php  # v1.4.0
+│           ├── class-email-controller.php      # v1.4.0
+│           ├── class-backup-controller.php     # v1.4.0
+│           └── class-audit-controller.php      # v1.4.0
 ├── assets/
 │   └── build/
-│       ├── index.js                # Compiled React app (~623 kB, ~182 kB gzip)
-│       └── style.css               # Compiled styles (~42 kB, ~8 kB gzip)
+│       ├── index.js                # Compiled React app (~688 kB, ~196 kB gzip)
+│       └── style.css               # Compiled styles (~47 kB, ~9 kB gzip)
 ├── src/                            # React source (TypeScript)
 │   ├── main.tsx
 │   ├── index.css
@@ -423,17 +519,25 @@ wp-manager-pro/
 │       ├── Database.tsx
 │       ├── Users.tsx
 │       ├── SystemInfo.tsx
-│       ├── Maintenance.tsx         # v1.3.0 appearance editor
+│       ├── Maintenance.tsx         # v1.3.0 appearance + v1.5.0 scope/bypass
 │       ├── Debug.tsx
-│       ├── ImageTools.tsx          # v1.3.0 AVIF support
+│       ├── ImageTools.tsx          # v1.3.0–1.6.0 full WebP/AVIF pipeline
 │       ├── Notes.tsx
 │       ├── Reset.tsx
-│       └── Security.tsx            # v1.3.0 admin URL hide
+│       ├── Security.tsx            # v1.3.0
+│       ├── Snippets.tsx            # v1.4.0
+│       ├── Redirects.tsx           # v1.4.0
+│       ├── Email.tsx               # v1.4.0
+│       ├── Backup.tsx              # v1.4.0
+│       └── AuditLog.tsx            # v1.4.0
 ├── releases/
 │   ├── v1.0.0.md
 │   ├── v1.1.0.md
 │   ├── v1.2.0.md
-│   └── v1.3.0.md
+│   ├── v1.3.0.md
+│   ├── v1.4.0.md
+│   ├── v1.5.0.md
+│   └── v1.6.0.md
 ├── vite.config.ts
 ├── tailwind.config.js
 ├── tsconfig.json

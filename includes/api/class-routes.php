@@ -15,6 +15,11 @@ use WP_Manager_Pro\API\Controllers\Notes_Controller;
 use WP_Manager_Pro\API\Controllers\Debug_Controller;
 use WP_Manager_Pro\API\Controllers\Images_Controller;
 use WP_Manager_Pro\API\Controllers\Reset_Controller;
+use WP_Manager_Pro\API\Controllers\Audit_Controller;
+use WP_Manager_Pro\API\Controllers\Snippets_Controller;
+use WP_Manager_Pro\API\Controllers\Redirects_Controller;
+use WP_Manager_Pro\API\Controllers\Email_Controller;
+use WP_Manager_Pro\API\Controllers\Backup_Controller;
 
 class Routes {
 
@@ -345,6 +350,21 @@ class Routes {
             'callback'            => [ Images_Controller::class, 'regenerate_thumbnails' ],
             'permission_callback' => [ self::class, 'admin_permission' ],
         ] );
+        register_rest_route( $namespace, '/images/convert', [
+            'methods'             => 'POST',
+            'callback'            => [ Images_Controller::class, 'batch_convert' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/images/convert-stats', [
+            'methods'             => 'GET',
+            'callback'            => [ Images_Controller::class, 'get_convert_stats' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/images/convert', [
+            'methods'             => 'DELETE',
+            'callback'            => [ Images_Controller::class, 'delete_all_converted' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
 
         // Reset Tools.
         register_rest_route( $namespace, '/reset/status', [
@@ -373,6 +393,151 @@ class Routes {
         register_rest_route( $namespace, '/reset/execute', [
             'methods'             => 'POST',
             'callback'            => [ Reset_Controller::class, 'execute_reset' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+
+        // Audit Log.
+        register_rest_route( $namespace, '/audit', [
+            'methods'             => 'GET',
+            'callback'            => [ Audit_Controller::class, 'get_logs' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/audit/clear', [
+            'methods'             => 'DELETE',
+            'callback'            => [ Audit_Controller::class, 'clear_logs' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/audit/export', [
+            'methods'             => 'POST',
+            'callback'            => [ Audit_Controller::class, 'export_logs' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/audit/download', [
+            'methods'             => 'GET',
+            'callback'            => [ Audit_Controller::class, 'download_export' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/audit/action-types', [
+            'methods'             => 'GET',
+            'callback'            => [ Audit_Controller::class, 'get_action_types' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+
+        // Code Snippets.
+        register_rest_route( $namespace, '/snippets', [
+            'methods'             => 'GET',
+            'callback'            => [ Snippets_Controller::class, 'get_snippets' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/snippets', [
+            'methods'             => 'POST',
+            'callback'            => [ Snippets_Controller::class, 'create_snippet' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/snippets/(?P<id>\d+)', [
+            'methods'             => 'PUT',
+            'callback'            => [ Snippets_Controller::class, 'update_snippet' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/snippets/(?P<id>\d+)/toggle', [
+            'methods'             => 'POST',
+            'callback'            => [ Snippets_Controller::class, 'toggle_snippet' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/snippets/(?P<id>\d+)', [
+            'methods'             => 'DELETE',
+            'callback'            => [ Snippets_Controller::class, 'delete_snippet' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+
+        // Redirects.
+        register_rest_route( $namespace, '/redirects', [
+            'methods'             => 'GET',
+            'callback'            => [ Redirects_Controller::class, 'get_redirects' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/redirects', [
+            'methods'             => 'POST',
+            'callback'            => [ Redirects_Controller::class, 'create_redirect' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/redirects/(?P<id>\d+)', [
+            'methods'             => 'PUT',
+            'callback'            => [ Redirects_Controller::class, 'update_redirect' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/redirects/(?P<id>\d+)', [
+            'methods'             => 'DELETE',
+            'callback'            => [ Redirects_Controller::class, 'delete_redirect' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/redirects/export', [
+            'methods'             => 'POST',
+            'callback'            => [ Redirects_Controller::class, 'export_csv' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/redirects/download', [
+            'methods'             => 'GET',
+            'callback'            => [ Redirects_Controller::class, 'download_csv' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/redirects/import', [
+            'methods'             => 'POST',
+            'callback'            => [ Redirects_Controller::class, 'import_csv' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+
+        // Email / SMTP.
+        register_rest_route( $namespace, '/email/settings', [
+            'methods'             => 'GET',
+            'callback'            => [ Email_Controller::class, 'get_settings' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/email/settings', [
+            'methods'             => 'POST',
+            'callback'            => [ Email_Controller::class, 'save_settings' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/email/test', [
+            'methods'             => 'POST',
+            'callback'            => [ Email_Controller::class, 'send_test' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/email/log', [
+            'methods'             => 'GET',
+            'callback'            => [ Email_Controller::class, 'get_log' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/email/log/clear', [
+            'methods'             => 'DELETE',
+            'callback'            => [ Email_Controller::class, 'clear_log' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+
+        // Database Backup.
+        register_rest_route( $namespace, '/backup', [
+            'methods'             => 'GET',
+            'callback'            => [ Backup_Controller::class, 'list_backups' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/backup/create', [
+            'methods'             => 'POST',
+            'callback'            => [ Backup_Controller::class, 'create_backup' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/backup/download', [
+            'methods'             => 'POST',
+            'callback'            => [ Backup_Controller::class, 'download_backup' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/backup/serve', [
+            'methods'             => 'GET',
+            'callback'            => [ Backup_Controller::class, 'serve_backup' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/backup/delete', [
+            'methods'             => 'DELETE',
+            'callback'            => [ Backup_Controller::class, 'delete_backup' ],
             'permission_callback' => [ self::class, 'admin_permission' ],
         ] );
     }
