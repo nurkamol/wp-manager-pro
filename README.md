@@ -2,7 +2,7 @@
 
 > A comprehensive, agency-ready WordPress management suite — built with React 19, TypeScript, and the WordPress REST API.
 
-![Version](https://img.shields.io/badge/version-1.6.0-blue)
+![Version](https://img.shields.io/badge/version-1.7.0-blue)
 ![WordPress](https://img.shields.io/badge/WordPress-5.9%2B-21759b)
 ![PHP](https://img.shields.io/badge/PHP-7.4%2B-8892be)
 ![License](https://img.shields.io/badge/license-GPL--2.0%2B-green)
@@ -48,6 +48,16 @@
 All operations happen through a secured REST API (`wp-manager-pro/v1`) that requires the `manage_options` capability on every route.
 
 ---
+
+## What's New in v1.7.0
+
+| Feature | Description |
+|---------|-------------|
+| 🖥️ Monaco Editor in Snippets | Code Snippets create/edit dialog now uses the VS Code engine with syntax highlighting for PHP, CSS & JS |
+| ⏰ Scheduled Backups | Daily / weekly / monthly auto-backup via WP Cron with configurable retention limit — old files pruned automatically |
+| ⚙️ Server Config Generator | New card in Image Tools: copy-ready Nginx & Apache snippets for WebP serving, security headers, and browser cache rules |
+| 🏷️ White-label / Branding | New Settings page — customize plugin name, admin menu label, and sidebar logo URL |
+| 📋 Changelog & FAQ | Settings page now has inline version history accordion and FAQ tab with GitHub issue link |
 
 ## What's New in v1.6.0
 
@@ -216,12 +226,20 @@ All operations happen through a secured REST API (`wp-manager-pro/v1`) that requ
 - **v1.6.0** Replace Original with WebP — delete original after conversion and update attachment metadata
 - **v1.6.0** Auto-delete `.webp` / `.avif` sidecar files when the original attachment is deleted
 - **v1.6.0** Delete all converted sidecars per format with a single button
+- **v1.7.0** Server Config Generator — copy-ready Nginx & Apache snippets for WebP serving, security headers, and browser cache rules
+
+### Settings / Branding *(New in v1.7.0)*
+- White-label the plugin: set a custom Plugin Name, Admin Menu Label, and Sidebar Logo URL
+- Changes take effect immediately after saving and reloading the page
+- Inline **Changelog** tab — collapsible version history accordion with the current version highlighted
+- **FAQ** tab with 9 common questions and a direct link to open a GitHub issue
 
 ### Code Snippets *(New in v1.4.0)*
 - Run custom PHP, CSS, and JavaScript directly from the dashboard without editing files
 - PHP snippets execute on `init`; CSS outputs to `wp_head`; JS outputs to `wp_footer`
 - Per-snippet enable/disable toggle — no deletion required to disable
 - Stored in the custom `wp_wmp_snippets` database table
+- **v1.7.0** Monaco Editor (VS Code engine) in the create/edit dialog with syntax highlighting per snippet type
 
 ### Redirect Manager *(New in v1.4.0)*
 - Full 301/302/307/308 redirect CRUD with source → destination mapping
@@ -239,6 +257,7 @@ All operations happen through a secured REST API (`wp-manager-pro/v1`) that requ
 - Backup list with filename, size, and creation date
 - One-click download and delete
 - Stored in a protected `wp-content/wmp-backups/` directory
+- **v1.7.0** Scheduled Backups — daily / weekly / monthly auto-backup via WP Cron; configurable retain-last-N limit; oldest files pruned automatically after each run
 
 ### Audit Log *(New in v1.4.0)*
 - Tracks plugin, theme, user, and post events automatically
@@ -280,14 +299,14 @@ All operations happen through a secured REST API (`wp-manager-pro/v1`) that requ
 ## Installation
 
 ### From ZIP
-1. Download `wp-manager-pro-1.6.0.zip` from the [Releases](https://github.com/nurkamol/wp-manager-pro/releases) page.
+1. Download `wp-manager-pro-1.7.0.zip` from the [Releases](https://github.com/nurkamol/wp-manager-pro/releases) page.
 2. In WP Admin → **Plugins → Add New → Upload Plugin**.
 3. Upload the ZIP and click **Install Now**, then **Activate**.
 4. Navigate to **WP Manager** in the admin sidebar (or click **Open** in the Plugins list).
 
 ### Manual
 ```bash
-unzip wp-manager-pro-1.6.0.zip -d /path/to/wp-content/plugins/
+unzip wp-manager-pro-1.7.0.zip -d /path/to/wp-content/plugins/
 ```
 
 Then activate via WP Admin → **Plugins**.
@@ -318,17 +337,17 @@ npm run dev
 ```bash
 npm run build
 # Outputs:
-#   assets/build/index.js   (~688 kB, ~196 kB gzipped)
-#   assets/build/style.css  (~47 kB, ~9 kB gzipped)
+#   assets/build/index.js   (~709 kB, ~202 kB gzipped)
+#   assets/build/style.css  (~48 kB, ~9 kB gzipped)
 ```
 
 ### Package Plugin ZIP
 ```bash
 cd ..
-zip -r wp-manager-pro-1.6.0.zip \
+zip -r wp-manager-pro-1.7.0.zip \
   wp-manager-pro/wp-manager-pro.php \
   wp-manager-pro/includes/ \
-  wp-manager-pro/assets/
+  wp-manager-pro/assets/build/
 ```
 
 ---
@@ -455,6 +474,10 @@ All endpoints require a valid WordPress nonce in the `X-WP-Nonce` header.
 | POST | `/backup/download` | **v1.4.0** Prepare backup for download |
 | GET | `/backup/serve` | **v1.4.0** Stream backup file |
 | DELETE | `/backup/delete` | **v1.4.0** Delete backup |
+| GET | `/backup/schedule` | **v1.7.0** Get scheduled backup config |
+| POST | `/backup/schedule` | **v1.7.0** Save scheduled backup config |
+| GET | `/settings` | **v1.7.0** Get branding settings |
+| POST | `/settings` | **v1.7.0** Save branding settings |
 | GET | `/audit` | **v1.4.0** Audit log entries |
 | DELETE | `/audit/clear` | **v1.4.0** Clear audit log |
 | POST | `/audit/export` | **v1.4.0** Export audit log as CSV |
@@ -472,7 +495,7 @@ wp-manager-pro/
 │   ├── class-plugin.php            # Singleton bootstrap, hook registration
 │   ├── class-admin.php             # Admin menu, asset enqueuing, plugin links
 │   └── api/
-│       ├── class-routes.php        # REST route registration (55 endpoints)
+│       ├── class-routes.php        # REST route registration (63 endpoints)
 │       └── controllers/
 │           ├── class-dashboard-controller.php
 │           ├── class-plugins-controller.php
@@ -491,11 +514,12 @@ wp-manager-pro/
 │           ├── class-redirects-controller.php  # v1.4.0
 │           ├── class-email-controller.php      # v1.4.0
 │           ├── class-backup-controller.php     # v1.4.0
-│           └── class-audit-controller.php      # v1.4.0
+│           ├── class-audit-controller.php      # v1.4.0
+│           └── class-settings-controller.php   # v1.7.0
 ├── assets/
 │   └── build/
-│       ├── index.js                # Compiled React app (~688 kB, ~196 kB gzip)
-│       └── style.css               # Compiled styles (~47 kB, ~9 kB gzip)
+│       ├── index.js                # Compiled React app (~709 kB, ~202 kB gzip)
+│       └── style.css               # Compiled styles (~48 kB, ~9 kB gzip)
 ├── src/                            # React source (TypeScript)
 │   ├── main.tsx
 │   ├── index.css
@@ -529,7 +553,8 @@ wp-manager-pro/
 │       ├── Redirects.tsx           # v1.4.0
 │       ├── Email.tsx               # v1.4.0
 │       ├── Backup.tsx              # v1.4.0
-│       └── AuditLog.tsx            # v1.4.0
+│       ├── AuditLog.tsx            # v1.4.0
+│       └── Settings.tsx            # v1.7.0
 ├── releases/
 │   ├── v1.0.0.md
 │   ├── v1.1.0.md
@@ -537,7 +562,8 @@ wp-manager-pro/
 │   ├── v1.3.0.md
 │   ├── v1.4.0.md
 │   ├── v1.5.0.md
-│   └── v1.6.0.md
+│   ├── v1.6.0.md
+│   └── v1.7.0.md
 ├── vite.config.ts
 ├── tailwind.config.js
 ├── tsconfig.json
