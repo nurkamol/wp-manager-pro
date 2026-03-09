@@ -5,10 +5,12 @@ import {
   Server, Construction, Users, Bug, Image, StickyNote,
   ChevronLeft, ChevronRight, ExternalLink, Settings, RotateCcw,
   Sun, Moon, Shield, Activity, Code2, ArrowLeftRight, Mail, HardDrive,
+  PanelLeftClose, PanelLeftOpen,
 } from 'lucide-react'
 import { getConfig, getBranding } from '@/lib/api'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import type { Theme } from '@/hooks/useTheme'
+import { useWpAdminSidebar } from '@/hooks/useWpAdminSidebar'
 
 type NavItem = {
   to: string
@@ -84,6 +86,7 @@ interface SidebarProps {
 export function Sidebar({ collapsed, onToggle, theme, onToggleTheme }: SidebarProps) {
   const config = getConfig()
   const branding = getBranding()
+  const { hidden: wpSidebarHidden, toggle: toggleWpSidebar } = useWpAdminSidebar()
   const pluginName = branding.pluginName || 'WP Manager Pro'
   // Split: first word(s) = main label, last word = sub-badge (e.g. "WP Manager" + "Pro")
   const nameParts = pluginName.split(' ')
@@ -94,13 +97,13 @@ export function Sidebar({ collapsed, onToggle, theme, onToggleTheme }: SidebarPr
     <aside
       className={cn(
         'flex flex-col bg-slate-900 text-white transition-all duration-300 shrink-0',
-        collapsed ? 'w-16' : 'w-60'
+        collapsed ? 'w-14' : 'w-60'
       )}
     >
       {/* Logo / Header */}
       <div className={cn(
         'flex items-center h-14 border-b border-slate-700/50 shrink-0',
-        collapsed ? 'justify-center' : 'px-4 justify-between'
+        collapsed ? 'justify-center px-0' : 'px-4 justify-between'
       )}>
         {!collapsed && (
           <div className="flex items-center gap-2.5">
@@ -127,36 +130,47 @@ export function Sidebar({ collapsed, onToggle, theme, onToggleTheme }: SidebarPr
             <ChevronRight className="w-4 h-4 text-white" />
           </button>
         ) : (
-          <button
-            onClick={onToggle}
-            title="Collapse sidebar"
-            className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-700/50 transition-colors"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-0.5">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={toggleWpSidebar}
+                  className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-700/50 transition-colors"
+                >
+                  {wpSidebarHidden
+                    ? <PanelLeftOpen className="w-4 h-4" />
+                    : <PanelLeftClose className="w-4 h-4" />}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-xs">
+                {wpSidebarHidden ? 'Show WP menu' : 'Hide WP menu'}
+              </TooltipContent>
+            </Tooltip>
+            <button
+              onClick={onToggle}
+              title="Collapse sidebar"
+              className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-700/50 transition-colors"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+          </div>
         )}
       </div>
 
       {/* Navigation */}
       <nav className="flex-1 py-2 overflow-y-auto">
         {navGroups.map((group, gi) => (
-          <div key={gi}>
-            {/* Group separator */}
-            {gi > 0 && (
-              collapsed ? (
-                <div className="mx-2 my-1.5 h-px bg-slate-700/50" />
-              ) : (
-                group.label && (
-                  <div className="px-4 pt-3 pb-0.5">
-                    <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">
-                      {group.label}
-                    </span>
-                  </div>
-                )
-              )
+          <div key={gi} className={cn(gi > 0 && (collapsed ? 'mt-4' : ''))}>
+            {/* Group label (expanded only) */}
+            {!collapsed && gi > 0 && group.label && (
+              <div className="px-4 pt-3 pb-0.5">
+                <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">
+                  {group.label}
+                </span>
+              </div>
             )}
 
-            <ul className={cn(collapsed ? 'space-y-0.5 px-1' : 'space-y-0.5 px-2')}>
+            <ul className={cn(collapsed ? 'space-y-1 px-2' : 'space-y-0.5 px-2')}>
               {group.items.map((item) => (
                 <li key={item.to}>
                   {collapsed ? (
@@ -167,14 +181,14 @@ export function Sidebar({ collapsed, onToggle, theme, onToggleTheme }: SidebarPr
                           end={item.end}
                           className={({ isActive }) =>
                             cn(
-                              'flex items-center justify-center w-full h-10 rounded-md transition-colors',
+                              'flex items-center justify-center w-full h-8 rounded-md transition-colors border',
                               isActive
-                                ? 'bg-blue-600 text-white'
-                                : 'text-slate-400 hover:text-white hover:bg-slate-700/60'
+                                ? 'bg-blue-600 border-blue-500 text-white'
+                                : 'bg-slate-800/70 border-slate-700/50 text-slate-400 hover:text-white hover:bg-slate-700/80 hover:border-slate-600'
                             )
                           }
                         >
-                          <item.icon className="w-[22px] h-[22px]" />
+                          <item.icon className="w-[18px] h-[18px]" />
                         </NavLink>
                       </TooltipTrigger>
                       <TooltipContent side="right" className="text-xs">
@@ -247,12 +261,40 @@ export function Sidebar({ collapsed, onToggle, theme, onToggleTheme }: SidebarPr
           </div>
         </div>
       ) : (
-        <div className="p-1.5 border-t border-slate-700/50 shrink-0 flex flex-col items-center gap-1">
+        <div className="pb-3 border-t border-slate-700/50 shrink-0 flex flex-col items-center gap-1 pt-2">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <img
+                src={config.user.avatar}
+                alt={config.user.name}
+                className="w-7 h-7 rounded-full border border-slate-600 cursor-pointer"
+              />
+            </TooltipTrigger>
+            <TooltipContent side="right" className="text-xs">
+              <p className="font-medium">{config.user.name}</p>
+              <p className="text-muted-foreground">{config.user.email}</p>
+            </TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={toggleWpSidebar}
+                className="p-1.5 rounded-md text-slate-400 hover:text-white hover:bg-slate-700/50 transition-colors"
+              >
+                {wpSidebarHidden
+                  ? <PanelLeftOpen className="w-4 h-4" />
+                  : <PanelLeftClose className="w-4 h-4" />}
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right" className="text-xs">
+              {wpSidebarHidden ? 'Show WP menu' : 'Hide WP menu'}
+            </TooltipContent>
+          </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
               <button
                 onClick={onToggleTheme}
-                className="p-2 rounded-md text-slate-400 hover:text-white hover:bg-slate-700/50 transition-colors"
+                className="p-1.5 rounded-md text-slate-400 hover:text-white hover:bg-slate-700/50 transition-colors"
                 aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
               >
                 {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}

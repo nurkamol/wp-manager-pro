@@ -21,6 +21,14 @@ interface BrandingSettings {
 // ── Changelog data ─────────────────────────────────────────────────────────────
 const changelog: { version: string; date: string; features: string[] }[] = [
   {
+    version: '1.8.0',
+    date: '2026-03-10',
+    features: [
+      'Sidebar redesign — icon-rail collapsed mode with visible button boxes, group spacing, and user avatar in footer',
+      'WP Admin menu toggle — hide / show the WordPress main navigation menu from within the plugin UI, state persisted in localStorage',
+    ],
+  },
+  {
     version: '1.7.0',
     date: '2026-03-09',
     features: [
