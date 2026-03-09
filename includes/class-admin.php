@@ -97,7 +97,17 @@ class Admin {
             ] );
         }
 
+        // Suppress third-party admin notices on our full-screen page.
+        // remove_all_actions clears callbacks already registered by the time
+        // admin_enqueue_scripts fires (covers admin_init / early-registered notices).
+        remove_all_actions( 'admin_notices' );
+        remove_all_actions( 'all_admin_notices' );
+        remove_all_actions( 'network_admin_notices' );
+        remove_all_actions( 'user_admin_notices' );
+
         // Remove conflicting admin styles to give our app full control.
+        // The notice CSS below catches anything registered after this point
+        // (e.g. plugins that hook admin_head to add notices).
         add_action( 'admin_head', function() {
             echo '<style>
                 #wpcontent { padding-left: 0 !important; }
@@ -106,6 +116,18 @@ class Admin {
                 .wp-manager-pro-page #wpbody { padding: 0 !important; }
                 #wpfooter { display: none; }
                 #wpwrap { background: #f0f2f5; }
+
+                /* Hide any notice that slips through after admin_enqueue_scripts */
+                body.toplevel_page_wp-manager-pro .notice,
+                body.toplevel_page_wp-manager-pro .notice-warning,
+                body.toplevel_page_wp-manager-pro .notice-error,
+                body.toplevel_page_wp-manager-pro .notice-info,
+                body.toplevel_page_wp-manager-pro .notice-success,
+                body.toplevel_page_wp-manager-pro div.error,
+                body.toplevel_page_wp-manager-pro div.updated,
+                body.toplevel_page_wp-manager-pro .update-nag {
+                    display: none !important;
+                }
             </style>';
         } );
     }
