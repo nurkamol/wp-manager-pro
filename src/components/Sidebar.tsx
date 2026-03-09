@@ -144,7 +144,7 @@ export function Sidebar({ collapsed, onToggle, theme, onToggleTheme }: SidebarPr
             {/* Group separator */}
             {gi > 0 && (
               collapsed ? (
-                <div className="mx-3 my-1.5 h-px bg-slate-700/50" />
+                <div className="mx-2 my-1.5 h-px bg-slate-700/50" />
               ) : (
                 group.label && (
                   <div className="px-4 pt-3 pb-0.5">
@@ -156,7 +156,7 @@ export function Sidebar({ collapsed, onToggle, theme, onToggleTheme }: SidebarPr
               )
             )}
 
-            <ul className={cn(collapsed ? 'space-y-0.5 px-2' : 'space-y-0.5 px-2')}>
+            <ul className={cn(collapsed ? 'space-y-0.5 px-1' : 'space-y-0.5 px-2')}>
               {group.items.map((item) => (
                 <li key={item.to}>
                   {collapsed ? (
