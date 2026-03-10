@@ -110,3 +110,4 @@ Have a feature request or want to vote on a backlog item? [Open an issue](https:
 
 [2.1.0]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v2.1.0
 [2.2.0]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v2.2.0
+[2.3.0]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v2.3.0

@@ -59,11 +59,13 @@ All operations happen through a secured REST API (`wp-manager-pro/v1`) that requ
 
 ## What's New in v2.3.0 — Content Tools
 
-- **Bulk Post Editor** — filter posts by type/status/search, select multiple, bulk-update status, author, or publish date
-- **Post Duplicator** — clone any post/page/CPT as a draft; options: copy meta, taxonomies, featured image
-- **Scheduled Post Manager** — list all future-scheduled content with live countdown; overdue posts highlighted
-- **Options Table Editor** — browse, search, and edit `wp_options` rows with type detection and serialized-data support
-- 10 new REST endpoints under `/content/*`
+| Feature | Description |
+|---------|-------------|
+| 📝 Bulk Post Editor | Filter by type/status/search; checkbox multi-select; bulk-update status, author, or publish date across many posts at once |
+| 📋 Post Duplicator | Clone any post/page/CPT as a new draft; options to copy post meta, taxonomies/categories, and featured image |
+| 📅 Scheduled Posts | List all future-scheduled content across post types with live time-until countdown; overdue posts highlighted in red |
+| ⚙️ Options Editor | Paginated, searchable `wp_options` browser; type detection (string/integer/JSON/serialized); inline edit + delete with protected-key guard |
+| 10 new endpoints | `GET /content/post-types`, `GET /content/authors`, `GET/POST /content/posts`, `POST /content/posts/bulk-edit`, `POST /content/posts/duplicate`, `GET /content/scheduled`, `GET/POST/DELETE /content/options`, `GET /content/options/{name}` |
 
 ---
 
