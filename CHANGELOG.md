@@ -7,6 +7,32 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [2.2.0] — 2026-03-11
+
+### Added
+- **Media Manager page** — 5-tab dedicated page for media library cleanup and maintenance
+- **Overview tab** — stats cards: total attachments, uploads folder size, orphaned count, unused count, duplicate groups; "What Each Section Does" guide
+- **Orphaned tab** — lists attachments whose physical file is missing from disk; bulk-select and delete via `wp_delete_attachment`
+- **Unused tab** — lists attachments with `post_parent = 0` not used as a featured image and not referenced in any published post content; shows thumbnail, file size, bulk delete
+- **Duplicates tab** — groups attachments by MD5 file hash; shows wasted space per group; one-click delete of individual duplicates (keeps oldest)
+- **Compress tab** — re-compress JPEG and PNG attachments via `wp_get_image_editor`; adjustable quality slider (40–100); shows before/after size and savings
+- `Images` icon added to sidebar Tools group for Media Manager
+
+### API
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/media/overview` | Summary stats: totals, size, orphaned/unused/duplicate counts |
+| GET | `/media/orphaned` | List attachments with missing physical files |
+| DELETE | `/media/orphaned` | Bulk delete orphaned attachments by ID array |
+| GET | `/media/unused` | List unattached, unreferenced attachments with thumbnails |
+| DELETE | `/media/unused` | Bulk delete unused attachments by ID array |
+| GET | `/media/duplicates` | Group attachments by MD5 hash; returns wasted-space totals |
+| DELETE | `/media/duplicate` | Delete a single duplicate attachment |
+| GET | `/media/compress-candidates` | List JPEG/PNG attachments with file sizes |
+| POST | `/media/compress` | Re-compress one attachment; returns before/after sizes |
+
+---
+
 ## [2.1.0] — 2026-03-10
 
 ### Added
@@ -546,4 +572,5 @@ First public release of WP Manager Pro — a comprehensive, agency-ready WordPre
 [1.1.0]: https://github.com/nurkamol/wp-manager-pro/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v1.0.0
 
+[2.2.0]: https://github.com/nurkamol/wp-manager-pro/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/nurkamol/wp-manager-pro/compare/v2.0.0...v2.1.0

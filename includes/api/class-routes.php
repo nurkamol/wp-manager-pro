@@ -24,6 +24,7 @@ use WP_Manager_Pro\API\Controllers\Settings_Controller;
 use WP_Manager_Pro\API\Controllers\Performance_Controller;
 use WP_Manager_Pro\API\Controllers\Security_Controller;
 use WP_Manager_Pro\API\Controllers\Cron_Controller;
+use WP_Manager_Pro\API\Controllers\Media_Controller;
 
 class Routes {
 
@@ -688,6 +689,53 @@ class Routes {
         register_rest_route( $namespace, '/cron/health', [
             'methods'             => 'GET',
             'callback'            => [ Cron_Controller::class, 'get_health' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+
+        // Media Manager (v2.2.0).
+        register_rest_route( $namespace, '/media/overview', [
+            'methods'             => 'GET',
+            'callback'            => [ Media_Controller::class, 'get_overview' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/media/orphaned', [
+            'methods'             => 'GET',
+            'callback'            => [ Media_Controller::class, 'get_orphaned' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/media/orphaned', [
+            'methods'             => 'DELETE',
+            'callback'            => [ Media_Controller::class, 'delete_orphaned' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/media/unused', [
+            'methods'             => 'GET',
+            'callback'            => [ Media_Controller::class, 'get_unused' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/media/unused', [
+            'methods'             => 'DELETE',
+            'callback'            => [ Media_Controller::class, 'delete_unused' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/media/duplicates', [
+            'methods'             => 'GET',
+            'callback'            => [ Media_Controller::class, 'get_duplicates' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/media/duplicate', [
+            'methods'             => 'DELETE',
+            'callback'            => [ Media_Controller::class, 'delete_duplicate' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/media/compress-candidates', [
+            'methods'             => 'GET',
+            'callback'            => [ Media_Controller::class, 'get_compress_candidates' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/media/compress', [
+            'methods'             => 'POST',
+            'callback'            => [ Media_Controller::class, 'compress_image' ],
             'permission_callback' => [ self::class, 'admin_permission' ],
         ] );
 

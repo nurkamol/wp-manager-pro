@@ -2,7 +2,7 @@
 
 > A comprehensive, agency-ready WordPress management suite — built with React 19, TypeScript, and the WordPress REST API.
 
-![Version](https://img.shields.io/badge/version-2.1.0-blue)
+![Version](https://img.shields.io/badge/version-2.2.0-blue)
 ![WordPress](https://img.shields.io/badge/WordPress-5.9%2B-21759b)
 ![PHP](https://img.shields.io/badge/PHP-7.4%2B-8892be)
 ![License](https://img.shields.io/badge/license-GPL--2.0%2B-green)
@@ -39,9 +39,13 @@
 |---------|---------|
 | ![Security](screenshots/13-security.png) | ![Settings](screenshots/14-settings.png) |
 
-| Cron Manager | Notes |
-|-------------|-------|
-| ![Cron Manager](screenshots/16-cron-manager.png) | ![Notes](screenshots/10-notes.png) |
+| Cron Manager | Media Manager |
+|-------------|--------------|
+| ![Cron Manager](screenshots/16-cron-manager.png) | ![Media Manager](screenshots/17-media-manager.png) |
+
+| Notes | |
+|-------|--|
+| ![Notes](screenshots/10-notes.png) | |
 
 ---
 
@@ -50,6 +54,19 @@
 **WP Manager Pro** replaces the need for multiple separate admin plugins by providing a single, fast, modern interface for managing every critical aspect of a WordPress site. It ships as a standard WordPress plugin — install it, activate it, and a full React-powered control panel appears under your WP Admin menu.
 
 All operations happen through a secured REST API (`wp-manager-pro/v1`) that requires the `manage_options` capability on every route.
+
+---
+
+## What's New in v2.2.0 — Media Manager
+
+| Feature | Description |
+|---------|-------------|
+| 🖼️ Overview | Stats cards: total attachments, uploads folder size, orphaned/unused/duplicate counts |
+| ⚠️ Orphaned | Attachments whose physical file is missing from disk — bulk-select and delete |
+| 🗂️ Unused | Attachments not used as featured images and not referenced in post content — thumbnails, file sizes, bulk delete |
+| 🔁 Duplicates | Groups by MD5 hash — shows wasted space per group; one-click delete of duplicate copies |
+| 🗜️ Compress | Re-compress JPEG/PNG in-place via `wp_get_image_editor`; adjustable quality slider; before/after size display |
+| 9 new endpoints | `GET/DELETE /media/orphaned`, `GET/DELETE /media/unused`, `GET /media/duplicates`, `DELETE /media/duplicate`, `GET /media/compress-candidates`, `POST /media/compress`, `GET /media/overview` |
 
 ---
 
@@ -358,6 +375,20 @@ Three-tab page for full WP-Cron control:
 - Status cards: WP-Cron enabled/disabled (`DISABLE_WP_CRON`), overdue event count (with detail list), lock timeout (`WP_CRON_LOCK_TIMEOUT`), alternate cron (`ALTERNATE_WP_CRON`)
 - Real Cron Setup guide: `wp-config.php` snippet, server crontab command (site URL pre-filled), WP-CLI command
 
+### Media Manager *(New in v2.2.0)*
+
+Five-tab page for media library cleanup and maintenance:
+
+**Overview Tab** — stats cards: total attachments, uploads folder size, orphaned/unused/duplicate counts; "What Each Section Does" guide
+
+**Orphaned Tab** — lists attachments whose physical file is missing from disk; bulk-select checkboxes; delete via `wp_delete_attachment`
+
+**Unused Tab** — lists unattached attachments not used as featured images and not referenced in any published post content; thumbnail previews, file sizes, total MB indicator, bulk delete
+
+**Duplicates Tab** — groups files by MD5 hash; shows wasted space per group and total wasted; one-click delete of duplicate copies (oldest kept as original)
+
+**Compress Tab** — re-compresses JPEG and PNG files in-place via `wp_get_image_editor`; adjustable quality slider (40–100, default 82); displays before size, after size, bytes saved, and percentage saved
+
 ### Notes
 - Color-coded, persistent note-taking (stored in a custom `wp_wmp_notes` table)
 - Create, edit, delete notes with 6 color options
@@ -546,6 +577,15 @@ All endpoints require a valid WordPress nonce in the `X-WP-Nonce` header.
 | POST | `/cron/schedules` | **v2.1.0** Create a custom schedule |
 | DELETE | `/cron/schedules` | **v2.1.0** Delete a custom schedule |
 | GET | `/cron/health` | **v2.1.0** Cron health status and real-cron hints |
+| GET | `/media/overview` | **v2.2.0** Stats: total attachments, uploads size, orphaned/unused/duplicate counts |
+| GET | `/media/orphaned` | **v2.2.0** List attachments with missing physical files |
+| DELETE | `/media/orphaned` | **v2.2.0** Bulk delete orphaned attachments by ID array |
+| GET | `/media/unused` | **v2.2.0** List unattached, unreferenced attachments with thumbnails |
+| DELETE | `/media/unused` | **v2.2.0** Bulk delete unused attachments by ID array |
+| GET | `/media/duplicates` | **v2.2.0** Group attachments by MD5 hash; returns wasted-space totals |
+| DELETE | `/media/duplicate` | **v2.2.0** Delete a single duplicate attachment |
+| GET | `/media/compress-candidates` | **v2.2.0** List JPEG/PNG attachments with file sizes |
+| POST | `/media/compress` | **v2.2.0** Re-compress one attachment; returns before/after sizes |
 | GET | `/security/overview` | **v2.0.0** All security feature states in one call |
 | POST | `/security/limiter` | **v2.0.0** Save login limiter settings |
 | GET | `/security/lockouts` | **v2.0.0** List lockout log entries |
@@ -603,7 +643,7 @@ wp-manager-pro/
 │   ├── class-plugin.php            # Singleton bootstrap, hook registration
 │   ├── class-admin.php             # Admin menu, asset enqueuing, plugin links
 │   └── api/
-│       ├── class-routes.php        # REST route registration (87 endpoints)
+│       ├── class-routes.php        # REST route registration (96 endpoints)
 │       └── controllers/
 │           ├── class-dashboard-controller.php
 │           ├── class-plugins-controller.php
@@ -624,11 +664,12 @@ wp-manager-pro/
 │           ├── class-backup-controller.php     # v1.4.0
 │           ├── class-audit-controller.php      # v1.4.0
 │           ├── class-settings-controller.php   # v1.8.0
-│           └── class-cron-controller.php       # v2.1.0
+│           ├── class-cron-controller.php       # v2.1.0
+│           └── class-media-controller.php      # v2.2.0
 ├── assets/
 │   └── build/
-│       ├── index.js                # Compiled React app (~773 kB, ~216 kB gzip)
-│       └── style.css               # Compiled styles (~48 kB, ~9 kB gzip)
+│       ├── index.js                # Compiled React app (~793 kB, ~220 kB gzip)
+│       └── style.css               # Compiled styles (~52 kB, ~9 kB gzip)
 ├── src/                            # React source (TypeScript)
 │   ├── main.tsx
 │   ├── index.css
@@ -659,6 +700,7 @@ wp-manager-pro/
 │       ├── Reset.tsx
 │       ├── Security.tsx            # v1.3.0 → v2.0.0 Security Suite
 │       ├── Cron.tsx                # v2.1.0 Cron Manager
+│       ├── MediaManager.tsx        # v2.2.0 Media Manager
 │       ├── Snippets.tsx            # v1.4.0
 │       ├── Redirects.tsx           # v1.4.0
 │       ├── Email.tsx               # v1.4.0

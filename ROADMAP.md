@@ -2,7 +2,7 @@
 
 This document outlines the planned feature development for WP Manager Pro. Releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Minor versions (`1.x.0`) add new features; patch versions (`1.x.y`) deliver bug fixes and polish.
 
-> **Current version:** 2.1.0 — last updated 2026-03-10
+> **Current version:** 2.2.0 — last updated 2026-03-11
 
 ---
 
@@ -22,21 +22,11 @@ This document outlines the planned feature development for WP Manager Pro. Relea
 | [1.9.0] | Performance page: DB Cleanup, Transient Manager, Object Cache Status |
 | [2.0.0] | Security Suite: Login Limiter, Lockout Log, IP Blocklist, XML-RPC disable, Hide WP Version, File Integrity Check, TOTP 2FA |
 | [2.1.0] | Cron Manager: Event Browser, Manual Trigger, Delete Events, Custom Schedules, Cron Health tab with real-cron setup guide |
+| [2.2.0] | Media Manager: Orphaned finder, Unused bulk delete, Duplicate detector (MD5), JPEG/PNG compression — 9 new REST endpoints |
 
 ---
 
 ## 🔜 Upcoming
-
-### v2.2.0 — Media Manager
-*Focus: keep the media library clean and lean*
-
-- **Orphaned Media Finder** — find attachments whose physical files are missing, and physical files that have no attachment record
-- **Bulk Delete Unused Media** — identify and delete attachments not referenced by any post, page, or custom post type meta
-- **Duplicate Media Detector** — find identical files using MD5/SHA1 file hashes; merge references and delete duplicates
-- **Image Compression** — lossless re-compression of existing JPEG/PNG files without format conversion; displays before/after file size
-- **Attachment Folder Organisation** — view and reorganise the `uploads/` directory by year/month with drag-and-drop
-
----
 
 ### v2.3.0 — Content Tools
 *Focus: bulk content management without leaving WP Manager Pro*
@@ -128,3 +118,4 @@ Have a feature request or want to vote on a backlog item? [Open an issue](https:
 [2.0.0]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v2.0.0
 
 [2.1.0]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v2.1.0
+[2.2.0]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v2.2.0

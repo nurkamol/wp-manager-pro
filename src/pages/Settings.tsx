@@ -21,6 +21,18 @@ interface BrandingSettings {
 // ── Changelog data ─────────────────────────────────────────────────────────────
 const changelog: { version: string; date: string; features: string[] }[] = [
   {
+    version: '2.2.0',
+    date: '2026-03-11',
+    features: [
+      'Media Manager — 5-tab page for media library cleanup (Overview, Orphaned, Unused, Duplicates, Compress)',
+      'Orphaned finder — lists attachments with missing physical files; bulk delete',
+      'Unused media — lists unattached attachments not referenced in post content; shows thumbnails + file sizes; bulk delete',
+      'Duplicate detector — groups by MD5 hash; shows wasted space per group; one-click delete of duplicate copies',
+      'Image Compress tab — re-compress JPEG/PNG via wp_get_image_editor; adjustable quality (40–100); before/after size display',
+      '9 new REST endpoints under /media/*',
+    ],
+  },
+  {
     version: '2.1.0',
     date: '2026-03-10',
     features: [

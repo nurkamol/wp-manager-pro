@@ -5,7 +5,7 @@ import {
   Server, Construction, Users, Bug, Image, StickyNote,
   ChevronLeft, ChevronRight, ExternalLink, Settings, RotateCcw,
   Sun, Moon, Shield, Activity, Code2, ArrowLeftRight, Mail, HardDrive,
-  PanelLeftClose, PanelLeftOpen, Gauge, Clock,
+  PanelLeftClose, PanelLeftOpen, Gauge, Clock, Images,
 } from 'lucide-react'
 import { getConfig, getBranding } from '@/lib/api'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -53,6 +53,7 @@ const navGroups: NavGroup[] = [
       { to: '/maintenance', icon: Construction, label: 'Maintenance' },
       { to: '/debug', icon: Bug, label: 'Debug Tools' },
       { to: '/images', icon: Image, label: 'Image Tools' },
+      { to: '/media-manager', icon: Images, label: 'Media Manager' },
       { to: '/performance', icon: Gauge, label: 'Performance' },
       { to: '/cron', icon: Clock, label: 'Cron Manager' },
       { to: '/notes', icon: StickyNote, label: 'Notes' },
