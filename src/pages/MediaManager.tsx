@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
+import { PageHeader } from '@/components/PageHeader'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -612,30 +613,29 @@ function CompressTab() {
 
 export function MediaManager() {
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Images className="w-6 h-6 text-blue-500" />
-        <div>
-          <h1 className="text-2xl font-bold">Media Manager</h1>
-          <p className="text-sm text-muted-foreground">Clean up your media library — orphaned files, unused attachments, duplicates, and compression</p>
-        </div>
+    <div className="fade-in">
+      <PageHeader
+        title="Media Manager"
+        description="Clean up your media library — orphaned files, unused attachments, duplicates, and compression"
+      />
+
+      <div className="p-6 space-y-6">
+        <Tabs defaultValue="overview">
+          <TabsList className="mb-4">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="orphaned">Orphaned</TabsTrigger>
+            <TabsTrigger value="unused">Unused</TabsTrigger>
+            <TabsTrigger value="duplicates">Duplicates</TabsTrigger>
+            <TabsTrigger value="compress">Compress</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview"><OverviewTab /></TabsContent>
+          <TabsContent value="orphaned"><OrphanedTab /></TabsContent>
+          <TabsContent value="unused"><UnusedTab /></TabsContent>
+          <TabsContent value="duplicates"><DuplicatesTab /></TabsContent>
+          <TabsContent value="compress"><CompressTab /></TabsContent>
+        </Tabs>
       </div>
-
-      <Tabs defaultValue="overview">
-        <TabsList className="mb-4">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="orphaned">Orphaned</TabsTrigger>
-          <TabsTrigger value="unused">Unused</TabsTrigger>
-          <TabsTrigger value="duplicates">Duplicates</TabsTrigger>
-          <TabsTrigger value="compress">Compress</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="overview"><OverviewTab /></TabsContent>
-        <TabsContent value="orphaned"><OrphanedTab /></TabsContent>
-        <TabsContent value="unused"><UnusedTab /></TabsContent>
-        <TabsContent value="duplicates"><DuplicatesTab /></TabsContent>
-        <TabsContent value="compress"><CompressTab /></TabsContent>
-      </Tabs>
     </div>
   )
 }
