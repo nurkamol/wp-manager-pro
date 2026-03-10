@@ -2,7 +2,7 @@
 
 > A comprehensive, agency-ready WordPress management suite — built with React 19, TypeScript, and the WordPress REST API.
 
-![Version](https://img.shields.io/badge/version-2.0.0-blue)
+![Version](https://img.shields.io/badge/version-2.1.0-blue)
 ![WordPress](https://img.shields.io/badge/WordPress-5.9%2B-21759b)
 ![PHP](https://img.shields.io/badge/PHP-7.4%2B-8892be)
 ![License](https://img.shields.io/badge/license-GPL--2.0%2B-green)
@@ -39,9 +39,9 @@
 |---------|---------|
 | ![Security](screenshots/13-security.png) | ![Settings](screenshots/14-settings.png) |
 
-| Notes | |
-|-------|--|
-| ![Notes](screenshots/10-notes.png) | |
+| Cron Manager | Notes |
+|-------------|-------|
+| ![Cron Manager](screenshots/16-cron-manager.png) | ![Notes](screenshots/10-notes.png) |
 
 ---
 
@@ -52,6 +52,17 @@
 All operations happen through a secured REST API (`wp-manager-pro/v1`) that requires the `manage_options` capability on every route.
 
 ---
+
+## What's New in v2.1.0 — WP-Cron Manager
+
+| Feature | Description |
+|---------|-------------|
+| 🕐 Event Browser | Full list of scheduled cron events sorted by next-run time; hook name, core badge, arg count, colour-coded urgency |
+| ▶️ Manual Trigger | Run any cron event on demand; captures output buffer and wall-clock duration (ms) |
+| 🗑️ Delete Events | Remove stuck or orphaned custom events; core WordPress events are protected (run-only) |
+| 📅 Custom Schedules | Register new recurrence intervals from the UI (key + display name + interval ≥ 60s); persisted in `wp_options` |
+| 🩺 Cron Health | Status cards for WP-Cron enabled/disabled, overdue event count, lock timeout, alternate cron; lists overdue events |
+| 🖥️ Real Cron Guide | Inline setup instructions: `wp-config.php` snippet, server crontab command (site URL pre-filled), WP-CLI command |
 
 ## What's New in v2.0.0 — Security Suite
 
@@ -327,6 +338,26 @@ Five-tab Security Suite covering every major attack surface:
 - 8 one-time backup codes generated on first verification (shown once, stored as MD5 hashes)
 - Per-user enable/disable; 100% native PHP — no Composer dependencies
 
+### Cron Manager *(New in v2.1.0)*
+
+Three-tab page for full WP-Cron control:
+
+**Events Tab**
+- Complete list of all scheduled cron events sorted by next-run timestamp
+- Colour-coded next-run times: green (future), amber (< 5 min), red (overdue)
+- `core` badge on WordPress core events; argument count badge on events with args
+- **Manual Trigger** — run any event on demand; captures output and execution time in an inline result banner
+- **Delete** custom (non-core) events with one click
+
+**Schedules Tab**
+- Lists all registered schedules (built-in + custom) with key, display name, and interval (human + raw seconds)
+- **Add Custom Schedule** form: key (snake_case), display name, interval in seconds (minimum 60)
+- Delete custom schedules; built-in WordPress schedules are protected
+
+**Health Tab**
+- Status cards: WP-Cron enabled/disabled (`DISABLE_WP_CRON`), overdue event count (with detail list), lock timeout (`WP_CRON_LOCK_TIMEOUT`), alternate cron (`ALTERNATE_WP_CRON`)
+- Real Cron Setup guide: `wp-config.php` snippet, server crontab command (site URL pre-filled), WP-CLI command
+
 ### Notes
 - Color-coded, persistent note-taking (stored in a custom `wp_wmp_notes` table)
 - Create, edit, delete notes with 6 color options
@@ -355,14 +386,14 @@ Five-tab Security Suite covering every major attack surface:
 ## Installation
 
 ### From ZIP
-1. Download `wp-manager-pro-v2.0.0.zip` from the [Releases](https://github.com/nurkamol/wp-manager-pro/releases) page.
+1. Download `wp-manager-pro-v2.1.0.zip` from the [Releases](https://github.com/nurkamol/wp-manager-pro/releases) page.
 2. In WP Admin → **Plugins → Add New → Upload Plugin**.
 3. Upload the ZIP and click **Install Now**, then **Activate**.
 4. Navigate to **WP Manager** in the admin sidebar (or click **Open** in the Plugins list).
 
 ### Manual
 ```bash
-unzip wp-manager-pro-v2.0.0.zip -d /path/to/wp-content/plugins/
+unzip wp-manager-pro-v2.1.0.zip -d /path/to/wp-content/plugins/
 ```
 
 Then activate via WP Admin → **Plugins**.
@@ -393,14 +424,14 @@ npm run dev
 ```bash
 npm run build
 # Outputs:
-#   assets/build/index.js   (~747 kB, ~208 kB gzipped)
+#   assets/build/index.js   (~773 kB, ~216 kB gzipped)
 #   assets/build/style.css  (~51 kB, ~9 kB gzipped)
 ```
 
 ### Package Plugin ZIP
 ```bash
 cd ..
-zip -r wp-manager-pro-v2.0.0.zip \
+zip -r wp-manager-pro-v2.1.0.zip \
   wp-manager-pro/wp-manager-pro.php \
   wp-manager-pro/includes/ \
   wp-manager-pro/assets/build/
@@ -508,6 +539,13 @@ All endpoints require a valid WordPress nonce in the `X-WP-Nonce` header.
 | GET | `/security` | **v1.3.0** Admin URL protection status |
 | POST | `/security/admin-url` | **v1.3.0** Enable/update custom login slug |
 | DELETE | `/security/admin-url` | **v1.3.0** Disable admin URL protection |
+| GET | `/cron/events` | **v2.1.0** List all scheduled cron events |
+| POST | `/cron/run` | **v2.1.0** Trigger a cron event immediately |
+| DELETE | `/cron/event` | **v2.1.0** Delete / unschedule a cron event |
+| GET | `/cron/schedules` | **v2.1.0** List all registered schedules |
+| POST | `/cron/schedules` | **v2.1.0** Create a custom schedule |
+| DELETE | `/cron/schedules` | **v2.1.0** Delete a custom schedule |
+| GET | `/cron/health` | **v2.1.0** Cron health status and real-cron hints |
 | GET | `/security/overview` | **v2.0.0** All security feature states in one call |
 | POST | `/security/limiter` | **v2.0.0** Save login limiter settings |
 | GET | `/security/lockouts` | **v2.0.0** List lockout log entries |
@@ -565,7 +603,7 @@ wp-manager-pro/
 │   ├── class-plugin.php            # Singleton bootstrap, hook registration
 │   ├── class-admin.php             # Admin menu, asset enqueuing, plugin links
 │   └── api/
-│       ├── class-routes.php        # REST route registration (80 endpoints)
+│       ├── class-routes.php        # REST route registration (87 endpoints)
 │       └── controllers/
 │           ├── class-dashboard-controller.php
 │           ├── class-plugins-controller.php
@@ -585,10 +623,11 @@ wp-manager-pro/
 │           ├── class-email-controller.php      # v1.4.0
 │           ├── class-backup-controller.php     # v1.4.0
 │           ├── class-audit-controller.php      # v1.4.0
-│           └── class-settings-controller.php   # v1.8.0
+│           ├── class-settings-controller.php   # v1.8.0
+│           └── class-cron-controller.php       # v2.1.0
 ├── assets/
 │   └── build/
-│       ├── index.js                # Compiled React app (~747 kB, ~208 kB gzip)
+│       ├── index.js                # Compiled React app (~773 kB, ~216 kB gzip)
 │       └── style.css               # Compiled styles (~48 kB, ~9 kB gzip)
 ├── src/                            # React source (TypeScript)
 │   ├── main.tsx
@@ -619,6 +658,7 @@ wp-manager-pro/
 │       ├── Notes.tsx
 │       ├── Reset.tsx
 │       ├── Security.tsx            # v1.3.0 → v2.0.0 Security Suite
+│       ├── Cron.tsx                # v2.1.0 Cron Manager
 │       ├── Snippets.tsx            # v1.4.0
 │       ├── Redirects.tsx           # v1.4.0
 │       ├── Email.tsx               # v1.4.0
@@ -635,7 +675,8 @@ wp-manager-pro/
 │   ├── v1.6.0.md
 │   ├── v1.8.0.md
 │   ├── v1.9.0.md
-│   └── v2.0.0.md
+│   ├── v2.0.0.md
+│   └── v2.1.0.md
 ├── vite.config.ts
 ├── tailwind.config.js
 ├── tsconfig.json

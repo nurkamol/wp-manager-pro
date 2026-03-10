@@ -21,6 +21,19 @@ interface BrandingSettings {
 // ── Changelog data ─────────────────────────────────────────────────────────────
 const changelog: { version: string; date: string; features: string[] }[] = [
   {
+    version: '2.1.0',
+    date: '2026-03-10',
+    features: [
+      'Cron Manager — full WP-Cron visibility and control in a dedicated 3-tab page',
+      'Event Browser — sortable list of all scheduled events with hook name, next run time, schedule label, and args count',
+      'Manual Trigger — run any cron event on demand; captures output and execution time',
+      'Delete Events — remove stuck or orphaned custom cron events with one click (core events protected)',
+      'Custom Schedules — register new cron intervals from the UI (e.g. every 2 hours); persisted via wp_options',
+      'Cron Health tab — DISABLE_WP_CRON status, ALTERNATE_WP_CRON, lock timeout, overdue event count, and real-cron setup instructions',
+      '7 new REST endpoints: GET/POST/DELETE /cron/schedules, GET /cron/events, POST /cron/run, DELETE /cron/event, GET /cron/health',
+    ],
+  },
+  {
     version: '2.0.0',
     date: '2026-03-10',
     features: [

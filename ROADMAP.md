@@ -2,7 +2,7 @@
 
 This document outlines the planned feature development for WP Manager Pro. Releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Minor versions (`1.x.0`) add new features; patch versions (`1.x.y`) deliver bug fixes and polish.
 
-> **Current version:** 1.9.0 — last updated 2026-03-10
+> **Current version:** 2.1.0 — last updated 2026-03-10
 
 ---
 
@@ -20,33 +20,12 @@ This document outlines the planned feature development for WP Manager Pro. Relea
 | [1.7.0] | Monaco editor in Code Snippets, Scheduled Backups, Server Config Generator, White-label/Branding |
 | [1.8.0] | Sidebar redesign (shadcn sidebar-07 icon-rail), WP Admin menu hide/show toggle |
 | [1.9.0] | Performance page: DB Cleanup, Transient Manager, Object Cache Status |
+| [2.0.0] | Security Suite: Login Limiter, Lockout Log, IP Blocklist, XML-RPC disable, Hide WP Version, File Integrity Check, TOTP 2FA |
+| [2.1.0] | Cron Manager: Event Browser, Manual Trigger, Delete Events, Custom Schedules, Cron Health tab with real-cron setup guide |
 
 ---
 
 ## 🔜 Upcoming
-
-### v2.0.0 — Security Suite
-*Focus: harden WordPress sites with actionable, one-click security controls*
-
-- **Login Attempt Limiter** — rate-limit failed logins per IP; lockout log with IP, timestamp, username; configurable threshold and lockout duration
-- **File Integrity Checker** — compare core WordPress file checksums against the official wordpress.org API; flag modified, added, or missing files with a diff viewer
-- **IP Blocklist Manager** — block / allowlist IP addresses or CIDR ranges; stored in `.htaccess` (Apache) or a WP middleware hook (Nginx); import/export CSV
-- **Disable XML-RPC** — one toggle; shows current XML-RPC exposure status and known attack surface
-- **Hide WordPress Version** — strip version from `<head>`, RSS feeds, script/style query strings, and generator meta tags
-- **Two-Factor Authentication** — TOTP-based 2FA (Google Authenticator / Authy compatible) for administrator accounts; QR code setup flow; backup codes
-
----
-
-### v2.1.0 — WP-Cron Manager
-*Focus: full visibility and control over WordPress scheduled events*
-
-- **Cron Job Browser** — complete list of all scheduled cron events with hook name, schedule label, next run timestamp, and registered arguments
-- **Manual Trigger** — run any cron event on demand with live output capture
-- **Delete / Disable Custom Events** — remove stuck or orphaned cron events; disable without deleting
-- **Custom Schedules** — register new cron intervals (e.g. every 2 hours) from the UI; currently only visible in System Info
-- **Cron Health Indicator** — detect if WP-Cron is disabled (`DISABLE_WP_CRON`) and surface alternative (real cron) setup instructions
-
----
 
 ### v2.2.0 — Media Manager
 *Focus: keep the media library clean and lean*
@@ -146,3 +125,6 @@ Have a feature request or want to vote on a backlog item? [Open an issue](https:
 [1.7.0]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v1.7.0
 [1.8.0]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v1.8.0
 [1.9.0]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v1.9.0
+[2.0.0]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v2.0.0
+
+[2.1.0]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v2.1.0

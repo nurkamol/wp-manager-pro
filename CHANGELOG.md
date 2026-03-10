@@ -7,6 +7,33 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [2.1.0] — 2026-03-10
+
+### Added
+- **Cron Manager page** — full WP-Cron visibility and control in a 3-tab dedicated page (Events, Schedules, Health)
+- **Event Browser** — lists all scheduled cron events sorted by next-run time; shows hook name, relative next-run label, schedule label and interval, argument count; colour-coded urgency (green/amber/red)
+- **Manual Trigger** — run any cron event on demand via `do_action_ref_array`; captures output buffer and wall-clock duration; displays inline result banner with output preview
+- **Delete Events** — one-click removal of custom (non-core) events via `wp_unschedule_event`; core WordPress events are protected (run-only)
+- **Custom Schedules** — register new recurrence intervals from the UI (key, display name, interval in seconds ≥ 60); persisted in `wp_options` and injected into WordPress via `cron_schedules` filter
+- **Delete Custom Schedules** — remove any UI-created schedule; built-in WordPress schedules are not deletable
+- **Cron Health tab** — status cards for DISABLE_WP_CRON, overdue event count, WP_CRON_LOCK_TIMEOUT, ALTERNATE_WP_CRON; lists up to 10 overdue events with hook name and seconds overdue
+- **Real Cron Setup guide** — inline instructions for disabling pseudo-cron, server crontab snippet (with site URL pre-filled), and WP-CLI command
+- `date-fns` v4 dependency for human-readable relative timestamps in the Events tab
+- `Clock` icon added to sidebar Tools group for Cron Manager
+
+### API
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/cron/events` | List all scheduled events sorted by timestamp |
+| POST | `/cron/run` | Trigger an event immediately; returns output + duration |
+| DELETE | `/cron/event` | Unschedule a specific event (or all occurrences of a hook) |
+| GET | `/cron/schedules` | List all registered schedules (built-in + custom) |
+| POST | `/cron/schedules` | Create a custom schedule |
+| DELETE | `/cron/schedules` | Delete a custom schedule |
+| GET | `/cron/health` | Cron health status, overdue events, and real-cron hints |
+
+---
+
 ## [2.0.0] — 2026-03-10
 
 ### Added
@@ -518,3 +545,5 @@ First public release of WP Manager Pro — a comprehensive, agency-ready WordPre
 [1.2.0]: https://github.com/nurkamol/wp-manager-pro/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/nurkamol/wp-manager-pro/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v1.0.0
+
+[2.1.0]: https://github.com/nurkamol/wp-manager-pro/compare/v2.0.0...v2.1.0

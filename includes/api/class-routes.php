@@ -23,6 +23,7 @@ use WP_Manager_Pro\API\Controllers\Backup_Controller;
 use WP_Manager_Pro\API\Controllers\Settings_Controller;
 use WP_Manager_Pro\API\Controllers\Performance_Controller;
 use WP_Manager_Pro\API\Controllers\Security_Controller;
+use WP_Manager_Pro\API\Controllers\Cron_Controller;
 
 class Routes {
 
@@ -650,6 +651,43 @@ class Routes {
         register_rest_route( $namespace, '/performance/cleanup', [
             'methods'             => 'POST',
             'callback'            => [ Performance_Controller::class, 'run_cleanup' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+
+        // Cron Manager (v2.1.0).
+        register_rest_route( $namespace, '/cron/events', [
+            'methods'             => 'GET',
+            'callback'            => [ Cron_Controller::class, 'get_events' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/cron/run', [
+            'methods'             => 'POST',
+            'callback'            => [ Cron_Controller::class, 'run_event' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/cron/event', [
+            'methods'             => 'DELETE',
+            'callback'            => [ Cron_Controller::class, 'delete_event' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/cron/schedules', [
+            'methods'             => 'GET',
+            'callback'            => [ Cron_Controller::class, 'get_schedules' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/cron/schedules', [
+            'methods'             => 'POST',
+            'callback'            => [ Cron_Controller::class, 'create_schedule' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/cron/schedules', [
+            'methods'             => 'DELETE',
+            'callback'            => [ Cron_Controller::class, 'delete_schedule' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/cron/health', [
+            'methods'             => 'GET',
+            'callback'            => [ Cron_Controller::class, 'get_health' ],
             'permission_callback' => [ self::class, 'admin_permission' ],
         ] );
 

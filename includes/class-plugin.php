@@ -48,6 +48,7 @@ class Plugin {
             'class-backup-controller',
             'class-settings-controller',
             'class-performance-controller',
+            'class-cron-controller',
         ];
 
         foreach ( $controllers as $controller ) {
@@ -127,6 +128,9 @@ class Plugin {
         // Scheduled Backups — cron action + custom monthly recurrence.
         add_action( 'wmp_run_scheduled_backup', [ API\Controllers\Backup_Controller::class, 'run_scheduled_backup' ] );
         add_filter( 'cron_schedules', [ $this, 'add_monthly_schedule' ] );
+
+        // Cron Manager — inject custom schedules created via the UI (v2.1.0).
+        add_filter( 'cron_schedules', [ API\Controllers\Cron_Controller::class, 'inject_custom_schedules' ] );
     }
 
     /**

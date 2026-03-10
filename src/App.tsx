@@ -21,6 +21,7 @@ import { Email } from './pages/Email'
 import { Backup } from './pages/Backup'
 import { Settings } from './pages/Settings'
 import { Performance } from './pages/Performance'
+import { Cron } from './pages/Cron'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -58,6 +59,7 @@ export function App() {
             <Route path="backup" element={<Backup />} />
             <Route path="settings" element={<Settings />} />
             <Route path="performance" element={<Performance />} />
+            <Route path="cron" element={<Cron />} />
           </Route>
         </Routes>
       </HashRouter>
