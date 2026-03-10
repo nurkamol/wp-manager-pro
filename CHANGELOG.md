@@ -7,6 +7,76 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [1.9.0] — 2026-03-10
+
+### Added
+
+#### Performance Page (new Tools section entry)
+- New **Performance** page (`/performance` route, Gauge icon) with three tabs: Overview, Transients, DB Cleanup
+- Sidebar icon: `Gauge` from lucide-react, placed between Image Tools and Notes in the Tools group
+
+#### Overview Tab
+- Eight stat cards: Post Revisions (with estimated KB saved), Auto-Drafts, Trashed Content, Spam Comments, Pending Comments, Orphaned Post Meta, Orphaned Comment Meta, Expired Transients
+- Cards highlight amber when the count is non-zero
+- Amber alert banner appears when any cleanable item exists, pointing to the DB Cleanup tab
+- **Object Cache Status banner**: auto-detects Redis (`WP_REDIS_VERSION`, `class Redis`), Memcached (`class Memcache` / `class Memcached`), or any external cache via `wp_using_ext_object_cache()`; shows green banner with cache type when active, grey banner with install recommendation when not active
+
+#### Transients Tab
+- Paginated table (50/page) of all transients (`_transient_%` in `wp_options`, excluding `_transient_timeout_%` rows)
+- Left-join on timeout rows to compute `expires_at` and `expired` flag per entry
+- Columns: name (with `expired` destructive badge), size in bytes, expiry timestamp
+- Search filters by transient name prefix
+- Delete individual transient button (calls `delete_transient()` + `delete_site_transient()`)
+- **Purge Expired** button: clears all expired regular and site transients in one shot; button disabled when count is 0
+
+#### DB Cleanup Tab
+- Checkbox-based selection of 8 cleanup types with live item counts (amber when non-zero)
+- Select All / None toggle buttons in card header
+- Total items summary line updates reactively as selections change
+- Confirmation dialog lists each selected type with its count before executing
+- After successful cleanup: count summary toast, selected items cleared, Overview stats refreshed
+
+#### REST API — 5 new endpoints
+- `GET /performance/overview` — all counts + object cache status; queries via direct `$wpdb->get_var()` using `SHOW TABLE STATUS`-style aggregation
+- `GET /performance/transients` — paginated list with optional search; LEFT JOIN to compute expiry; supports `page`, `limit`, `search` params
+- `DELETE /performance/transients` — deletes single transient by `?name=` param (regular + site variants)
+- `POST /performance/transients/purge-expired` — iterates expired timeout rows for both `_transient_timeout_%` and `_site_transient_timeout_%`; returns deleted count
+- `POST /performance/cleanup` — runs selected types from validated allowlist; uses `wp_delete_post_revision()`, `wp_delete_post()`, `wp_delete_comment()`, direct `$wpdb->query()` DELETE with LEFT JOIN for orphaned meta rows
+
+### Changed
+- Bump version `1.8.0` → `1.9.0` in plugin header, `WP_MANAGER_PRO_VERSION` constant, and `package.json`
+- Build: `index.js` ~728 kB / `style.css` ~49.6 kB
+- Screenshots: all 15 retaken; `14-plugin-zip-upload` replaced by `14-settings`; `15-performance` added
+
+---
+
+## [1.8.0] — 2026-03-10
+
+### Added
+
+#### Sidebar Redesign (shadcn sidebar-07 style)
+- Collapsed sidebar width changed from `w-16` (64 px) to `w-14` (56 px)
+- Each collapsed nav item now renders a visible button box: `border`, `bg-slate-800/70 border-slate-700/50`, `h-8`, icon size `w-[18px] h-[18px]`
+- Active collapsed item: `bg-blue-600 border-blue-500 text-white`
+- Group spacing in collapsed mode: `mt-4` top margin per group (replaces old `h-px` separator dividers)
+- Group labels shown only in expanded mode, only for `gi > 0`
+- Expanded sidebar: `ChevronLeft` collapse button in header alongside `PanelLeftClose/PanelLeftOpen`
+- Collapsed sidebar: blue `ChevronRight` button centered in header for expand; footer shows user avatar (with tooltip), WP-menu toggle, and theme toggle
+
+#### WP Admin Menu Toggle
+- New `useWpAdminSidebar` hook (`src/hooks/useWpAdminSidebar.ts`)
+- Injects/removes a `<style id="wmp-wp-sidebar-style">` tag in `document.head`
+- Hidden state CSS: `#adminmenumain, #adminmenuback { display: none !important }` + `#wpcontent, #wpfooter { margin-left: 0 !important; transition: margin-left 0.3s }`
+- State read from / written to `localStorage` key `wmp-wp-sidebar-hidden` on every toggle
+- Button appears in expanded sidebar header (`PanelLeftClose/PanelLeftOpen`) and in collapsed sidebar footer
+- Tooltip: "Hide WP menu" / "Show WP menu"
+
+### Changed
+- Bump version `1.7.0` → `1.8.0` in plugin header, `WP_MANAGER_PRO_VERSION` constant, and `package.json`
+- All 14 screenshots retaken at 3228×1524 px (2× Retina) with the new sidebar UI
+
+---
+
 ## [1.7.0] — 2026-03-09
 
 ### Added
@@ -371,6 +441,8 @@ First public release of WP Manager Pro — a comprehensive, agency-ready WordPre
 
 ---
 
+[1.9.0]: https://github.com/nurkamol/wp-manager-pro/compare/v1.8.0...v1.9.0
+[1.8.0]: https://github.com/nurkamol/wp-manager-pro/compare/v1.7.0...v1.8.0
 [1.7.0]: https://github.com/nurkamol/wp-manager-pro/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/nurkamol/wp-manager-pro/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/nurkamol/wp-manager-pro/compare/v1.4.0...v1.5.0
