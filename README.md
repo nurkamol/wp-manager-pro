@@ -27,17 +27,21 @@
 |-----------------|------------|
 | ![Maintenance Mode](screenshots/07-maintenance-mode.png) | ![Debug Tools](screenshots/08-debug-tools.png) |
 
-| Image Tools | Security |
-|------------|---------|
-| ![Image Tools](screenshots/09-image-tools.png) | ![Security](screenshots/13-security.png) |
+| Image Tools | Performance |
+|------------|-------------|
+| ![Image Tools](screenshots/09-image-tools.png) | ![Performance](screenshots/15-performance.png) |
 
 | System Info | Reset Tools |
 |------------|------------|
 | ![System Info](screenshots/11-system-info.png) | ![Reset Tools](screenshots/12-reset-tools.png) |
 
-| Notes | Plugin ZIP Upload |
-|-------|-----------------|
-| ![Notes](screenshots/10-notes.png) | ![Plugin ZIP Upload](screenshots/14-plugin-zip-upload.png) |
+| Security | Settings |
+|---------|---------|
+| ![Security](screenshots/13-security.png) | ![Settings](screenshots/14-settings.png) |
+
+| Notes | |
+|-------|--|
+| ![Notes](screenshots/10-notes.png) | |
 
 ---
 
