@@ -7,6 +7,72 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [2.0.0] — 2026-03-10
+
+### Added
+
+#### Security Suite (5-tab Security page)
+- Security page fully redesigned with tabbed layout: **Overview**, **Login**, **Hardening**, **Integrity**, **Two-Factor**
+
+#### Overview Tab
+- Status cards for six security features: Admin URL, Login Limiter, IP Blocklist, XML-RPC, Hide WP Version, Two-Factor Auth
+- Each card shows on/off badge with color indicator
+- WordPress version + locale displayed; quick reference to run a file integrity check
+
+#### Login Protection Tab
+- **Custom Login URL** — existing feature (custom slug, block direct wp-login.php access) now integrated into tabbed layout
+- **Login Attempt Limiter** — configurable max attempts, counting window (seconds), and lockout duration (seconds); state stored in WordPress transients
+- **Lockout Log** — table of all IP lockout events with username, timestamp, and attempt count; per-IP unlock and bulk clear
+
+#### Hardening Tab
+- **Disable XML-RPC** toggle — applies `xmlrpc_enabled` filter returning `false`
+- **Hide WordPress Version** toggle — removes WP version from `<meta name="generator">` and strips `?ver=X.Y.Z` from script/style queue URLs
+- **IP Blocklist** — add exact IPs or CIDR ranges with optional notes; enforced on `init` hook; per-entry remove button
+
+#### File Integrity Tab
+- Fetches official MD5 checksums from `https://api.wordpress.org/core/checksums/1.0/?version=X&locale=Y`
+- Compares every file in `wp-admin/` and `wp-includes/` against expected hashes
+- Reports **modified** files (path, last-modified date) and **missing** files
+- `wp-content/` is excluded (user content)
+
+#### Two-Factor Authentication Tab
+- TOTP-based 2FA per admin account (RFC 6238 — SHA1, 6 digits, 30-second window)
+- QR code via Google Charts API for Google Authenticator, Authy, or any TOTP app
+- Fallback manual secret entry (base32-encoded, no padding)
+- 8 one-time backup codes generated on verification; stored as MD5 hashes in user meta
+- Per-user meta keys: `wmp_2fa_secret`, `wmp_2fa_enabled`, `wmp_2fa_backup_codes`
+
+#### REST Endpoints (14 new)
+- `GET /security/overview` — all feature states in one call
+- `POST /security/limiter` — save login limiter settings
+- `GET /security/lockouts` — list lockout log
+- `DELETE /security/lockouts` — clear lockout log
+- `POST /security/lockouts/unlock` — unlock specific IP
+- `GET /security/ip-blocklist` — list blocked IPs
+- `POST /security/ip-blocklist` — add IP/CIDR to blocklist
+- `DELETE /security/ip-blocklist` — remove IP from blocklist
+- `POST /security/hardening` — save XML-RPC + hide-version settings
+- `POST /security/integrity` — run core file integrity check
+- `GET /security/2fa` — get 2FA status for current user
+- `POST /security/2fa/setup` — generate TOTP secret + QR URL
+- `POST /security/2fa/verify` — verify code and activate 2FA
+- `DELETE /security/2fa` — disable 2FA for current user
+
+#### WordPress Runtime Hooks
+- `wp_login_failed` → record failed login attempt per IP
+- `authenticate` (priority 30) → block locked-out IPs before authentication
+- `init` → check IP blocklist and `wp_die(403)` if matched
+- `xmlrpc_enabled` → disable XML-RPC (conditional on option)
+- `the_generator` → suppress WP version meta tag (conditional on option)
+- `script_loader_src` / `style_loader_src` → strip `?ver=X.Y.Z` from asset URLs (conditional)
+
+### Changed
+- Security page route `/security` now loads a 5-tab component instead of the single-card layout
+- `class-plugin.php` loads `class-performance-controller` (missing from previous release's controller list)
+- `class-routes.php` now properly imports `Security_Controller` via `use` statement
+
+---
+
 ## [1.9.0] — 2026-03-10
 
 ### Added
@@ -441,6 +507,7 @@ First public release of WP Manager Pro — a comprehensive, agency-ready WordPre
 
 ---
 
+[2.0.0]: https://github.com/nurkamol/wp-manager-pro/compare/v1.9.0...v2.0.0
 [1.9.0]: https://github.com/nurkamol/wp-manager-pro/compare/v1.8.0...v1.9.0
 [1.8.0]: https://github.com/nurkamol/wp-manager-pro/compare/v1.7.0...v1.8.0
 [1.7.0]: https://github.com/nurkamol/wp-manager-pro/compare/v1.6.0...v1.7.0

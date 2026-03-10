@@ -22,6 +22,7 @@ use WP_Manager_Pro\API\Controllers\Email_Controller;
 use WP_Manager_Pro\API\Controllers\Backup_Controller;
 use WP_Manager_Pro\API\Controllers\Settings_Controller;
 use WP_Manager_Pro\API\Controllers\Performance_Controller;
+use WP_Manager_Pro\API\Controllers\Security_Controller;
 
 class Routes {
 
@@ -381,6 +382,11 @@ class Routes {
             'callback'            => [ Security_Controller::class, 'get_status' ],
             'permission_callback' => [ self::class, 'admin_permission' ],
         ] );
+        register_rest_route( $namespace, '/security/overview', [
+            'methods'             => 'GET',
+            'callback'            => [ Security_Controller::class, 'get_overview' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
         register_rest_route( $namespace, '/security/admin-url', [
             'methods'             => 'POST',
             'callback'            => [ Security_Controller::class, 'update_slug' ],
@@ -389,6 +395,71 @@ class Routes {
         register_rest_route( $namespace, '/security/admin-url', [
             'methods'             => 'DELETE',
             'callback'            => [ Security_Controller::class, 'disable_protection' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/security/limiter', [
+            'methods'             => 'POST',
+            'callback'            => [ Security_Controller::class, 'save_limiter_settings' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/security/lockouts', [
+            'methods'             => 'GET',
+            'callback'            => [ Security_Controller::class, 'get_lockout_log' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/security/lockouts', [
+            'methods'             => 'DELETE',
+            'callback'            => [ Security_Controller::class, 'clear_lockout_log' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/security/lockouts/unlock', [
+            'methods'             => 'POST',
+            'callback'            => [ Security_Controller::class, 'unlock_ip' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/security/ip-blocklist', [
+            'methods'             => 'GET',
+            'callback'            => [ Security_Controller::class, 'get_ip_blocklist' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/security/ip-blocklist', [
+            'methods'             => 'POST',
+            'callback'            => [ Security_Controller::class, 'add_ip_block' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/security/ip-blocklist', [
+            'methods'             => 'DELETE',
+            'callback'            => [ Security_Controller::class, 'remove_ip_block' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/security/hardening', [
+            'methods'             => 'POST',
+            'callback'            => [ Security_Controller::class, 'save_hardening' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/security/integrity', [
+            'methods'             => 'POST',
+            'callback'            => [ Security_Controller::class, 'check_integrity' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/security/2fa', [
+            'methods'             => 'GET',
+            'callback'            => [ Security_Controller::class, 'get_2fa_status' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/security/2fa/setup', [
+            'methods'             => 'POST',
+            'callback'            => [ Security_Controller::class, 'setup_2fa' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/security/2fa/verify', [
+            'methods'             => 'POST',
+            'callback'            => [ Security_Controller::class, 'verify_2fa' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/security/2fa', [
+            'methods'             => 'DELETE',
+            'callback'            => [ Security_Controller::class, 'disable_2fa' ],
             'permission_callback' => [ self::class, 'admin_permission' ],
         ] );
 

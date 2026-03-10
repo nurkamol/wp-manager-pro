@@ -21,6 +21,20 @@ interface BrandingSettings {
 // ── Changelog data ─────────────────────────────────────────────────────────────
 const changelog: { version: string; date: string; features: string[] }[] = [
   {
+    version: '2.0.0',
+    date: '2026-03-10',
+    features: [
+      'Security Suite — 5-tab Security page: Overview, Login Protection, Hardening, File Integrity, Two-Factor Auth',
+      'Login Attempt Limiter — brute-force protection with configurable threshold, window, and lockout duration',
+      'IP Blocklist — block individual IPs or CIDR ranges; stored in wp_options, enforced on init hook',
+      'WordPress Hardening — disable XML-RPC and hide WordPress version from generator meta tag and asset query strings',
+      'Core File Integrity Checker — compare wp-admin/ and wp-includes/ MD5s against official wordpress.org checksums API',
+      'Two-Factor Authentication (TOTP) — per-user 2FA via Google Authenticator / Authy with one-time backup codes',
+      'Lockout Log — view, clear, and unlock individual IPs from brute-force lockout history',
+      '14 new REST endpoints under /security/: overview, limiter, lockouts, lockouts/unlock, ip-blocklist, hardening, integrity, 2fa',
+    ],
+  },
+  {
     version: '1.9.0',
     date: '2026-03-10',
     features: [

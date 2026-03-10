@@ -47,6 +47,7 @@ class Plugin {
             'class-email-controller',
             'class-backup-controller',
             'class-settings-controller',
+            'class-performance-controller',
         ];
 
         foreach ( $controllers as $controller ) {
@@ -66,6 +67,21 @@ class Plugin {
         // Admin URL protection (conditional on settings).
         add_action( 'login_init', [ API\Controllers\Security_Controller::class, 'protect_login' ] );
         add_action( 'init', [ API\Controllers\Security_Controller::class, 'handle_custom_login_url' ] );
+
+        // Security v2.0.0 — login limiter and IP blocklist.
+        add_action( 'wp_login_failed', [ API\Controllers\Security_Controller::class, 'record_failed_login' ] );
+        add_filter( 'authenticate', [ API\Controllers\Security_Controller::class, 'check_lockout' ], 30, 3 );
+        add_action( 'init', [ API\Controllers\Security_Controller::class, 'check_ip_blocklist' ] );
+
+        // Security v2.0.0 — hardening hooks (applied conditionally based on saved options).
+        if ( get_option( 'wmp_disable_xmlrpc', false ) ) {
+            add_filter( 'xmlrpc_enabled', '__return_false' );
+        }
+        if ( get_option( 'wmp_hide_wp_version', false ) ) {
+            add_filter( 'the_generator', '__return_empty_string' );
+            add_filter( 'script_loader_src', [ $this, 'strip_wp_version_from_src' ], 10, 1 );
+            add_filter( 'style_loader_src',  [ $this, 'strip_wp_version_from_src' ], 10, 1 );
+        }
 
         // SVG / AVIF support (conditional on settings).
         add_filter( 'upload_mimes', [ API\Controllers\Images_Controller::class, 'maybe_allow_avif' ] );
@@ -111,6 +127,16 @@ class Plugin {
         // Scheduled Backups — cron action + custom monthly recurrence.
         add_action( 'wmp_run_scheduled_backup', [ API\Controllers\Backup_Controller::class, 'run_scheduled_backup' ] );
         add_filter( 'cron_schedules', [ $this, 'add_monthly_schedule' ] );
+    }
+
+    /**
+     * Remove the WordPress version from script/style src URLs (hardening).
+     */
+    public function strip_wp_version_from_src( string $src ): string {
+        if ( strpos( $src, 'ver=' . get_bloginfo( 'version' ) ) !== false ) {
+            $src = remove_query_arg( 'ver', $src );
+        }
+        return $src;
     }
 
     /**
