@@ -2,7 +2,7 @@
 
 > A comprehensive, agency-ready WordPress management suite — built with React 19, TypeScript, and the WordPress REST API.
 
-![Version](https://img.shields.io/badge/version-1.9.0-blue)
+![Version](https://img.shields.io/badge/version-2.0.0-blue)
 ![WordPress](https://img.shields.io/badge/WordPress-5.9%2B-21759b)
 ![PHP](https://img.shields.io/badge/PHP-7.4%2B-8892be)
 ![License](https://img.shields.io/badge/license-GPL--2.0%2B-green)
@@ -52,6 +52,19 @@
 All operations happen through a secured REST API (`wp-manager-pro/v1`) that requires the `manage_options` capability on every route.
 
 ---
+
+## What's New in v2.0.0 — Security Suite
+
+| Feature | Description |
+|---------|-------------|
+| 🔒 Security Overview | At-a-glance status cards for all six security features with on/off states |
+| 🛡️ Login Attempt Limiter | Brute-force protection: configurable max attempts, counting window, and lockout duration (stored via WordPress transients) |
+| 📋 Lockout Log | Paginated history of IP lockouts with username, timestamp, attempt count; per-IP unlock and bulk clear |
+| 🚫 Disable XML-RPC | One-toggle to apply `xmlrpc_enabled` filter — prevents brute-force and DDoS via `xmlrpc.php` |
+| 👻 Hide WordPress Version | Removes WP version from `<meta name="generator">` tag and strips `?ver=X.Y.Z` from script/style URLs |
+| 🌐 IP Blocklist | Add individual IPs or CIDR ranges (e.g. `10.0.0.0/24`) with optional notes; enforced on the `init` hook before any output |
+| 🔍 File Integrity Check | Fetches official MD5 checksums from wordpress.org and compares every file in `wp-admin/` and `wp-includes/` |
+| 🔑 Two-Factor Authentication | TOTP-based 2FA per admin account (RFC 6238 — SHA1, 6 digits, 30-second window); QR code + 8 backup codes; native PHP, no Composer |
 
 ## What's New in v1.9.0
 
@@ -283,13 +296,36 @@ All operations happen through a secured REST API (`wp-manager-pro/v1`) that requ
 - Tracks plugin, theme, user, and post events automatically
 - Filter by action type; export to CSV; clear log
 
-### Security *(New in v1.3.0)*
-- **Admin URL Protection**: Move `wp-login.php` to a secret URL slug of your choice
-- Direct GET requests to `wp-login.php` are blocked and redirected to the homepage
-- Login form POST, password reset, and other auth actions continue to work normally
-- Custom login URL displayed with copy-to-clipboard and open buttons
-- One-click disable to restore default WordPress login behavior
-- Protects against bots scanning the standard login URL
+### Security *(v1.3.0 → v2.0.0 Security Suite)*
+
+Five-tab Security Suite covering every major attack surface:
+
+**Overview Tab**
+- At-a-glance status cards for all six security features with on/off indicators
+- Shows WordPress version and locale with a quick link to the Integrity tab
+
+**Login Tab** *(v1.3.0 + v2.0.0)*
+- **Admin URL Protection**: Move `wp-login.php` to a secret slug; direct GET requests blocked
+- **Login Attempt Limiter**: Configurable max attempts, counting window (seconds), and lockout duration; stored via WordPress transients
+- **Lockout Log**: Paginated history of IP lockouts with username, timestamp, attempt count; per-IP unlock and bulk clear
+
+**Hardening Tab** *(New in v2.0.0)*
+- **Disable XML-RPC**: One toggle to apply `xmlrpc_enabled` filter — prevents brute-force and DDoS via `xmlrpc.php`
+- **Hide WordPress Version**: Removes WP version from `<meta name="generator">` and strips `?ver=X.Y.Z` from all script/style URLs
+- **IP Blocklist**: Add individual IPs or CIDR ranges (e.g. `10.0.0.0/24`) with optional notes; enforced on `init` before any output; supports remove
+
+**Integrity Tab** *(New in v2.0.0)*
+- Fetches official MD5 checksums from `api.wordpress.org/core/checksums`
+- Compares every file in `wp-admin/` and `wp-includes/` against expected hashes
+- Reports modified files (path + actual vs. expected hash + last modified date) and missing files
+- `wp-content/` excluded (user content)
+
+**Two-Factor Auth Tab** *(New in v2.0.0)*
+- TOTP-based 2FA per admin account (RFC 6238 — SHA1, 6 digits, 30-second window)
+- QR code for easy scanning with Google Authenticator, Authy, or any TOTP app
+- Fallback manual secret entry (base32-encoded)
+- 8 one-time backup codes generated on first verification (shown once, stored as MD5 hashes)
+- Per-user enable/disable; 100% native PHP — no Composer dependencies
 
 ### Notes
 - Color-coded, persistent note-taking (stored in a custom `wp_wmp_notes` table)
@@ -319,14 +355,14 @@ All operations happen through a secured REST API (`wp-manager-pro/v1`) that requ
 ## Installation
 
 ### From ZIP
-1. Download `wp-manager-pro-1.8.0.zip` from the [Releases](https://github.com/nurkamol/wp-manager-pro/releases) page.
+1. Download `wp-manager-pro-v2.0.0.zip` from the [Releases](https://github.com/nurkamol/wp-manager-pro/releases) page.
 2. In WP Admin → **Plugins → Add New → Upload Plugin**.
 3. Upload the ZIP and click **Install Now**, then **Activate**.
 4. Navigate to **WP Manager** in the admin sidebar (or click **Open** in the Plugins list).
 
 ### Manual
 ```bash
-unzip wp-manager-pro-1.8.0.zip -d /path/to/wp-content/plugins/
+unzip wp-manager-pro-v2.0.0.zip -d /path/to/wp-content/plugins/
 ```
 
 Then activate via WP Admin → **Plugins**.
@@ -357,14 +393,14 @@ npm run dev
 ```bash
 npm run build
 # Outputs:
-#   assets/build/index.js   (~709 kB, ~202 kB gzipped)
-#   assets/build/style.css  (~48 kB, ~9 kB gzipped)
+#   assets/build/index.js   (~747 kB, ~208 kB gzipped)
+#   assets/build/style.css  (~51 kB, ~9 kB gzipped)
 ```
 
 ### Package Plugin ZIP
 ```bash
 cd ..
-zip -r wp-manager-pro-1.8.0.zip \
+zip -r wp-manager-pro-v2.0.0.zip \
   wp-manager-pro/wp-manager-pro.php \
   wp-manager-pro/includes/ \
   wp-manager-pro/assets/build/
@@ -472,6 +508,20 @@ All endpoints require a valid WordPress nonce in the `X-WP-Nonce` header.
 | GET | `/security` | **v1.3.0** Admin URL protection status |
 | POST | `/security/admin-url` | **v1.3.0** Enable/update custom login slug |
 | DELETE | `/security/admin-url` | **v1.3.0** Disable admin URL protection |
+| GET | `/security/overview` | **v2.0.0** All security feature states in one call |
+| POST | `/security/limiter` | **v2.0.0** Save login limiter settings |
+| GET | `/security/lockouts` | **v2.0.0** List lockout log entries |
+| DELETE | `/security/lockouts` | **v2.0.0** Clear all lockout log entries |
+| POST | `/security/lockouts/unlock` | **v2.0.0** Unlock a specific IP |
+| GET | `/security/ip-blocklist` | **v2.0.0** List blocked IPs |
+| POST | `/security/ip-blocklist` | **v2.0.0** Add IP or CIDR to blocklist |
+| DELETE | `/security/ip-blocklist` | **v2.0.0** Remove IP from blocklist |
+| POST | `/security/hardening` | **v2.0.0** Save XML-RPC / hide-version settings |
+| POST | `/security/integrity` | **v2.0.0** Run core file integrity check |
+| GET | `/security/2fa` | **v2.0.0** Get 2FA status for current user |
+| POST | `/security/2fa/setup` | **v2.0.0** Generate TOTP secret + QR URL |
+| POST | `/security/2fa/verify` | **v2.0.0** Verify code and activate 2FA |
+| DELETE | `/security/2fa` | **v2.0.0** Disable 2FA for current user |
 | GET | `/snippets` | **v1.4.0** List snippets |
 | POST | `/snippets` | **v1.4.0** Create snippet |
 | PUT | `/snippets/{id}` | **v1.4.0** Update snippet |
@@ -515,7 +565,7 @@ wp-manager-pro/
 │   ├── class-plugin.php            # Singleton bootstrap, hook registration
 │   ├── class-admin.php             # Admin menu, asset enqueuing, plugin links
 │   └── api/
-│       ├── class-routes.php        # REST route registration (63 endpoints)
+│       ├── class-routes.php        # REST route registration (80 endpoints)
 │       └── controllers/
 │           ├── class-dashboard-controller.php
 │           ├── class-plugins-controller.php
@@ -529,7 +579,7 @@ wp-manager-pro/
 │           ├── class-images-controller.php
 │           ├── class-notes-controller.php
 │           ├── class-reset-controller.php
-│           ├── class-security-controller.php   # v1.3.0
+│           ├── class-security-controller.php   # v1.3.0 → v2.0.0
 │           ├── class-snippets-controller.php   # v1.4.0
 │           ├── class-redirects-controller.php  # v1.4.0
 │           ├── class-email-controller.php      # v1.4.0
@@ -538,7 +588,7 @@ wp-manager-pro/
 │           └── class-settings-controller.php   # v1.8.0
 ├── assets/
 │   └── build/
-│       ├── index.js                # Compiled React app (~709 kB, ~202 kB gzip)
+│       ├── index.js                # Compiled React app (~747 kB, ~208 kB gzip)
 │       └── style.css               # Compiled styles (~48 kB, ~9 kB gzip)
 ├── src/                            # React source (TypeScript)
 │   ├── main.tsx
@@ -568,7 +618,7 @@ wp-manager-pro/
 │       ├── ImageTools.tsx          # v1.3.0–1.6.0 full WebP/AVIF pipeline
 │       ├── Notes.tsx
 │       ├── Reset.tsx
-│       ├── Security.tsx            # v1.3.0
+│       ├── Security.tsx            # v1.3.0 → v2.0.0 Security Suite
 │       ├── Snippets.tsx            # v1.4.0
 │       ├── Redirects.tsx           # v1.4.0
 │       ├── Email.tsx               # v1.4.0
@@ -583,7 +633,9 @@ wp-manager-pro/
 │   ├── v1.4.0.md
 │   ├── v1.5.0.md
 │   ├── v1.6.0.md
-│   └── v1.8.0.md
+│   ├── v1.8.0.md
+│   ├── v1.9.0.md
+│   └── v2.0.0.md
 ├── vite.config.ts
 ├── tailwind.config.js
 ├── tsconfig.json
@@ -609,7 +661,19 @@ Go to **Maintenance** in the sidebar. Use the **Content** tab to set your title 
 In **Plugin Manager** or **Theme Manager**, click the clock/history icon (⏱) on any plugin or theme row. A dialog loads all available versions from WordPress.org. Click **Install** next to the version you want — the plugin/theme stays active after the switch.
 
 ### How do I hide the WordPress login page?
-Go to **Security** in the sidebar. Enter a secret slug (e.g. `my-secret-login`) and click **Enable Protection**. Your login page moves to `yoursite.com/my-secret-login`. Direct GET requests to `wp-login.php` are redirected to the homepage. Copy the new URL with the clipboard button before saving. To restore the default, click **Disable Protection**.
+Go to **Security → Login** tab. Enter a secret slug (e.g. `my-secret-login`) and click **Enable Protection**. Your login page moves to `yoursite.com/my-secret-login`. Direct GET requests to `wp-login.php` are redirected to the homepage. Copy the new URL with the clipboard button before saving. To restore the default, click **Disable Protection**.
+
+### How do I block brute-force login attacks?
+Go to **Security → Login** tab. Enable the **Login Attempt Limiter** and set your desired max attempts, counting window (seconds), and lockout duration (seconds). When an IP exceeds the limit it is automatically blocked; you can view and unlock locked-out IPs in the **Lockout Log** section below.
+
+### How do I block a specific IP or IP range?
+Go to **Security → Hardening** tab. Enter an IP address (e.g. `203.0.113.5`) or a CIDR range (e.g. `10.0.0.0/24`) in the IP Blocklist, add an optional note, and click **Add**. Blocked IPs are rejected on WordPress's `init` hook before any output is sent.
+
+### How do I verify my WordPress core files haven't been tampered with?
+Go to **Security → Integrity** tab and click **Run Integrity Check**. WP Manager Pro fetches the official MD5 checksums from wordpress.org and compares every file in `wp-admin/` and `wp-includes/`. Any modified or missing files are listed with their actual hash, expected hash, and last-modified date.
+
+### How do I enable Two-Factor Authentication?
+Go to **Security → Two-Factor** tab and click **Set Up Two-Factor Auth**. Scan the QR code with Google Authenticator, Authy, or any TOTP app, then enter the 6-digit code to verify and activate. Eight one-time backup codes are generated and shown once — save them somewhere safe. To disable 2FA, click **Disable 2FA** on the same tab.
 
 ### How do I enable WebP or AVIF image uploads?
 Go to **Image Tools** and toggle **WebP Conversion** or **AVIF Support** on. WebP requires GD or ImageMagick. AVIF requires PHP 8.1+ with GD (`imageavif` function) or ImageMagick compiled with the AVIF codec. The support status cards at the top of the page show what your server supports.
@@ -653,6 +717,9 @@ This can happen if another plugin or theme loads conflicting scripts on the WP M
 - Username rename validates with `sanitize_user()` + `validate_username()`, checks for conflicts
 - Reset Tools requires explicit `confirm: true` flag; uses WordPress core deletion functions only
 - **v1.3.0** Admin URL protection blocks GET requests to `wp-login.php` without the secret key; POST/password-reset flows are unaffected
+- **v2.0.0** Login Attempt Limiter uses WordPress transients with IP-keyed lock keys; brute-force protection fires at priority 30 on the `authenticate` filter
+- **v2.0.0** IP Blocklist matches exact IPs and CIDR ranges via bitwise mask comparison; enforced on `init` before any page output
+- **v2.0.0** TOTP 2FA uses 100% native PHP (no Composer): `random_bytes`, `hash_hmac('sha1')`, custom base32 encoder/decoder; backup codes stored as MD5 hashes
 - All user inputs are sanitized with `sanitize_text_field()`, `absint()`, `sanitize_hex_color()`, `wp_kses_post()`
 
 ---
