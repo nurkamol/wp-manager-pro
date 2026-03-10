@@ -21,6 +21,18 @@ interface BrandingSettings {
 // ── Changelog data ─────────────────────────────────────────────────────────────
 const changelog: { version: string; date: string; features: string[] }[] = [
   {
+    version: '2.3.0',
+    date: '2026-03-11',
+    features: [
+      'Content Tools — 4-tab page for bulk content management without leaving WP Manager Pro',
+      'Bulk Post Editor — filter by post type/status/search; select multiple posts; bulk-update status, author, or publish date',
+      'Post Duplicator — clone any post/page/CPT as a draft with options to copy meta, taxonomies, and featured image',
+      'Scheduled Post Manager — calendar-style list of all future-scheduled content across post types with time-until countdown',
+      'Options Table Editor — paginated, searchable wp_options browser with type detection; inline edit and delete with serialized-data support',
+      '10 new REST endpoints under /content/*',
+    ],
+  },
+  {
     version: '2.2.0',
     date: '2026-03-11',
     features: [

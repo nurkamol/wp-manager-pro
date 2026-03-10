@@ -25,6 +25,7 @@ use WP_Manager_Pro\API\Controllers\Performance_Controller;
 use WP_Manager_Pro\API\Controllers\Security_Controller;
 use WP_Manager_Pro\API\Controllers\Cron_Controller;
 use WP_Manager_Pro\API\Controllers\Media_Controller;
+use WP_Manager_Pro\API\Controllers\Content_Controller;
 
 class Routes {
 
@@ -736,6 +737,58 @@ class Routes {
         register_rest_route( $namespace, '/media/compress', [
             'methods'             => 'POST',
             'callback'            => [ Media_Controller::class, 'compress_image' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+
+        // Content Tools (v2.3.0).
+        register_rest_route( $namespace, '/content/post-types', [
+            'methods'             => 'GET',
+            'callback'            => [ Content_Controller::class, 'get_post_types' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/content/authors', [
+            'methods'             => 'GET',
+            'callback'            => [ Content_Controller::class, 'get_authors' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/content/posts', [
+            'methods'             => 'GET',
+            'callback'            => [ Content_Controller::class, 'get_posts' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/content/posts/bulk-edit', [
+            'methods'             => 'POST',
+            'callback'            => [ Content_Controller::class, 'bulk_edit_posts' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/content/posts/duplicate', [
+            'methods'             => 'POST',
+            'callback'            => [ Content_Controller::class, 'duplicate_post' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/content/scheduled', [
+            'methods'             => 'GET',
+            'callback'            => [ Content_Controller::class, 'get_scheduled' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/content/options', [
+            'methods'             => 'GET',
+            'callback'            => [ Content_Controller::class, 'get_options' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/content/options/(?P<name>[\w%\-.]+)', [
+            'methods'             => 'GET',
+            'callback'            => [ Content_Controller::class, 'get_option_value' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/content/options', [
+            'methods'             => 'POST',
+            'callback'            => [ Content_Controller::class, 'update_option_value' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/content/options', [
+            'methods'             => 'DELETE',
+            'callback'            => [ Content_Controller::class, 'delete_option_value' ],
             'permission_callback' => [ self::class, 'admin_permission' ],
         ] );
 

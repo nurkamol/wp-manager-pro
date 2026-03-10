@@ -2,7 +2,7 @@
 
 This document outlines the planned feature development for WP Manager Pro. Releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Minor versions (`1.x.0`) add new features; patch versions (`1.x.y`) deliver bug fixes and polish.
 
-> **Current version:** 2.2.0 — last updated 2026-03-11
+> **Current version:** 2.3.0 — last updated 2026-03-11
 
 ---
 
@@ -23,20 +23,11 @@ This document outlines the planned feature development for WP Manager Pro. Relea
 | [2.0.0] | Security Suite: Login Limiter, Lockout Log, IP Blocklist, XML-RPC disable, Hide WP Version, File Integrity Check, TOTP 2FA |
 | [2.1.0] | Cron Manager: Event Browser, Manual Trigger, Delete Events, Custom Schedules, Cron Health tab with real-cron setup guide |
 | [2.2.0] | Media Manager: Orphaned finder, Unused bulk delete, Duplicate detector (MD5), JPEG/PNG compression — 9 new REST endpoints |
+| [2.3.0] | Content Tools: Bulk Post Editor, Post Duplicator, Scheduled Post Manager, Options Table Editor — 10 new REST endpoints |
 
 ---
 
 ## 🔜 Upcoming
-
-### v2.3.0 — Content Tools
-*Focus: bulk content management without leaving WP Manager Pro*
-
-- **Bulk Post Editor** — change status, publish date, author, or category across multiple posts in one action
-- **Post Duplicator** — clone any post, page, or custom post type with one click; choose to copy meta, taxonomies, and featured image
-- **Scheduled Post Manager** — calendar and list view of all future-scheduled content across post types
-- **Options Table Editor** — browse, search, and edit `wp_options` rows with type detection and serialised-data handling (like a lightweight phpMyAdmin for options)
-
----
 
 ### v2.4.0 — Advanced Dev Tools
 *Focus: developer-centric tools for staging and production workflows*

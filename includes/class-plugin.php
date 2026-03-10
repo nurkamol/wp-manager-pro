@@ -50,6 +50,7 @@ class Plugin {
             'class-performance-controller',
             'class-cron-controller',
             'class-media-controller',
+            'class-content-controller',
         ];
 
         foreach ( $controllers as $controller ) {

@@ -7,6 +7,33 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [2.3.0] — 2026-03-11
+
+### Added
+- **Content Tools page** — 4-tab page for bulk content management without leaving WP Manager Pro
+- **Bulk Post Editor tab** — filter posts by type, status, and keyword; select multiple posts with checkboxes; bulk-update status, author, or publish date in one action
+- **Post Duplicator tab** — clone any post, page, or CPT as a draft; options to copy post meta, taxonomies/categories, and featured image
+- **Scheduled Post Manager tab** — list all future-scheduled content across post types; shows scheduled time, author, and live countdown ("in 3d 5h"); overdue posts highlighted in red
+- **Options Table Editor tab** — paginated, searchable browser for all `wp_options` rows; type detection (string, integer, float, JSON, serialized, empty); inline edit with full raw-value Textarea and autoload toggle; delete with protection for critical keys
+- `FileEdit` icon added to sidebar Tools group for Content Tools
+- Helper endpoints: `/content/post-types` (registered public post types), `/content/authors` (users with `edit_posts`)
+
+### API
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/content/post-types` | List all registered public post types |
+| GET | `/content/authors` | List users with edit_posts capability |
+| GET | `/content/posts` | Paginated post list with post_type, status, search, page filters |
+| POST | `/content/posts/bulk-edit` | Bulk update status, date, author, category for multiple post IDs |
+| POST | `/content/posts/duplicate` | Clone a post as a draft with optional meta/taxonomy/thumbnail copy |
+| GET | `/content/scheduled` | List all future-scheduled posts across post types |
+| GET | `/content/options` | Paginated, searchable wp_options list with type detection |
+| GET | `/content/options/(?P<name>...)` | Full value of a single option (for edit dialog) |
+| POST | `/content/options` | Create or update a wp_options row |
+| DELETE | `/content/options` | Delete a wp_options row (protected critical keys blocked) |
+
+---
+
 ## [2.2.0] — 2026-03-11
 
 ### Added

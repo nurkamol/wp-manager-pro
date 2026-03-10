@@ -2,7 +2,7 @@
 
 > A comprehensive, agency-ready WordPress management suite — built with React 19, TypeScript, and the WordPress REST API.
 
-![Version](https://img.shields.io/badge/version-2.2.0-blue)
+![Version](https://img.shields.io/badge/version-2.3.0-blue)
 ![WordPress](https://img.shields.io/badge/WordPress-5.9%2B-21759b)
 ![PHP](https://img.shields.io/badge/PHP-7.4%2B-8892be)
 ![License](https://img.shields.io/badge/license-GPL--2.0%2B-green)
@@ -43,9 +43,9 @@
 |-------------|--------------|
 | ![Cron Manager](screenshots/16-cron-manager.png) | ![Media Manager](screenshots/17-media-manager.png) |
 
-| Notes | |
-|-------|--|
-| ![Notes](screenshots/10-notes.png) | |
+| Content Tools | Notes |
+|--------------|-------|
+| ![Content Tools](screenshots/18-content-tools.png) | ![Notes](screenshots/10-notes.png) |
 
 ---
 
@@ -54,6 +54,16 @@
 **WP Manager Pro** replaces the need for multiple separate admin plugins by providing a single, fast, modern interface for managing every critical aspect of a WordPress site. It ships as a standard WordPress plugin — install it, activate it, and a full React-powered control panel appears under your WP Admin menu.
 
 All operations happen through a secured REST API (`wp-manager-pro/v1`) that requires the `manage_options` capability on every route.
+
+---
+
+## What's New in v2.3.0 — Content Tools
+
+- **Bulk Post Editor** — filter posts by type/status/search, select multiple, bulk-update status, author, or publish date
+- **Post Duplicator** — clone any post/page/CPT as a draft; options: copy meta, taxonomies, featured image
+- **Scheduled Post Manager** — list all future-scheduled content with live countdown; overdue posts highlighted
+- **Options Table Editor** — browse, search, and edit `wp_options` rows with type detection and serialized-data support
+- 10 new REST endpoints under `/content/*`
 
 ---
 
