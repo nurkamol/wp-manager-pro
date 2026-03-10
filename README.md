@@ -2,7 +2,7 @@
 
 > A comprehensive, agency-ready WordPress management suite — built with React 19, TypeScript, and the WordPress REST API.
 
-![Version](https://img.shields.io/badge/version-1.8.0-blue)
+![Version](https://img.shields.io/badge/version-1.9.0-blue)
 ![WordPress](https://img.shields.io/badge/WordPress-5.9%2B-21759b)
 ![PHP](https://img.shields.io/badge/PHP-7.4%2B-8892be)
 ![License](https://img.shields.io/badge/license-GPL--2.0%2B-green)
@@ -48,6 +48,15 @@
 All operations happen through a secured REST API (`wp-manager-pro/v1`) that requires the `manage_options` capability on every route.
 
 ---
+
+## What's New in v1.9.0
+
+| Feature | Description |
+|---------|-------------|
+| ⚡ Performance Page | New dedicated page under Tools for database cleanup, transient management, and object cache status |
+| 🗑️ DB Cleanup | One-click removal of post revisions, auto-drafts, trashed content, spam/pending comments, orphaned postmeta & commentmeta, and expired transients |
+| 🕐 Transient Manager | Browse all transients with search, pagination, expiry status, size — delete individually or purge all expired at once |
+| 🖥️ Object Cache Status | Detects Redis / Memcached / external cache and shows a prominent status banner |
 
 ## What's New in v1.8.0
 

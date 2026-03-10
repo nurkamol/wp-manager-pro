@@ -21,6 +21,16 @@ interface BrandingSettings {
 // ── Changelog data ─────────────────────────────────────────────────────────────
 const changelog: { version: string; date: string; features: string[] }[] = [
   {
+    version: '1.9.0',
+    date: '2026-03-10',
+    features: [
+      'Performance page — database cleanup, transient manager, and object cache status under one roof',
+      'DB Cleanup — remove post revisions, auto-drafts, trash, spam/pending comments, orphaned postmeta & commentmeta, expired transients',
+      'Transient Manager — browse, search, and delete individual transients or purge all expired at once',
+      'Object Cache Detection — banner shows Redis / Memcached / external cache status with install recommendation',
+    ],
+  },
+  {
     version: '1.8.0',
     date: '2026-03-10',
     features: [

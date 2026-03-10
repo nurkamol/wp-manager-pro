@@ -21,6 +21,7 @@ use WP_Manager_Pro\API\Controllers\Redirects_Controller;
 use WP_Manager_Pro\API\Controllers\Email_Controller;
 use WP_Manager_Pro\API\Controllers\Backup_Controller;
 use WP_Manager_Pro\API\Controllers\Settings_Controller;
+use WP_Manager_Pro\API\Controllers\Performance_Controller;
 
 class Routes {
 
@@ -551,6 +552,33 @@ class Routes {
         register_rest_route( $namespace, '/backup/schedule', [
             'methods'             => 'POST',
             'callback'            => [ Backup_Controller::class, 'save_schedule' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+
+        // Performance (DB Cleanup + Transients + Cache).
+        register_rest_route( $namespace, '/performance/overview', [
+            'methods'             => 'GET',
+            'callback'            => [ Performance_Controller::class, 'get_overview' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/performance/transients', [
+            'methods'             => 'GET',
+            'callback'            => [ Performance_Controller::class, 'get_transients' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/performance/transients', [
+            'methods'             => 'DELETE',
+            'callback'            => [ Performance_Controller::class, 'delete_transient_item' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/performance/transients/purge-expired', [
+            'methods'             => 'POST',
+            'callback'            => [ Performance_Controller::class, 'purge_expired_transients' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/performance/cleanup', [
+            'methods'             => 'POST',
+            'callback'            => [ Performance_Controller::class, 'run_cleanup' ],
             'permission_callback' => [ self::class, 'admin_permission' ],
         ] );
 

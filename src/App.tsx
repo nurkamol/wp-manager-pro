@@ -20,6 +20,7 @@ import { Redirects } from './pages/Redirects'
 import { Email } from './pages/Email'
 import { Backup } from './pages/Backup'
 import { Settings } from './pages/Settings'
+import { Performance } from './pages/Performance'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -56,6 +57,7 @@ export function App() {
             <Route path="email" element={<Email />} />
             <Route path="backup" element={<Backup />} />
             <Route path="settings" element={<Settings />} />
+            <Route path="performance" element={<Performance />} />
           </Route>
         </Routes>
       </HashRouter>
