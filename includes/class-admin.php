@@ -135,4 +135,164 @@ class Admin {
     public static function render_page() {
         echo '<div id="wp-manager-pro-root" class="wp-manager-pro-page"></div>';
     }
+
+    // ── Admin Bar Maintenance Toggle ───────────────────────────────────────────
+
+    /**
+     * Add maintenance mode toggle node to the WP admin bar.
+     * Visible on both frontend and backend for administrators.
+     *
+     * @param \WP_Admin_Bar $wp_admin_bar
+     */
+    public static function add_maintenance_bar_item( \WP_Admin_Bar $wp_admin_bar ) {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            return;
+        }
+
+        $active = (bool) get_option( 'wmp_maintenance_active', false );
+
+        $toggle = sprintf(
+            '<span class="wmp-ab-icon">⚙</span>'
+            . '<span class="wmp-ab-label">%s</span>'
+            . '<span class="wmp-ab-toggle" data-active="%s" title="%s"><span class="wmp-ab-knob"></span></span>',
+            esc_html__( 'Maintenance', 'wp-manager-pro' ),
+            $active ? '1' : '0',
+            $active
+                ? esc_attr__( 'Maintenance is ON — click to disable', 'wp-manager-pro' )
+                : esc_attr__( 'Maintenance is OFF — click to enable', 'wp-manager-pro' )
+        );
+
+        $wp_admin_bar->add_node( [
+            'id'     => 'wmp-maintenance',
+            'title'  => $toggle,
+            'href'   => '#',
+            'meta'   => [
+                'class' => 'wmp-maintenance-item' . ( $active ? ' wmp-maint-active' : '' ),
+            ],
+        ] );
+    }
+
+    /**
+     * Enqueue inline CSS + JS for the admin bar maintenance toggle.
+     * Hooked to both wp_enqueue_scripts (frontend) and admin_enqueue_scripts (backend).
+     */
+    public static function enqueue_admin_bar_assets() {
+        if ( ! is_admin_bar_showing() || ! current_user_can( 'manage_options' ) ) {
+            return;
+        }
+
+        $api_url = esc_url_raw( rest_url( 'wp-manager-pro/v1/maintenance/toggle' ) );
+        $nonce   = wp_create_nonce( 'wp_rest' );
+
+        // ── Styles ──────────────────────────────────────────────────────────────
+        wp_register_style( 'wmp-adminbar', false, [], WP_MANAGER_PRO_VERSION ); // phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion
+        wp_enqueue_style( 'wmp-adminbar' );
+        wp_add_inline_style( 'wmp-adminbar', '
+            #wp-admin-bar-wmp-maintenance > .ab-item {
+                display: flex !important;
+                align-items: center;
+                gap: 7px;
+                cursor: pointer;
+                padding: 0 12px !important;
+                user-select: none;
+            }
+            .wmp-ab-icon {
+                font-size: 13px;
+                line-height: 1;
+                opacity: .85;
+            }
+            .wmp-ab-label {
+                font-size: 13px;
+                font-weight: 500;
+            }
+            /* Toggle switch */
+            .wmp-ab-toggle {
+                display: inline-flex;
+                align-items: center;
+                width: 38px;
+                height: 20px;
+                background: #555d65;
+                border-radius: 10px;
+                position: relative;
+                transition: background .22s;
+                flex-shrink: 0;
+                margin-left: 2px;
+            }
+            .wmp-ab-toggle[data-active="1"] {
+                background: #e05252;
+            }
+            .wmp-ab-knob {
+                width: 14px;
+                height: 14px;
+                background: #fff;
+                border-radius: 50%;
+                position: absolute;
+                left: 3px;
+                transition: left .22s;
+                box-shadow: 0 1px 3px rgba(0,0,0,.3);
+            }
+            .wmp-ab-toggle[data-active="1"] .wmp-ab-knob {
+                left: 21px;
+            }
+            /* Loading state */
+            #wp-admin-bar-wmp-maintenance.wmp-ab-loading .wmp-ab-toggle {
+                opacity: .5;
+                pointer-events: none;
+            }
+            /* Active (maintenance ON) highlight */
+            #wp-admin-bar-wmp-maintenance.wmp-maint-active > .ab-item {
+                background: rgba(224,82,82,.18) !important;
+            }
+            #wp-admin-bar-wmp-maintenance.wmp-maint-active > .ab-item:hover {
+                background: rgba(224,82,82,.28) !important;
+            }
+        ' );
+
+        // ── Script ──────────────────────────────────────────────────────────────
+        wp_register_script( 'wmp-adminbar', false, [], WP_MANAGER_PRO_VERSION, true ); // phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion
+        wp_enqueue_script( 'wmp-adminbar' );
+        wp_add_inline_script( 'wmp-adminbar', sprintf(
+            '(function(){
+                var API  = %s;
+                var NON  = %s;
+                document.addEventListener("DOMContentLoaded", function() {
+                    var bar = document.getElementById("wp-admin-bar-wmp-maintenance");
+                    if (!bar) return;
+                    var link   = bar.querySelector("> .ab-item");
+                    var toggle = bar.querySelector(".wmp-ab-toggle");
+                    if (!link || !toggle) return;
+
+                    link.addEventListener("click", function(e) {
+                        e.preventDefault();
+                        if (bar.classList.contains("wmp-ab-loading")) return;
+
+                        var isActive = toggle.dataset.active === "1";
+                        bar.classList.add("wmp-ab-loading");
+
+                        fetch(API, {
+                            method:  "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                "X-WP-Nonce":   NON
+                            },
+                            body: JSON.stringify({ enable: !isActive })
+                        })
+                        .then(function(r) { return r.json(); })
+                        .then(function(data) {
+                            var on = !!data.active;
+                            toggle.dataset.active = on ? "1" : "0";
+                            toggle.title = on
+                                ? "Maintenance is ON \u2014 click to disable"
+                                : "Maintenance is OFF \u2014 click to enable";
+                            bar.classList.toggle("wmp-maint-active", on);
+                        })
+                        .catch(function(err) { console.error("[WP Manager] toggle error", err); })
+                        .finally(function() { bar.classList.remove("wmp-ab-loading"); });
+                    });
+                });
+            })();',
+            wp_json_encode( $api_url ),
+            wp_json_encode( $nonce )
+        ) );
+    }
 }
