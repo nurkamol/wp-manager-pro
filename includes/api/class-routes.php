@@ -92,6 +92,26 @@ class Routes {
             'callback'            => [ Plugins_Controller::class, 'check_updates' ],
             'permission_callback' => [ self::class, 'admin_permission' ],
         ] );
+        register_rest_route( $namespace, '/plugins/bulk-activate', [
+            'methods'             => 'POST',
+            'callback'            => [ Plugins_Controller::class, 'bulk_activate' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/plugins/bulk-deactivate', [
+            'methods'             => 'POST',
+            'callback'            => [ Plugins_Controller::class, 'bulk_deactivate' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/plugins/bulk-delete', [
+            'methods'             => 'DELETE',
+            'callback'            => [ Plugins_Controller::class, 'bulk_delete' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/plugins/bulk-update', [
+            'methods'             => 'POST',
+            'callback'            => [ Plugins_Controller::class, 'bulk_update' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
         register_rest_route( $namespace, '/plugins/export', [
             'methods'             => 'POST',
             'callback'            => [ Plugins_Controller::class, 'export_plugin' ],

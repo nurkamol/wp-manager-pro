@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo } from 'react'
+import { useState, useRef, useMemo, useCallback } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { PageHeader } from '@/components/PageHeader'
@@ -14,6 +14,7 @@ import { toast } from 'sonner'
 import {
   Search, Power, Trash2, Download, RefreshCw, AlertTriangle,
   Star, Upload, Package, ArrowUpCircle, CheckCircle2, History,
+  X, CheckSquare, Square, Minus, FileArchive, ChevronDown,
 } from 'lucide-react'
 import { stripHtml, truncate } from '@/lib/utils'
 
@@ -39,6 +40,12 @@ interface WpPlugin {
   icon: string
 }
 
+interface QueueItem {
+  file: File
+  status: 'pending' | 'uploading' | 'done' | 'error'
+  message?: string
+}
+
 export function Plugins() {
   const queryClient = useQueryClient()
   const uploadInputRef = useRef<HTMLInputElement>(null)
@@ -47,13 +54,18 @@ export function Plugins() {
   const [wpSearch, setWpSearch] = useState('')
   const [wpSearchQuery, setWpSearchQuery] = useState('')
   const [deleteTarget, setDeleteTarget] = useState<Plugin | null>(null)
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
   const [installing, setInstalling] = useState<string | null>(null)
   const [versionsPlugin, setVersionsPlugin] = useState<{ slug: string; name: string; file: string } | null>(null)
 
-  // Upload tab state
-  const [uploadFile, setUploadFile] = useState<File | null>(null)
+  // Selection
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+
+  // Upload queue (multi-file)
+  const [uploadQueue, setUploadQueue] = useState<QueueItem[]>([])
   const [overwrite, setOverwrite] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
+  const [isUploadingAll, setIsUploadingAll] = useState(false)
 
   const { data: pluginsData, isLoading } = useQuery({
     queryKey: ['plugins'],
@@ -95,7 +107,6 @@ export function Plugins() {
     retry: 1,
   })
 
-  // Version history for selected plugin
   const { data: versionsData, isLoading: isLoadingVersions } = useQuery({
     queryKey: ['plugin-versions', versionsPlugin?.slug],
     queryFn: async () => {
@@ -115,7 +126,6 @@ export function Plugins() {
     staleTime: 60000,
   })
 
-  // Map slug → plugin for search-tab smart buttons
   const installedMap = useMemo(() => {
     const map = new Map<string, Plugin>()
     pluginsData?.plugins.forEach(p => {
@@ -125,6 +135,7 @@ export function Plugins() {
     return map
   }, [pluginsData])
 
+  // ── Individual mutations ──
   const toggleMutation = useMutation({
     mutationFn: ({ plugin, active }: { plugin: string; active: boolean }) =>
       api.post(active ? '/plugins/deactivate' : '/plugins/activate', { plugin }),
@@ -139,7 +150,7 @@ export function Plugins() {
   const deleteMutation = useMutation({
     mutationFn: (plugin: string) => api.delete('/plugins/delete', { plugin }),
     onSuccess: () => {
-      toast.success('Plugin deleted successfully')
+      toast.success('Plugin deleted')
       queryClient.invalidateQueries({ queryKey: ['plugins'] })
       setDeleteTarget(null)
     },
@@ -147,19 +158,13 @@ export function Plugins() {
   })
 
   const installMutation = useMutation({
-    mutationFn: (slug: string) => {
-      setInstalling(slug)
-      return api.post('/plugins/install', { slug })
-    },
+    mutationFn: (slug: string) => { setInstalling(slug); return api.post('/plugins/install', { slug }) },
     onSuccess: (_, slug) => {
       toast.success(`Plugin installed: ${slug}`)
       queryClient.invalidateQueries({ queryKey: ['plugins'] })
       setInstalling(null)
     },
-    onError: (err: Error) => {
-      toast.error(err.message)
-      setInstalling(null)
-    },
+    onError: (err: Error) => { toast.error(err.message); setInstalling(null) },
   })
 
   const updateMutation = useMutation({
@@ -192,39 +197,125 @@ export function Plugins() {
     onError: (err: Error) => toast.error(err.message),
   })
 
-  const uploadMutation = useMutation({
-    mutationFn: (fd: FormData) => api.upload('/plugins/upload', fd),
-    onSuccess: () => {
-      toast.success('Plugin uploaded and installed successfully')
-      queryClient.invalidateQueries({ queryKey: ['plugins'] })
-      setUploadFile(null)
-      setOverwrite(false)
-    },
-    onError: (err: Error) => toast.error(err.message),
-  })
-
   const exportMutation = useMutation({
     mutationFn: (plugin: string) => api.post<{ download_url: string }>('/plugins/export', { plugin }),
     onSuccess: (data) => { window.location.href = data.download_url },
     onError: (err: Error) => toast.error(err.message),
   })
 
-  const handleUploadSubmit = () => {
-    if (!uploadFile) return
-    const fd = new FormData()
-    fd.append('file', uploadFile)
-    fd.append('overwrite', overwrite ? '1' : '0')
-    uploadMutation.mutate(fd)
+  // ── Bulk mutations ──
+  const bulkActivateMutation = useMutation({
+    mutationFn: (plugins: string[]) => api.post('/plugins/bulk-activate', { plugins }),
+    onSuccess: (_, plugins) => {
+      toast.success(`${plugins.length} plugin(s) activated`)
+      queryClient.invalidateQueries({ queryKey: ['plugins'] })
+      setSelected(new Set())
+    },
+    onError: (err: Error) => toast.error(err.message),
+  })
+
+  const bulkDeactivateMutation = useMutation({
+    mutationFn: (plugins: string[]) => api.post('/plugins/bulk-deactivate', { plugins }),
+    onSuccess: (_, plugins) => {
+      toast.success(`${plugins.length} plugin(s) deactivated`)
+      queryClient.invalidateQueries({ queryKey: ['plugins'] })
+      setSelected(new Set())
+    },
+    onError: (err: Error) => toast.error(err.message),
+  })
+
+  const bulkUpdateMutation = useMutation({
+    mutationFn: (plugins: string[]) => api.post<{ updated: number; failed: number; message: string }>('/plugins/bulk-update', { plugins }),
+    onSuccess: (data) => {
+      toast.success(data.message)
+      queryClient.invalidateQueries({ queryKey: ['plugins'] })
+      setSelected(new Set())
+    },
+    onError: (err: Error) => toast.error(err.message),
+  })
+
+  const bulkDeleteMutation = useMutation({
+    mutationFn: (plugins: string[]) => api.delete('/plugins/bulk-delete', { plugins }),
+    onSuccess: (_, plugins) => {
+      toast.success(`${plugins.length} plugin(s) deleted`)
+      queryClient.invalidateQueries({ queryKey: ['plugins'] })
+      setSelected(new Set())
+      setBulkDeleteOpen(false)
+    },
+    onError: (err: Error) => toast.error(err.message),
+  })
+
+  // ── Selection helpers ──
+  const toggleSelect = useCallback((file: string) => {
+    setSelected(prev => {
+      const next = new Set(prev)
+      next.has(file) ? next.delete(file) : next.add(file)
+      return next
+    })
+  }, [])
+
+  const toggleSelectGroup = useCallback((files: string[]) => {
+    setSelected(prev => {
+      const allSelected = files.every(f => prev.has(f))
+      const next = new Set(prev)
+      if (allSelected) files.forEach(f => next.delete(f))
+      else files.forEach(f => next.add(f))
+      return next
+    })
+  }, [])
+
+  // ── Upload queue handlers ──
+  const addFilesToQueue = (files: FileList | File[]) => {
+    const zips = Array.from(files).filter(f => f.name.endsWith('.zip'))
+    if (zips.length === 0) { toast.error('Only .zip files are accepted'); return }
+    setUploadQueue(prev => {
+      const existing = new Set(prev.map(q => q.file.name))
+      const newItems: QueueItem[] = zips
+        .filter(f => !existing.has(f.name))
+        .map(f => ({ file: f, status: 'pending' }))
+      return [...prev, ...newItems]
+    })
+  }
+
+  const removeFromQueue = (index: number) => {
+    setUploadQueue(prev => prev.filter((_, i) => i !== index))
+  }
+
+  const handleUploadAll = async () => {
+    const pending = uploadQueue.filter(q => q.status === 'pending')
+    if (pending.length === 0) return
+    setIsUploadingAll(true)
+
+    for (let i = 0; i < uploadQueue.length; i++) {
+      if (uploadQueue[i].status !== 'pending') continue
+
+      setUploadQueue(prev => prev.map((q, idx) => idx === i ? { ...q, status: 'uploading' } : q))
+
+      const fd = new FormData()
+      fd.append('file', uploadQueue[i].file)
+      fd.append('overwrite', overwrite ? '1' : '0')
+
+      try {
+        await api.upload('/plugins/upload', fd)
+        setUploadQueue(prev => prev.map((q, idx) => idx === i ? { ...q, status: 'done', message: 'Installed' } : q))
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Upload failed'
+        setUploadQueue(prev => prev.map((q, idx) => idx === i ? { ...q, status: 'error', message: msg } : q))
+      }
+    }
+
+    setIsUploadingAll(false)
+    queryClient.invalidateQueries({ queryKey: ['plugins'] })
+    toast.success('Upload complete')
   }
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault()
     setIsDragging(false)
-    const file = e.dataTransfer.files[0]
-    if (file?.name.endsWith('.zip')) setUploadFile(file)
-    else toast.error('Please drop a .zip file')
+    addFilesToQueue(e.dataTransfer.files)
   }
 
+  // ── Filtered lists ──
   const filtered = pluginsData?.plugins.filter(p =>
     p.name.toLowerCase().includes(search.toLowerCase()) ||
     p.author.toLowerCase().includes(search.toLowerCase())
@@ -233,6 +324,14 @@ export function Plugins() {
   const activePlugins = filtered.filter(p => p.active)
   const inactivePlugins = filtered.filter(p => !p.active)
   const updatesAvailable = pluginsData?.plugins.filter(p => p.has_update).length ?? 0
+
+  // ── Bulk toolbar computed values ──
+  const selectedList = pluginsData?.plugins.filter(p => selected.has(p.file)) ?? []
+  const selectedInactive = selectedList.filter(p => !p.active)
+  const selectedActive = selectedList.filter(p => p.active)
+  const selectedWithUpdates = selectedList.filter(p => p.has_update)
+  const isBulkBusy = bulkActivateMutation.isPending || bulkDeactivateMutation.isPending
+    || bulkUpdateMutation.isPending || bulkDeleteMutation.isPending
 
   const openVersions = (plugin: Plugin) => {
     const slug = plugin.file.includes('/') ? plugin.file.split('/')[0] : plugin.file.replace('.php', '')
@@ -278,15 +377,89 @@ export function Plugins() {
               </div>
             </div>
 
+            {/* Bulk action toolbar */}
+            {selected.size > 0 && (
+              <div className="mb-4 flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg flex-wrap">
+                <span className="text-sm font-medium text-blue-800 mr-1">{selected.size} selected</span>
+
+                {selectedInactive.length > 0 && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs border-green-300 text-green-700 hover:bg-green-50"
+                    onClick={() => bulkActivateMutation.mutate(selectedInactive.map(p => p.file))}
+                    disabled={isBulkBusy}
+                  >
+                    {bulkActivateMutation.isPending ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Power className="w-3 h-3" />}
+                    Activate ({selectedInactive.length})
+                  </Button>
+                )}
+
+                {selectedActive.length > 0 && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs border-slate-300 text-slate-700 hover:bg-slate-100"
+                    onClick={() => bulkDeactivateMutation.mutate(selectedActive.map(p => p.file))}
+                    disabled={isBulkBusy}
+                  >
+                    {bulkDeactivateMutation.isPending ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Power className="w-3 h-3" />}
+                    Deactivate ({selectedActive.length})
+                  </Button>
+                )}
+
+                {selectedWithUpdates.length > 0 && (
+                  <Button
+                    size="sm"
+                    className="h-7 text-xs bg-amber-500 hover:bg-amber-600 text-white"
+                    onClick={() => bulkUpdateMutation.mutate(selectedWithUpdates.map(p => p.file))}
+                    disabled={isBulkBusy}
+                  >
+                    {bulkUpdateMutation.isPending ? <RefreshCw className="w-3 h-3 animate-spin" /> : <ArrowUpCircle className="w-3 h-3" />}
+                    Update ({selectedWithUpdates.length})
+                  </Button>
+                )}
+
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs border-red-200 text-red-600 hover:bg-red-50"
+                  onClick={() => setBulkDeleteOpen(true)}
+                  disabled={isBulkBusy}
+                >
+                  <Trash2 className="w-3 h-3" />
+                  Delete ({selected.size})
+                </Button>
+
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 w-7 p-0 ml-auto text-slate-400 hover:text-slate-600"
+                  onClick={() => setSelected(new Set())}
+                >
+                  <X className="w-3.5 h-3.5" />
+                </Button>
+              </div>
+            )}
+
             <div className="space-y-4">
               {activePlugins.length > 0 && (
                 <div>
-                  <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Active ({activePlugins.length})</h3>
+                  <div className="flex items-center gap-2 mb-2">
+                    <GroupCheckbox
+                      files={activePlugins.map(p => p.file)}
+                      selected={selected}
+                      onToggle={toggleSelectGroup}
+                    />
+                    <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Active ({activePlugins.length})</h3>
+                  </div>
                   <div className="space-y-2">
                     {activePlugins.map(plugin => (
                       <PluginRow
                         key={plugin.file}
                         plugin={plugin}
+                        selected={selected.has(plugin.file)}
+                        onSelect={toggleSelect}
                         onToggle={() => toggleMutation.mutate({ plugin: plugin.file, active: plugin.active })}
                         onDelete={() => setDeleteTarget(plugin)}
                         onExport={() => exportMutation.mutate(plugin.file)}
@@ -303,12 +476,21 @@ export function Plugins() {
 
               {inactivePlugins.length > 0 && (
                 <div>
-                  <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Inactive ({inactivePlugins.length})</h3>
+                  <div className="flex items-center gap-2 mb-2">
+                    <GroupCheckbox
+                      files={inactivePlugins.map(p => p.file)}
+                      selected={selected}
+                      onToggle={toggleSelectGroup}
+                    />
+                    <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Inactive ({inactivePlugins.length})</h3>
+                  </div>
                   <div className="space-y-2">
                     {inactivePlugins.map(plugin => (
                       <PluginRow
                         key={plugin.file}
                         plugin={plugin}
+                        selected={selected.has(plugin.file)}
+                        onSelect={toggleSelect}
                         onToggle={() => toggleMutation.mutate({ plugin: plugin.file, active: plugin.active })}
                         onDelete={() => setDeleteTarget(plugin)}
                         onExport={() => exportMutation.mutate(plugin.file)}
@@ -441,30 +623,86 @@ export function Plugins() {
           {/* ── Upload ZIP ── */}
           <TabsContent value="upload" className="mt-0">
             <div className="max-w-xl mx-auto space-y-5">
-              <input type="file" ref={uploadInputRef} className="hidden" accept=".zip"
-                onChange={e => { const f = e.target.files?.[0]; if (f) setUploadFile(f); e.target.value = '' }} />
+              <input
+                type="file"
+                ref={uploadInputRef}
+                className="hidden"
+                accept=".zip"
+                multiple
+                onChange={e => { if (e.target.files) addFilesToQueue(e.target.files); e.target.value = '' }}
+              />
 
+              {/* Drop zone */}
               <div
-                className={`border-2 border-dashed rounded-lg p-10 text-center cursor-pointer transition-colors ${isDragging ? 'border-blue-400 bg-blue-50' : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'}`}
+                className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${isDragging ? 'border-blue-400 bg-blue-50' : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'}`}
                 onClick={() => uploadInputRef.current?.click()}
                 onDragOver={e => { e.preventDefault(); setIsDragging(true) }}
                 onDragLeave={() => setIsDragging(false)}
                 onDrop={handleDrop}
               >
-                <Package className="w-10 h-10 mx-auto mb-3 text-slate-400" />
-                {uploadFile ? (
-                  <div>
-                    <p className="font-medium text-slate-700">{uploadFile.name}</p>
-                    <p className="text-xs text-slate-400 mt-1">{(uploadFile.size / 1024).toFixed(1)} KB</p>
-                    <button className="mt-2 text-xs text-blue-500 hover:underline" onClick={e => { e.stopPropagation(); setUploadFile(null) }}>Remove</button>
-                  </div>
-                ) : (
-                  <div>
-                    <p className="text-sm font-medium text-slate-600">Drop a plugin ZIP here or click to browse</p>
-                    <p className="text-xs text-slate-400 mt-1">Only .zip files are accepted</p>
-                  </div>
-                )}
+                <Package className="w-10 h-10 mx-auto mb-2 text-slate-400" />
+                <p className="text-sm font-medium text-slate-600">Drop plugin ZIPs here or click to browse</p>
+                <p className="text-xs text-slate-400 mt-1">Multiple files supported — .zip only</p>
               </div>
+
+              {/* File queue */}
+              {uploadQueue.length > 0 && (
+                <div className="border border-slate-200 rounded-lg overflow-hidden">
+                  <div className="bg-slate-50 px-4 py-2 flex items-center justify-between border-b border-slate-200">
+                    <span className="text-xs font-semibold text-slate-600 uppercase tracking-wide">
+                      {uploadQueue.length} file{uploadQueue.length > 1 ? 's' : ''} queued
+                    </span>
+                    <button
+                      className="text-xs text-slate-400 hover:text-slate-600"
+                      onClick={() => setUploadQueue([])}
+                    >
+                      Clear all
+                    </button>
+                  </div>
+                  <div className="divide-y divide-slate-100">
+                    {uploadQueue.map((item, i) => (
+                      <div key={i} className="flex items-center gap-3 px-4 py-3">
+                        <FileArchive className="w-4 h-4 text-slate-400 shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-slate-700 truncate">{item.file.name}</p>
+                          <p className="text-xs text-slate-400">{(item.file.size / 1024).toFixed(1)} KB</p>
+                        </div>
+                        <div className="shrink-0">
+                          {item.status === 'pending' && (
+                            <span className="text-xs text-slate-400">Pending</span>
+                          )}
+                          {item.status === 'uploading' && (
+                            <div className="flex items-center gap-1 text-blue-500">
+                              <RefreshCw className="w-3 h-3 animate-spin" />
+                              <span className="text-xs">Installing...</span>
+                            </div>
+                          )}
+                          {item.status === 'done' && (
+                            <div className="flex items-center gap-1 text-green-600">
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              <span className="text-xs">Done</span>
+                            </div>
+                          )}
+                          {item.status === 'error' && (
+                            <div className="flex items-center gap-1 text-red-500" title={item.message}>
+                              <AlertTriangle className="w-3.5 h-3.5" />
+                              <span className="text-xs">Error</span>
+                            </div>
+                          )}
+                        </div>
+                        {item.status === 'pending' && (
+                          <button
+                            className="text-slate-300 hover:text-red-400 shrink-0"
+                            onClick={() => removeFromQueue(i)}
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <label className="flex items-center gap-3 cursor-pointer select-none">
                 <input type="checkbox" checked={overwrite} onChange={e => setOverwrite(e.target.checked)} className="w-4 h-4 accent-blue-600" />
@@ -474,16 +712,33 @@ export function Plugins() {
                 </div>
               </label>
 
-              <Button className="w-full" onClick={handleUploadSubmit} disabled={!uploadFile || uploadMutation.isPending}>
-                {uploadMutation.isPending ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                {uploadMutation.isPending ? 'Installing...' : 'Upload & Install Plugin'}
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => uploadInputRef.current?.click()}
+                  disabled={isUploadingAll}
+                >
+                  <Upload className="w-4 h-4" /> Add Files
+                </Button>
+                <Button
+                  className="flex-1"
+                  onClick={handleUploadAll}
+                  disabled={uploadQueue.filter(q => q.status === 'pending').length === 0 || isUploadingAll}
+                >
+                  {isUploadingAll ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                  {isUploadingAll
+                    ? `Installing (${uploadQueue.filter(q => q.status === 'uploading').length + uploadQueue.filter(q => q.status === 'done').length}/${uploadQueue.length})...`
+                    : `Install ${uploadQueue.filter(q => q.status === 'pending').length} Plugin${uploadQueue.filter(q => q.status === 'pending').length > 1 ? 's' : ''}`
+                  }
+                </Button>
+              </div>
             </div>
           </TabsContent>
         </Tabs>
       </div>
 
-      {/* ── Delete Dialog ── */}
+      {/* ── Single Delete Dialog ── */}
       <Dialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
         <DialogContent>
           <DialogHeader>
@@ -499,6 +754,39 @@ export function Plugins() {
             <Button variant="destructive" onClick={() => deleteTarget && deleteMutation.mutate(deleteTarget.file)} disabled={deleteMutation.isPending}>
               {deleteMutation.isPending ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
               Delete Plugin
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Bulk Delete Dialog ── */}
+      <Dialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-red-500" /> Delete {selected.size} Plugin{selected.size > 1 ? 's' : ''}
+            </DialogTitle>
+            <DialogDescription>
+              This will permanently delete the selected {selected.size} plugin{selected.size > 1 ? 's' : ''}. This cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-40 overflow-y-auto space-y-1">
+            {selectedList.map(p => (
+              <div key={p.file} className="flex items-center gap-2 text-sm text-slate-600">
+                <Package className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                {p.name}
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBulkDeleteOpen(false)}>Cancel</Button>
+            <Button
+              variant="destructive"
+              onClick={() => bulkDeleteMutation.mutate([...selected])}
+              disabled={bulkDeleteMutation.isPending}
+            >
+              {bulkDeleteMutation.isPending ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+              Delete All
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -572,11 +860,41 @@ export function Plugins() {
   )
 }
 
+// ── Group checkbox (select all in section) ──
+function GroupCheckbox({
+  files, selected, onToggle
+}: {
+  files: string[]
+  selected: Set<string>
+  onToggle: (files: string[]) => void
+}) {
+  const allSelected = files.length > 0 && files.every(f => selected.has(f))
+  const someSelected = files.some(f => selected.has(f))
+
+  return (
+    <button
+      className="text-slate-400 hover:text-slate-600 transition-colors"
+      onClick={() => onToggle(files)}
+      title={allSelected ? 'Deselect all' : 'Select all'}
+    >
+      {allSelected
+        ? <CheckSquare className="w-4 h-4 text-blue-500" />
+        : someSelected
+          ? <Minus className="w-4 h-4 text-blue-400" />
+          : <Square className="w-4 h-4" />
+      }
+    </button>
+  )
+}
+
+// ── Plugin row ──
 function PluginRow({
-  plugin, onToggle, onDelete, onExport, onUpdate, onVersions,
+  plugin, selected, onSelect, onToggle, onDelete, onExport, onUpdate, onVersions,
   isTogglingPending, isExporting, isUpdating,
 }: {
   plugin: Plugin
+  selected: boolean
+  onSelect: (file: string) => void
   onToggle: () => void
   onDelete: () => void
   onExport: () => void
@@ -587,20 +905,33 @@ function PluginRow({
   isUpdating: boolean
 }) {
   return (
-    <div className={`flex items-center justify-between p-4 rounded-lg border bg-white hover:shadow-sm transition-shadow ${plugin.active ? 'border-slate-200' : 'border-slate-100 opacity-70'}`}>
-      <div className="flex-1 min-w-0 mr-4">
-        <div className="flex items-center gap-2 mb-1">
+    <div className={`flex items-center gap-3 p-4 rounded-lg border bg-white hover:shadow-sm transition-shadow ${
+      selected ? 'border-blue-300 bg-blue-50/40' : plugin.active ? 'border-slate-200' : 'border-slate-100 opacity-70'
+    }`}>
+      <button
+        className="text-slate-400 hover:text-blue-500 transition-colors shrink-0"
+        onClick={() => onSelect(plugin.file)}
+      >
+        {selected
+          ? <CheckSquare className="w-4 h-4 text-blue-500" />
+          : <Square className="w-4 h-4" />
+        }
+      </button>
+
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 mb-0.5">
           <h3 className="font-medium text-sm text-slate-900">{plugin.name}</h3>
           {plugin.active && <Badge variant="success" className="text-[10px]">Active</Badge>}
           {plugin.has_update && <Badge variant="warning" className="text-[10px]">Update</Badge>}
         </div>
         <p className="text-xs text-slate-500 truncate">{stripHtml(truncate(plugin.description, 120))}</p>
-        <div className="flex items-center gap-2 mt-1">
+        <div className="flex items-center gap-2 mt-0.5">
           <span className="text-[10px] text-slate-400">v{plugin.version}</span>
           <span className="text-[10px] text-slate-300">•</span>
           <span className="text-[10px] text-slate-400">{stripHtml(plugin.author)}</span>
         </div>
       </div>
+
       <div className="flex items-center gap-1.5 shrink-0">
         {plugin.has_update && (
           <Button size="sm" className="bg-amber-500 hover:bg-amber-600 text-white h-8" onClick={onUpdate} disabled={isUpdating}>

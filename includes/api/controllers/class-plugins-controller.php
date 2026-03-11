@@ -452,6 +452,108 @@ class Plugins_Controller {
         return new WP_REST_Response( [ 'success' => true, 'message' => "Plugin v{$version} installed successfully." ], 200 );
     }
 
+    public static function bulk_activate( WP_REST_Request $request ) {
+        self::load_plugin_functions();
+
+        $plugins = (array) $request->get_param( 'plugins' );
+        if ( empty( $plugins ) ) {
+            return new WP_Error( 'missing_param', 'Plugins array is required.', [ 'status' => 400 ] );
+        }
+
+        $plugins = array_map( 'sanitize_text_field', $plugins );
+        $result  = activate_plugins( $plugins );
+
+        if ( is_wp_error( $result ) ) {
+            return new WP_Error( 'activation_failed', $result->get_error_message(), [ 'status' => 500 ] );
+        }
+
+        return new WP_REST_Response( [ 'success' => true, 'message' => count( $plugins ) . ' plugin(s) activated.' ], 200 );
+    }
+
+    public static function bulk_deactivate( WP_REST_Request $request ) {
+        self::load_plugin_functions();
+
+        $plugins = (array) $request->get_param( 'plugins' );
+        if ( empty( $plugins ) ) {
+            return new WP_Error( 'missing_param', 'Plugins array is required.', [ 'status' => 400 ] );
+        }
+
+        $plugins = array_map( 'sanitize_text_field', $plugins );
+        $plugins = array_values( array_filter( $plugins, fn( $p ) => WP_MANAGER_PRO_BASENAME !== $p ) );
+
+        deactivate_plugins( $plugins );
+
+        return new WP_REST_Response( [ 'success' => true, 'message' => count( $plugins ) . ' plugin(s) deactivated.' ], 200 );
+    }
+
+    public static function bulk_delete( WP_REST_Request $request ) {
+        self::load_plugin_functions();
+
+        $plugins = (array) $request->get_param( 'plugins' );
+        if ( empty( $plugins ) ) {
+            return new WP_Error( 'missing_param', 'Plugins array is required.', [ 'status' => 400 ] );
+        }
+
+        $plugins = array_map( 'sanitize_text_field', $plugins );
+        $plugins = array_values( array_filter( $plugins, fn( $p ) => WP_MANAGER_PRO_BASENAME !== $p ) );
+
+        deactivate_plugins( $plugins );
+
+        if ( ! function_exists( 'delete_plugins' ) ) {
+            require_once ABSPATH . 'wp-admin/includes/plugin.php';
+        }
+
+        $result = delete_plugins( $plugins );
+
+        if ( is_wp_error( $result ) ) {
+            return new WP_Error( 'delete_failed', $result->get_error_message(), [ 'status' => 500 ] );
+        }
+
+        return new WP_REST_Response( [ 'success' => true, 'message' => count( $plugins ) . ' plugin(s) deleted.' ], 200 );
+    }
+
+    public static function bulk_update( WP_REST_Request $request ) {
+        self::load_plugin_functions();
+
+        $plugins = (array) $request->get_param( 'plugins' );
+        if ( empty( $plugins ) ) {
+            return new WP_Error( 'missing_param', 'Plugins array is required.', [ 'status' => 400 ] );
+        }
+
+        $plugins        = array_map( 'sanitize_text_field', $plugins );
+        $update_plugins = get_site_transient( 'update_plugins' );
+        $updated        = 0;
+        $failed         = 0;
+
+        foreach ( $plugins as $plugin_file ) {
+            if ( ! isset( $update_plugins->response[ $plugin_file ] ) ) {
+                continue;
+            }
+
+            $was_active = is_plugin_active( $plugin_file );
+            $upgrader   = new \Plugin_Upgrader( new \WP_Ajax_Upgrader_Skin() );
+            $result     = $upgrader->upgrade( $plugin_file );
+
+            if ( is_wp_error( $result ) || ! $result ) {
+                $failed++;
+            } else {
+                if ( $was_active && ! is_plugin_active( $plugin_file ) ) {
+                    activate_plugin( $plugin_file );
+                }
+                $updated++;
+            }
+        }
+
+        $message = "{$updated} plugin(s) updated" . ( $failed > 0 ? ", {$failed} failed" : '' ) . '.';
+
+        return new WP_REST_Response( [
+            'success' => $updated > 0,
+            'updated' => $updated,
+            'failed'  => $failed,
+            'message' => $message,
+        ], 200 );
+    }
+
     public static function check_updates( WP_REST_Request $request ) {
         self::load_plugin_functions();
 
