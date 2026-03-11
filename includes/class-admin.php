@@ -188,63 +188,79 @@ class Admin {
         wp_register_style( 'wmp-adminbar', false, [], WP_MANAGER_PRO_VERSION ); // phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion
         wp_enqueue_style( 'wmp-adminbar' );
         wp_add_inline_style( 'wmp-adminbar', '
-            #wp-admin-bar-wmp-maintenance > .ab-item {
+            /* Use #wpadminbar prefix throughout to beat WP admin bar specificity */
+            #wpadminbar #wp-admin-bar-wmp-maintenance > .ab-item {
                 display: flex !important;
-                align-items: center;
-                gap: 7px;
-                cursor: pointer;
+                align-items: center !important;
+                gap: 7px !important;
+                cursor: pointer !important;
                 padding: 0 12px !important;
-                user-select: none;
+                user-select: none !important;
+                line-height: 1 !important;
             }
-            .wmp-ab-icon {
-                font-size: 13px;
-                line-height: 1;
-                opacity: .85;
+            #wpadminbar #wp-admin-bar-wmp-maintenance .wmp-ab-icon {
+                font-size: 13px !important;
+                line-height: 1 !important;
+                opacity: .85 !important;
+                width: auto !important;
+                height: auto !important;
             }
-            .wmp-ab-label {
-                font-size: 13px;
-                font-weight: 500;
+            #wpadminbar #wp-admin-bar-wmp-maintenance .wmp-ab-label {
+                font-size: 13px !important;
+                font-weight: 500 !important;
+                width: auto !important;
+                height: auto !important;
             }
-            /* Toggle switch */
-            .wmp-ab-toggle {
-                display: inline-flex;
-                align-items: center;
-                width: 38px;
-                height: 20px;
-                background: #555d65;
-                border-radius: 10px;
-                position: relative;
-                transition: background .22s;
-                flex-shrink: 0;
-                margin-left: 2px;
+            /* Toggle pill — all dims !important to override WP span resets */
+            #wpadminbar #wp-admin-bar-wmp-maintenance .wmp-ab-toggle {
+                display: inline-flex !important;
+                align-items: center !important;
+                width: 38px !important;
+                height: 20px !important;
+                min-width: 38px !important;
+                min-height: 20px !important;
+                background: #555d65 !important;
+                border-radius: 10px !important;
+                position: relative !important;
+                transition: background .22s !important;
+                flex-shrink: 0 !important;
+                margin-left: 2px !important;
+                overflow: visible !important;
+                vertical-align: middle !important;
             }
-            .wmp-ab-toggle[data-active="1"] {
-                background: #e05252;
+            #wpadminbar #wp-admin-bar-wmp-maintenance .wmp-ab-toggle[data-active="1"] {
+                background: #e05252 !important;
             }
-            .wmp-ab-knob {
-                width: 14px;
-                height: 14px;
-                background: #fff;
-                border-radius: 50%;
-                position: absolute;
-                left: 3px;
-                transition: left .22s;
-                box-shadow: 0 1px 3px rgba(0,0,0,.3);
+            /* Knob */
+            #wpadminbar #wp-admin-bar-wmp-maintenance .wmp-ab-knob {
+                display: block !important;
+                width: 14px !important;
+                height: 14px !important;
+                min-width: 14px !important;
+                min-height: 14px !important;
+                background: #fff !important;
+                border-radius: 50% !important;
+                position: absolute !important;
+                top: 50% !important;
+                left: 3px !important;
+                transform: translateY(-50%) !important;
+                transition: left .22s !important;
+                box-shadow: 0 1px 3px rgba(0,0,0,.35) !important;
             }
-            .wmp-ab-toggle[data-active="1"] .wmp-ab-knob {
-                left: 21px;
+            #wpadminbar #wp-admin-bar-wmp-maintenance .wmp-ab-toggle[data-active="1"] .wmp-ab-knob {
+                left: 21px !important;
             }
             /* Loading state */
-            #wp-admin-bar-wmp-maintenance.wmp-ab-loading .wmp-ab-toggle {
-                opacity: .5;
-                pointer-events: none;
+            #wpadminbar #wp-admin-bar-wmp-maintenance.wmp-ab-loading .wmp-ab-toggle {
+                opacity: .5 !important;
+                pointer-events: none !important;
             }
-            /* Active (maintenance ON) highlight */
-            #wp-admin-bar-wmp-maintenance.wmp-maint-active > .ab-item {
-                background: rgba(224,82,82,.18) !important;
+            /* Active (maintenance ON) bar highlight */
+            #wpadminbar #wp-admin-bar-wmp-maintenance.wmp-maint-active > .ab-item {
+                background: rgba(224,82,82,.2) !important;
             }
-            #wp-admin-bar-wmp-maintenance.wmp-maint-active > .ab-item:hover {
-                background: rgba(224,82,82,.28) !important;
+            #wpadminbar #wp-admin-bar-wmp-maintenance.wmp-maint-active > .ab-item:hover {
+                background: rgba(224,82,82,.32) !important;
             }
         ' );
 
@@ -253,17 +269,20 @@ class Admin {
         wp_enqueue_script( 'wmp-adminbar' );
         wp_add_inline_script( 'wmp-adminbar', sprintf(
             '(function(){
-                var API  = %s;
-                var NON  = %s;
-                document.addEventListener("DOMContentLoaded", function() {
+                var API = %s;
+                var NON = %s;
+
+                function wmpBindMaintenanceToggle() {
                     var bar = document.getElementById("wp-admin-bar-wmp-maintenance");
                     if (!bar) return;
-                    var link   = bar.querySelector("> .ab-item");
+                    var link   = bar.querySelector(".ab-item");
                     var toggle = bar.querySelector(".wmp-ab-toggle");
-                    if (!link || !toggle) return;
+                    if (!link || !toggle || bar.dataset.wmpBound) return;
+                    bar.dataset.wmpBound = "1";
 
                     link.addEventListener("click", function(e) {
                         e.preventDefault();
+                        e.stopPropagation();
                         if (bar.classList.contains("wmp-ab-loading")) return;
 
                         var isActive = toggle.dataset.active === "1";
@@ -289,7 +308,12 @@ class Admin {
                         .catch(function(err) { console.error("[WP Manager] toggle error", err); })
                         .finally(function() { bar.classList.remove("wmp-ab-loading"); });
                     });
-                });
+                }
+
+                /* Run immediately — footer scripts execute after admin bar HTML is in DOM.
+                   Also listen for DOMContentLoaded as a fallback for edge cases. */
+                wmpBindMaintenanceToggle();
+                document.addEventListener("DOMContentLoaded", wmpBindMaintenanceToggle);
             })();',
             wp_json_encode( $api_url ),
             wp_json_encode( $nonce )
