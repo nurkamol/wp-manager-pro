@@ -16,6 +16,8 @@ import {
   Gauge, Trash2, Timer, FileText, MessageSquare, Database, Zap,
   RefreshCw, Search, ChevronLeft, ChevronRight, CheckSquare, Square,
   ServerCrash, CheckCircle2, AlertTriangle, Clock,
+  Server, Wifi, WifiOff, FlipVertical, Activity, MemoryStick,
+  KeyRound, ArrowDownUp, TrendingUp, Users, Hash,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -47,6 +49,38 @@ interface TransientsData {
   total: number
   page: number
   limit: number
+}
+
+interface ObjectCacheStats {
+  hits?: number
+  misses?: number
+  hit_ratio?: number | null
+  keys_count?: number
+  memory_used?: string | null
+  memory_peak?: string | null
+  uptime_seconds?: number
+  connected_clients?: number
+  evicted_keys?: number
+  expired_keys?: number
+  ops_per_sec?: number
+  redis_version?: string | null
+  version?: string | null
+  maxmemory_policy?: string | null
+  error?: string
+}
+
+interface ObjectCacheData {
+  enabled: boolean
+  drop_in_exists: boolean
+  drop_in_writable: boolean
+  disabled_exists: boolean
+  content_writable: boolean
+  cache_type: 'redis' | 'memcached' | 'apcu' | 'custom' | 'none'
+  status: 'connected' | 'error' | 'not_configured' | 'extension_missing'
+  connection: Record<string, string | number>
+  stats: ObjectCacheStats
+  wp_stats: { cache_hits?: number | null; cache_misses?: number | null; groups?: string[] }
+  diagnostics: Record<string, string>
 }
 
 // ── Cleanup item definitions ───────────────────────────────────────────────────
@@ -232,6 +266,31 @@ export function Performance() {
 
   const totalSelected = selected.reduce((sum, key) => sum + getCount(key), 0)
 
+  // ── Object Cache ──────────────────────────────────────────────────────────────
+  const { data: cacheData, isLoading: cacheLoading, refetch: refetchCache } =
+    useQuery<ObjectCacheData>({
+      queryKey: ['object-cache'],
+      queryFn: () => api.get('/performance/object-cache'),
+    })
+
+  const flushCacheMutation = useMutation<{ success: boolean; message: string }, Error, void>({
+    mutationFn: () => api.post('/performance/object-cache/flush', {}),
+    onSuccess: (res) => {
+      toast[res.success ? 'success' : 'warning'](res.message)
+      refetchCache()
+    },
+    onError: (e: Error) => toast.error(e.message),
+  })
+
+  const dropInMutation = useMutation<{ success: boolean; message: string }, Error, 'enable' | 'disable'>({
+    mutationFn: (action) => api.post('/performance/object-cache/drop-in', { action }),
+    onSuccess: (res) => {
+      toast[res.success ? 'success' : 'error'](res.message)
+      refetchCache()
+    },
+    onError: (e: Error) => toast.error(e.message),
+  })
+
   // ── Search submit ──────────────────────────────────────────────────────────────
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -304,6 +363,16 @@ export function Performance() {
             <TabsTrigger value="cleanup" className="flex items-center gap-2">
               <Trash2 className="w-4 h-4" />
               DB Cleanup
+            </TabsTrigger>
+            <TabsTrigger value="object-cache" className="flex items-center gap-2">
+              <Server className="w-4 h-4" />
+              Object Cache
+              {cacheData?.status === 'connected' && (
+                <span className="w-1.5 h-1.5 rounded-full bg-green-500 ml-0.5" />
+              )}
+              {(cacheData?.status === 'error' || cacheData?.status === 'extension_missing') && (
+                <span className="w-1.5 h-1.5 rounded-full bg-red-500 ml-0.5" />
+              )}
             </TabsTrigger>
           </TabsList>
 
@@ -628,6 +697,343 @@ export function Performance() {
               </CardContent>
             </Card>
           </TabsContent>
+          {/* ── Object Cache Tab ────────────────────────────────────────────── */}
+          <TabsContent value="object-cache">
+            {cacheLoading ? (
+              <div className="flex items-center justify-center py-20 text-muted-foreground">
+                <RefreshCw className="w-5 h-5 animate-spin mr-2" />Loading…
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {/* Status card */}
+                <Card className={cn(
+                  'border',
+                  cacheData?.status === 'connected'          && 'border-green-500/30 bg-green-500/5',
+                  cacheData?.status === 'error'              && 'border-red-500/30 bg-red-500/5',
+                  cacheData?.status === 'extension_missing'  && 'border-amber-500/30 bg-amber-500/5',
+                  cacheData?.status === 'not_configured'     && 'border-slate-700/50',
+                )}>
+                  <CardContent className="pt-5 pb-4">
+                    <div className="flex items-start justify-between gap-4 flex-wrap">
+                      <div className="flex items-center gap-3">
+                        {cacheData?.status === 'connected'
+                          ? <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" />
+                          : cacheData?.status === 'error' || cacheData?.status === 'extension_missing'
+                          ? <WifiOff className="w-5 h-5 text-red-500 shrink-0" />
+                          : <ServerCrash className="w-5 h-5 text-slate-400 shrink-0" />}
+                        <div>
+                          <p className="text-sm font-semibold">
+                            {cacheData?.cache_type === 'none' ? 'No Object Cache' : (
+                              <>
+                                {cacheData?.cache_type?.toUpperCase() ?? 'Object Cache'}{' '}
+                                <span className={cn(
+                                  'font-normal',
+                                  cacheData?.status === 'connected'        ? 'text-green-500'  :
+                                  cacheData?.status === 'error'            ? 'text-red-500'    :
+                                  cacheData?.status === 'extension_missing'? 'text-amber-500'  :
+                                  'text-slate-400'
+                                )}>
+                                  {cacheData?.status === 'connected'         ? 'Connected'          :
+                                   cacheData?.status === 'error'             ? 'Connection Error'   :
+                                   cacheData?.status === 'extension_missing' ? 'Extension Missing'  :
+                                   'Not Configured'}
+                                </span>
+                              </>
+                            )}
+                          </p>
+                          {cacheData?.diagnostics?.error && (
+                            <p className="text-xs text-red-400 mt-0.5 font-mono">{cacheData.diagnostics.error}</p>
+                          )}
+                          {cacheData?.status === 'not_configured' && (
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              No object-cache.php drop-in detected. Install Redis or Memcached for significant performance gains.
+                            </p>
+                          )}
+                          {cacheData?.drop_in_exists && Object.keys(cacheData.connection ?? {}).length > 0 && (
+                            <div className="flex flex-wrap gap-3 mt-2">
+                              {Object.entries(cacheData.connection).map(([k, v]) => v !== '' && v !== null && (
+                                <span key={k} className="text-xs text-muted-foreground font-mono">
+                                  <span className="text-foreground/60">{k}:</span> {String(v)}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Action buttons */}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => refetchCache()}
+                          disabled={cacheLoading}
+                        >
+                          <RefreshCw className="w-4 h-4 mr-1.5" />
+                          Refresh
+                        </Button>
+                        {cacheData?.enabled && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => flushCacheMutation.mutate()}
+                            disabled={flushCacheMutation.isPending}
+                          >
+                            {flushCacheMutation.isPending
+                              ? <RefreshCw className="w-4 h-4 mr-1.5 animate-spin" />
+                              : <Zap className="w-4 h-4 mr-1.5" />}
+                            Flush Cache
+                          </Button>
+                        )}
+                        {/* Drop-in toggle */}
+                        {cacheData?.drop_in_exists && (cacheData.drop_in_writable || cacheData.content_writable) && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-amber-600 border-amber-500/40 hover:bg-amber-500/10"
+                            onClick={() => dropInMutation.mutate('disable')}
+                            disabled={dropInMutation.isPending}
+                          >
+                            <FlipVertical className="w-4 h-4 mr-1.5" />
+                            Disable Drop-in
+                          </Button>
+                        )}
+                        {!cacheData?.drop_in_exists && cacheData?.disabled_exists && cacheData?.content_writable && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-green-600 border-green-500/40 hover:bg-green-500/10"
+                            onClick={() => dropInMutation.mutate('enable')}
+                            disabled={dropInMutation.isPending}
+                          >
+                            <Wifi className="w-4 h-4 mr-1.5" />
+                            Re-enable Drop-in
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Live Stats grid */}
+                {cacheData?.status === 'connected' && (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {cacheData.stats.hit_ratio != null && (
+                      <Card>
+                        <CardContent className="pt-4 pb-3">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-1">Hit Ratio</p>
+                              <p className={cn(
+                                'text-2xl font-bold',
+                                (cacheData.stats.hit_ratio ?? 0) >= 80 ? 'text-green-500' :
+                                (cacheData.stats.hit_ratio ?? 0) >= 50 ? 'text-amber-500' : 'text-red-500'
+                              )}>
+                                {cacheData.stats.hit_ratio}%
+                              </p>
+                              <p className="text-[11px] text-muted-foreground mt-0.5">
+                                {(cacheData.stats.hits ?? 0).toLocaleString()} hits / {(cacheData.stats.misses ?? 0).toLocaleString()} misses
+                              </p>
+                            </div>
+                            <div className="p-2 rounded-lg bg-green-500/10 shrink-0">
+                              <TrendingUp className="w-4 h-4 text-green-500" />
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+                    {cacheData.stats.keys_count != null && (
+                      <Card>
+                        <CardContent className="pt-4 pb-3">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-1">Cached Keys</p>
+                              <p className="text-2xl font-bold">{cacheData.stats.keys_count.toLocaleString()}</p>
+                              {cacheData.stats.evicted_keys != null && (
+                                <p className="text-[11px] text-muted-foreground mt-0.5">{cacheData.stats.evicted_keys.toLocaleString()} evicted</p>
+                              )}
+                            </div>
+                            <div className="p-2 rounded-lg bg-blue-500/10 shrink-0">
+                              <Hash className="w-4 h-4 text-blue-500" />
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+                    {cacheData.stats.memory_used && (
+                      <Card>
+                        <CardContent className="pt-4 pb-3">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-1">Memory Used</p>
+                              <p className="text-2xl font-bold">{cacheData.stats.memory_used}</p>
+                              {cacheData.stats.memory_peak && (
+                                <p className="text-[11px] text-muted-foreground mt-0.5">peak {cacheData.stats.memory_peak}</p>
+                              )}
+                            </div>
+                            <div className="p-2 rounded-lg bg-purple-500/10 shrink-0">
+                              <MemoryStick className="w-4 h-4 text-purple-500" />
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+                    {cacheData.stats.connected_clients != null && (
+                      <Card>
+                        <CardContent className="pt-4 pb-3">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-1">Connections</p>
+                              <p className="text-2xl font-bold">{cacheData.stats.connected_clients}</p>
+                              {cacheData.stats.ops_per_sec != null && (
+                                <p className="text-[11px] text-muted-foreground mt-0.5">{cacheData.stats.ops_per_sec} ops/sec</p>
+                              )}
+                            </div>
+                            <div className="p-2 rounded-lg bg-cyan-500/10 shrink-0">
+                              <Users className="w-4 h-4 text-cyan-500" />
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+                    {(cacheData.stats.redis_version ?? cacheData.stats.version) && (
+                      <Card>
+                        <CardContent className="pt-4 pb-3">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-1">
+                                {cacheData.cache_type === 'redis' ? 'Redis' :
+                                 cacheData.cache_type === 'memcached' ? 'Memcached' : 'APCu'} Version
+                              </p>
+                              <p className="text-xl font-bold">{cacheData.stats.redis_version ?? cacheData.stats.version}</p>
+                              {cacheData.stats.maxmemory_policy && (
+                                <p className="text-[11px] text-muted-foreground mt-0.5 font-mono">{cacheData.stats.maxmemory_policy}</p>
+                              )}
+                            </div>
+                            <div className="p-2 rounded-lg bg-orange-500/10 shrink-0">
+                              <Server className="w-4 h-4 text-orange-500" />
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+                    {cacheData.stats.uptime_seconds != null && cacheData.stats.uptime_seconds > 0 && (
+                      <Card>
+                        <CardContent className="pt-4 pb-3">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-1">Uptime</p>
+                              <p className="text-xl font-bold">
+                                {cacheData.stats.uptime_seconds < 3600
+                                  ? `${Math.floor(cacheData.stats.uptime_seconds / 60)}m`
+                                  : cacheData.stats.uptime_seconds < 86400
+                                  ? `${Math.floor(cacheData.stats.uptime_seconds / 3600)}h`
+                                  : `${Math.floor(cacheData.stats.uptime_seconds / 86400)}d`}
+                              </p>
+                            </div>
+                            <div className="p-2 rounded-lg bg-slate-500/10 shrink-0">
+                              <Activity className="w-4 h-4 text-slate-400" />
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+                    {cacheData.stats.expired_keys != null && (
+                      <Card>
+                        <CardContent className="pt-4 pb-3">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-1">Expired Keys</p>
+                              <p className="text-2xl font-bold">{cacheData.stats.expired_keys.toLocaleString()}</p>
+                            </div>
+                            <div className="p-2 rounded-lg bg-yellow-500/10 shrink-0">
+                              <Clock className="w-4 h-4 text-yellow-500" />
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </div>
+                )}
+
+                {/* WordPress request-level cache stats */}
+                {(cacheData?.wp_stats?.cache_hits != null || cacheData?.wp_stats?.cache_misses != null) && (
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm">This Request — WP Object Cache</CardTitle>
+                      <CardDescription className="text-xs">Cache hits/misses for the current page load (from $wp_object_cache)</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex gap-6">
+                        {cacheData.wp_stats.cache_hits != null && (
+                          <div>
+                            <p className="text-xs text-muted-foreground">Hits</p>
+                            <p className="text-xl font-bold text-green-500">{cacheData.wp_stats.cache_hits.toLocaleString()}</p>
+                          </div>
+                        )}
+                        {cacheData.wp_stats.cache_misses != null && (
+                          <div>
+                            <p className="text-xs text-muted-foreground">Misses</p>
+                            <p className="text-xl font-bold text-amber-500">{cacheData.wp_stats.cache_misses.toLocaleString()}</p>
+                          </div>
+                        )}
+                        {cacheData.wp_stats.groups && cacheData.wp_stats.groups.length > 0 && (
+                          <div className="flex-1">
+                            <p className="text-xs text-muted-foreground mb-1">Cache Groups ({cacheData.wp_stats.groups.length})</p>
+                            <div className="flex flex-wrap gap-1">
+                              {cacheData.wp_stats.groups.slice(0, 20).map(g => (
+                                <span key={g} className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{g}</span>
+                              ))}
+                              {cacheData.wp_stats.groups.length > 20 && (
+                                <span className="text-[10px] text-muted-foreground px-1">+{cacheData.wp_stats.groups.length - 20} more</span>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Drop-in info */}
+                <Card className="border-slate-700/50">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm">Object Cache Drop-in</CardTitle>
+                    <CardDescription className="text-xs">
+                      wp-content/object-cache.php — WordPress uses this file to replace the built-in cache backend
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-wrap gap-4 text-sm">
+                      <div className="flex items-center gap-2">
+                        {cacheData?.drop_in_exists
+                          ? <CheckCircle2 className="w-4 h-4 text-green-500" />
+                          : <ServerCrash className="w-4 h-4 text-slate-400" />}
+                        <span className={cacheData?.drop_in_exists ? 'text-green-500' : 'text-muted-foreground'}>
+                          {cacheData?.drop_in_exists ? 'Drop-in active' : 'No drop-in installed'}
+                        </span>
+                      </div>
+                      {cacheData?.disabled_exists && (
+                        <div className="flex items-center gap-2">
+                          <AlertTriangle className="w-4 h-4 text-amber-500" />
+                          <span className="text-amber-500">Disabled drop-in exists (object-cache.php.disabled)</span>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2">
+                        {cacheData?.drop_in_writable || cacheData?.content_writable
+                          ? <CheckCircle2 className="w-4 h-4 text-green-500" />
+                          : <AlertTriangle className="w-4 h-4 text-amber-500" />}
+                        <span className="text-muted-foreground">
+                          {cacheData?.drop_in_writable || cacheData?.content_writable ? 'Filesystem writable' : 'Not writable — file operations unavailable'}
+                        </span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+          </TabsContent>
+
         </Tabs>
       </div>
 

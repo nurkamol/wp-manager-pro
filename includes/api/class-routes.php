@@ -675,6 +675,21 @@ class Routes {
             'callback'            => [ Performance_Controller::class, 'run_cleanup' ],
             'permission_callback' => [ self::class, 'admin_permission' ],
         ] );
+        register_rest_route( $namespace, '/performance/object-cache', [
+            'methods'             => 'GET',
+            'callback'            => [ Performance_Controller::class, 'get_object_cache' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/performance/object-cache/flush', [
+            'methods'             => 'POST',
+            'callback'            => [ Performance_Controller::class, 'flush_object_cache' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/performance/object-cache/drop-in', [
+            'methods'             => 'POST',
+            'callback'            => [ Performance_Controller::class, 'manage_drop_in' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
 
         // Cron Manager (v2.1.0).
         register_rest_route( $namespace, '/cron/events', [
