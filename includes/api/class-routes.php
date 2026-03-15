@@ -881,6 +881,21 @@ class Routes {
             'callback'            => [ Settings_Controller::class, 'save_settings' ],
             'permission_callback' => [ self::class, 'admin_permission' ],
         ] );
+        register_rest_route( $namespace, '/settings/export', [
+            'methods'             => 'GET',
+            'callback'            => [ Settings_Controller::class, 'export_settings' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/settings/import', [
+            'methods'             => 'POST',
+            'callback'            => [ Settings_Controller::class, 'import_settings' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/settings/export-wp-xml', [
+            'methods'             => 'POST',
+            'callback'            => [ Settings_Controller::class, 'export_wordpress_xml' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
     }
 
     public static function admin_permission() {

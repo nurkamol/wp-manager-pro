@@ -5,13 +5,14 @@ import {
   Server, Construction, Users, Bug, Image, StickyNote,
   ChevronLeft, ChevronRight, ExternalLink, Settings, RotateCcw,
   Sun, Moon, Shield, Activity, Code2, ArrowLeftRight, Mail, HardDrive,
-  PanelLeftClose, PanelLeftOpen, Gauge, Clock, Images, FileEdit, Terminal,
+  PanelLeftClose, PanelLeftOpen, Gauge, Clock, Images, FileEdit, Terminal, Keyboard,
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { getConfig, getBranding, api } from '@/lib/api'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import type { Theme } from '@/hooks/useTheme'
 import { useWpAdminSidebar } from '@/hooks/useWpAdminSidebar'
+import { useCommandPalette } from '@/components/CommandPalette'
 
 type NavItem = {
   to: string
@@ -101,6 +102,7 @@ export function Sidebar({ collapsed, onToggle, theme, onToggleTheme }: SidebarPr
   const config = getConfig()
   const branding = getBranding()
   const { hidden: wpSidebarHidden, toggle: toggleWpSidebar } = useWpAdminSidebar()
+  const { open: openCommandPalette } = useCommandPalette()
   const pluginName = branding.pluginName || 'WP Manager Pro'
   // Split: first word(s) = main label, last word = sub-badge (e.g. "WP Manager" + "Pro")
   const nameParts = pluginName.split(' ')
@@ -271,6 +273,20 @@ export function Sidebar({ collapsed, onToggle, theme, onToggleTheme }: SidebarPr
                 {theme === 'dark' ? 'Light mode' : 'Dark mode'}
               </TooltipContent>
             </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={openCommandPalette}
+                  className="p-1.5 rounded-md text-slate-400 hover:text-white hover:bg-slate-700/50 transition-colors shrink-0"
+                  aria-label="Open command palette"
+                >
+                  <Keyboard className="w-3.5 h-3.5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top">
+                Command Palette (⌘K)
+              </TooltipContent>
+            </Tooltip>
           </div>
           <div className="flex items-center justify-between">
             <a
@@ -327,6 +343,20 @@ export function Sidebar({ collapsed, onToggle, theme, onToggleTheme }: SidebarPr
             </TooltipTrigger>
             <TooltipContent side="right">
               {theme === 'dark' ? 'Light mode' : 'Dark mode'}
+            </TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={openCommandPalette}
+                className="p-1.5 rounded-md text-slate-400 hover:text-white hover:bg-slate-700/50 transition-colors"
+                aria-label="Open command palette"
+              >
+                <Keyboard className="w-4 h-4" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              Command Palette (⌘K)
             </TooltipContent>
           </Tooltip>
         </div>

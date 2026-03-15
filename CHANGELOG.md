@@ -7,6 +7,23 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [2.5.0] — 2026-03-16
+
+### Added
+- **Command Palette** — `Cmd+K` / `Ctrl+K` global overlay with fuzzy search across all 25 pages and 5 quick actions (Flush Cache, Toggle Maintenance, Clear Error Log, Purge Transients, Create Backup); keyboard navigation (↑↓ Enter Esc); recent pages from localStorage; keyboard icon button in sidebar footer
+- **Settings Export** — export WP Manager Pro config (Branding, Maintenance, SMTP, Image Settings, Snippets, Redirects, Notes) as a signed JSON bundle with HMAC integrity signature
+- **Settings Import** — drag-and-drop JSON import with client-side preview, cross-site warning, per-section overwrite control, and import result summary
+- **WordPress XML Export** — trigger WordPress's native content export (All / Posts / Pages / Media / custom CPT) as a downloadable XML file without leaving the plugin
+
+### API
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/settings/export` | Download all WP Manager Pro settings as signed JSON |
+| POST | `/settings/import` | Import settings from a JSON bundle with section control |
+| POST | `/settings/export-wp-xml` | Stream WordPress XML export for selected content type |
+
+---
+
 ## [2.4.0] — 2026-03-16
 
 ### Added
@@ -640,6 +657,7 @@ First public release of WP Manager Pro — a comprehensive, agency-ready WordPre
 [1.1.0]: https://github.com/nurkamol/wp-manager-pro/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v1.0.0
 
+[2.5.0]: https://github.com/nurkamol/wp-manager-pro/compare/v2.4.0...v2.5.0
 [2.4.0]: https://github.com/nurkamol/wp-manager-pro/compare/v2.3.1...v2.4.0
 [2.3.1]: https://github.com/nurkamol/wp-manager-pro/compare/v2.3.0...v2.3.1
 [2.2.0]: https://github.com/nurkamol/wp-manager-pro/compare/v2.1.0...v2.2.0

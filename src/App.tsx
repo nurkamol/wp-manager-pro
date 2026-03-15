@@ -1,4 +1,4 @@
-import { BrowserRouter, HashRouter, Routes, Route } from 'react-router-dom'
+import { HashRouter, Routes, Route } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Layout } from './components/Layout'
 import { Dashboard } from './pages/Dashboard'
@@ -25,6 +25,7 @@ import { Cron } from './pages/Cron'
 import { MediaManager } from './pages/MediaManager'
 import { ContentTools } from './pages/ContentTools'
 import { DevTools } from './pages/DevTools'
+import { CommandPaletteProvider, CommandPalette } from './components/CommandPalette'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -40,34 +41,37 @@ export function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <HashRouter>
-        <Routes>
-          <Route path="/" element={<Layout />}>
-            <Route index element={<Dashboard />} />
-            <Route path="plugins" element={<Plugins />} />
-            <Route path="themes" element={<Themes />} />
-            <Route path="file-manager" element={<FileManager />} />
-            <Route path="database" element={<Database />} />
-            <Route path="users" element={<Users />} />
-            <Route path="maintenance" element={<Maintenance />} />
-            <Route path="debug" element={<Debug />} />
-            <Route path="images" element={<ImageTools />} />
-            <Route path="notes" element={<Notes />} />
-            <Route path="system" element={<SystemInfo />} />
-            <Route path="reset" element={<Reset />} />
-            <Route path="security" element={<Security />} />
-            <Route path="audit-log" element={<AuditLog />} />
-            <Route path="snippets" element={<Snippets />} />
-            <Route path="redirects" element={<Redirects />} />
-            <Route path="email" element={<Email />} />
-            <Route path="backup" element={<Backup />} />
-            <Route path="settings" element={<Settings />} />
-            <Route path="performance" element={<Performance />} />
-            <Route path="cron" element={<Cron />} />
-            <Route path="media-manager" element={<MediaManager />} />
-            <Route path="content-tools" element={<ContentTools />} />
-            <Route path="dev-tools" element={<DevTools />} />
-          </Route>
-        </Routes>
+        <CommandPaletteProvider>
+          <CommandPalette />
+          <Routes>
+            <Route path="/" element={<Layout />}>
+              <Route index element={<Dashboard />} />
+              <Route path="plugins" element={<Plugins />} />
+              <Route path="themes" element={<Themes />} />
+              <Route path="file-manager" element={<FileManager />} />
+              <Route path="database" element={<Database />} />
+              <Route path="users" element={<Users />} />
+              <Route path="maintenance" element={<Maintenance />} />
+              <Route path="debug" element={<Debug />} />
+              <Route path="images" element={<ImageTools />} />
+              <Route path="notes" element={<Notes />} />
+              <Route path="system" element={<SystemInfo />} />
+              <Route path="reset" element={<Reset />} />
+              <Route path="security" element={<Security />} />
+              <Route path="audit-log" element={<AuditLog />} />
+              <Route path="snippets" element={<Snippets />} />
+              <Route path="redirects" element={<Redirects />} />
+              <Route path="email" element={<Email />} />
+              <Route path="backup" element={<Backup />} />
+              <Route path="settings" element={<Settings />} />
+              <Route path="performance" element={<Performance />} />
+              <Route path="cron" element={<Cron />} />
+              <Route path="media-manager" element={<MediaManager />} />
+              <Route path="content-tools" element={<ContentTools />} />
+              <Route path="dev-tools" element={<DevTools />} />
+            </Route>
+          </Routes>
+        </CommandPaletteProvider>
       </HashRouter>
     </QueryClientProvider>
   )

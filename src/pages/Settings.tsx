@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api, getConfig } from '@/lib/api'
 import { PageHeader } from '@/components/PageHeader'
@@ -9,7 +9,10 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { toast } from 'sonner'
-import { Save, RefreshCw, Palette, BookOpen, HelpCircle, ChevronDown, ChevronRight, ExternalLink } from 'lucide-react'
+import {
+  Save, RefreshCw, Palette, BookOpen, HelpCircle, ChevronDown, ChevronRight, ExternalLink,
+  Download, Upload, FileJson, Globe, CheckSquare, Square, FileDown, AlertTriangle, Info,
+} from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface BrandingSettings {
@@ -20,6 +23,19 @@ interface BrandingSettings {
 
 // ── Changelog data ─────────────────────────────────────────────────────────────
 const changelog: { version: string; date: string; features: string[] }[] = [
+  {
+    version: '2.5.0',
+    date: '2026-03-16',
+    features: [
+      'Command Palette — global Cmd+K / Ctrl+K overlay for instant navigation to any page or quick actions',
+      'Navigation — all 24 pages searchable with fuzzy filter; keyboard navigation with ↑↓ and Enter',
+      'Quick Actions — Flush Object Cache, Toggle Maintenance Mode, Clear Error Log, Purge Expired Transients, Create Backup from anywhere in the app',
+      'Recent Pages — last 5 visited pages shown at top of palette when search is empty (stored in localStorage)',
+      'Settings Export — export plugin configuration (Branding, Maintenance, SMTP, Images, Snippets, Redirects, Notes) as a JSON bundle with HMAC signature',
+      'Settings Import — import a previously exported bundle with section-level overwrite controls and preview of detected sections',
+      'WordPress Content Export — export site content as standard WordPress XML (all / posts / pages / media / custom post type)',
+    ],
+  },
   {
     version: '2.4.0',
     date: '2026-03-16',
@@ -214,7 +230,7 @@ const faq: { q: string; a: string }[] = [
   },
   {
     q: 'How do Code Snippets run?',
-    a: 'PHP snippets are hooked onto WordPress\'s init action (priority 1) and run on every request when enabled. CSS snippets are output via wp_head; JS snippets via wp_footer. Disabling a snippet is instant — it is un-hooked without touching any files. If a snippet causes a fatal error you can disable it directly in the database by setting enabled = 0 in the wp_wmp_snippets table.',
+    a: "PHP snippets are hooked onto WordPress's init action (priority 1) and run on every request when enabled. CSS snippets are output via wp_head; JS snippets via wp_footer. Disabling a snippet is instant — it is un-hooked without touching any files. If a snippet causes a fatal error you can disable it directly in the database by setting enabled = 0 in the wp_wmp_snippets table.",
   },
   {
     q: 'Is the "Login As User" feature a security risk?',
@@ -233,6 +249,34 @@ const faq: { q: string; a: string }[] = [
     a: 'The WordPress admin menu is rendered server-side on every page load. After saving a new menu label in Settings → Branding, simply reload the browser tab and the new label will appear in the WordPress left-hand menu.',
   },
 ]
+
+// ── Export/Import section types ───────────────────────────────────────────────
+
+const EXPORT_SECTIONS = [
+  { id: 'branding',     label: 'Branding' },
+  { id: 'maintenance',  label: 'Maintenance' },
+  { id: 'smtp',         label: 'SMTP / Email' },
+  { id: 'images',       label: 'Image Settings' },
+  { id: 'snippets',     label: 'Code Snippets' },
+  { id: 'redirects',    label: 'Redirects' },
+  { id: 'notes',        label: 'Notes' },
+]
+
+const WP_EXPORT_CONTENT_TYPES = [
+  { value: 'all',        label: 'All Content' },
+  { value: 'post',       label: 'Posts only' },
+  { value: 'page',       label: 'Pages only' },
+  { value: 'attachment', label: 'Media only' },
+  { value: 'custom',     label: 'Custom post type…' },
+]
+
+interface ImportPreview {
+  sections: string[]
+  exported_at: string
+  site_url: string
+  plugin_version: string
+  same_site: boolean
+}
 
 // ── Component ──────────────────────────────────────────────────────────────────
 
@@ -271,6 +315,171 @@ export function Settings() {
   // FAQ accordion state — first item open by default
   const [expandedFaq, setExpandedFaq] = useState<number | null>(0)
 
+  // ── Export state ────────────────────────────────────────────────────────────
+  const [exportSections, setExportSections] = useState<string[]>(EXPORT_SECTIONS.map(s => s.id))
+  const [isExporting, setIsExporting] = useState(false)
+
+  // ── Import state ────────────────────────────────────────────────────────────
+  const [importFile, setImportFile] = useState<File | null>(null)
+  const [importPreview, setImportPreview] = useState<ImportPreview | null>(null)
+  const [importSections, setImportSections] = useState<string[]>([])
+  const [isDragging, setIsDragging] = useState(false)
+  const [isImporting, setIsImporting] = useState(false)
+  const [importResult, setImportResult] = useState<{ imported: string[]; skipped: string[]; warnings: string[] } | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // ── WP XML export state ─────────────────────────────────────────────────────
+  const [wpExportContent, setWpExportContent] = useState('all')
+  const [wpExportCustomType, setWpExportCustomType] = useState('')
+  const [isWpExporting, setIsWpExporting] = useState(false)
+
+  function toggleExportSection(id: string) {
+    setExportSections(prev =>
+      prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]
+    )
+  }
+
+  function toggleImportSection(id: string) {
+    setImportSections(prev =>
+      prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]
+    )
+  }
+
+  async function handleExport() {
+    if (exportSections.length === 0) {
+      toast.error('Select at least one section to export')
+      return
+    }
+    setIsExporting(true)
+    try {
+      const cfg = getConfig()
+      const params = new URLSearchParams({ sections: exportSections.join(',') })
+      const res = await fetch(`${cfg.apiUrl}/settings/export?${params}`, {
+        method: 'GET',
+        headers: { 'X-WP-Nonce': cfg.nonce },
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ message: `HTTP ${res.status}` }))
+        throw new Error(err.message || `HTTP ${res.status}`)
+      }
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      const date = new Date().toISOString().slice(0, 10)
+      a.href = url
+      a.download = `wmp-settings-${date}.json`
+      a.click()
+      URL.revokeObjectURL(url)
+      toast.success('Settings exported successfully')
+    } catch (err) {
+      toast.error((err as Error).message || 'Export failed')
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+  function parseImportFile(file: File) {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      try {
+        const json = JSON.parse(e.target?.result as string)
+        const sections: string[] = []
+        EXPORT_SECTIONS.forEach(s => {
+          if (json[s.id] !== undefined) sections.push(s.id)
+        })
+        const siteUrl = json._meta?.site_url || ''
+        const currentSite = config.siteUrl || ''
+        setImportPreview({
+          sections,
+          exported_at: json._meta?.exported_at || '',
+          site_url: siteUrl,
+          plugin_version: json._meta?.plugin_version || '',
+          same_site: !!siteUrl && !!currentSite && siteUrl === currentSite,
+        })
+        setImportSections(sections)
+        setImportResult(null)
+      } catch {
+        toast.error('Invalid JSON file — please select a valid WP Manager Pro export')
+        setImportFile(null)
+        setImportPreview(null)
+      }
+    }
+    reader.readAsText(file)
+  }
+
+  function handleFileSelect(file: File) {
+    if (!file.name.endsWith('.json')) {
+      toast.error('Please select a .json file')
+      return
+    }
+    setImportFile(file)
+    parseImportFile(file)
+  }
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+    const file = e.dataTransfer.files[0]
+    if (file) handleFileSelect(file)
+  }, [])
+
+  async function handleImport() {
+    if (!importFile) return
+    setIsImporting(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', importFile)
+      formData.append('overwrite', JSON.stringify(importSections))
+      const cfg = getConfig()
+      const res = await fetch(`${cfg.apiUrl}/settings/import`, {
+        method: 'POST',
+        headers: { 'X-WP-Nonce': cfg.nonce },
+        body: formData,
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`)
+      setImportResult(data)
+      toast.success(`Import complete — ${data.imported?.length ?? 0} sections imported`)
+    } catch (err) {
+      toast.error((err as Error).message || 'Import failed')
+    } finally {
+      setIsImporting(false)
+    }
+  }
+
+  async function handleWpExport() {
+    setIsWpExporting(true)
+    const content = wpExportContent === 'custom' ? wpExportCustomType.trim() || 'post' : wpExportContent
+    try {
+      const cfg = getConfig()
+      const res = await fetch(`${cfg.apiUrl}/settings/export-wp-xml`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-WP-Nonce': cfg.nonce,
+        },
+        body: JSON.stringify({ content }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ message: `HTTP ${res.status}` }))
+        throw new Error(err.message || `HTTP ${res.status}`)
+      }
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      const date = new Date().toISOString().slice(0, 10)
+      a.href = url
+      a.download = `wordpress-export-${date}.xml`
+      a.click()
+      URL.revokeObjectURL(url)
+      toast.success('WordPress XML export downloaded')
+    } catch (err) {
+      toast.error((err as Error).message || 'Export failed')
+    } finally {
+      setIsWpExporting(false)
+    }
+  }
+
   if (isLoading) return <PageLoader text="Loading settings..." />
 
   return (
@@ -286,6 +495,10 @@ export function Settings() {
             <TabsTrigger value="branding" className="flex items-center gap-2">
               <Palette className="w-4 h-4" />
               Branding
+            </TabsTrigger>
+            <TabsTrigger value="export-import" className="flex items-center gap-2">
+              <Download className="w-4 h-4" />
+              Export / Import
             </TabsTrigger>
             <TabsTrigger value="changelog" className="flex items-center gap-2">
               <BookOpen className="w-4 h-4" />
@@ -382,6 +595,296 @@ export function Settings() {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* ── Export / Import Tab ───────────────────────────────────────────── */}
+          <TabsContent value="export-import" className="space-y-6">
+
+            {/* JSON Export */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileJson className="w-5 h-5 text-blue-500" />
+                  Export Settings
+                </CardTitle>
+                <CardDescription>
+                  Download a JSON bundle of selected plugin configuration sections.
+                  The bundle is signed with an HMAC so you can verify it hasn't been tampered with.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Section checkboxes */}
+                <div>
+                  <div className="flex items-center gap-4 mb-3">
+                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Sections to export</span>
+                    <button
+                      onClick={() => setExportSections(EXPORT_SECTIONS.map(s => s.id))}
+                      className="text-xs text-blue-600 hover:underline"
+                    >
+                      Select All
+                    </button>
+                    <button
+                      onClick={() => setExportSections([])}
+                      className="text-xs text-slate-500 hover:underline"
+                    >
+                      None
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {EXPORT_SECTIONS.map(section => {
+                      const checked = exportSections.includes(section.id)
+                      return (
+                        <button
+                          key={section.id}
+                          onClick={() => toggleExportSection(section.id)}
+                          className={cn(
+                            'flex items-center gap-2 px-3 py-2 rounded-md border text-sm transition-colors text-left',
+                            checked
+                              ? 'border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
+                              : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                          )}
+                        >
+                          {checked
+                            ? <CheckSquare className="w-3.5 h-3.5 shrink-0" />
+                            : <Square className="w-3.5 h-3.5 shrink-0" />}
+                          {section.label}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* Metadata */}
+                <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700 text-xs text-slate-500 space-y-1">
+                  <div className="flex items-center gap-2">
+                    <Globe className="w-3.5 h-3.5" />
+                    <span>Site: {config.siteUrl || window.location.origin}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Info className="w-3.5 h-3.5" />
+                    <span>Plugin version: v{config.version}</span>
+                  </div>
+                </div>
+
+                <Button onClick={handleExport} disabled={isExporting || exportSections.length === 0}>
+                  {isExporting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
+                  Export Settings
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* JSON Import */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Upload className="w-5 h-5 text-green-500" />
+                  Import Settings
+                </CardTitle>
+                <CardDescription>
+                  Restore settings from a previously exported WP Manager Pro JSON bundle.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+
+                {/* Drop zone */}
+                <div
+                  onDragOver={e => { e.preventDefault(); setIsDragging(true) }}
+                  onDragLeave={() => setIsDragging(false)}
+                  onDrop={handleDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                  className={cn(
+                    'border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors',
+                    isDragging
+                      ? 'border-blue-400 bg-blue-50 dark:bg-blue-900/10'
+                      : 'border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/30'
+                  )}
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".json"
+                    className="hidden"
+                    onChange={e => {
+                      const file = e.target.files?.[0]
+                      if (file) handleFileSelect(file)
+                    }}
+                  />
+                  <FileJson className="w-8 h-8 mx-auto mb-2 text-slate-400" />
+                  {importFile ? (
+                    <p className="text-sm font-medium text-slate-700 dark:text-slate-300">{importFile.name}</p>
+                  ) : (
+                    <>
+                      <p className="text-sm text-slate-600 dark:text-slate-400">
+                        Drop a <strong>.json</strong> export file here, or click to browse
+                      </p>
+                      <p className="text-xs text-slate-400 mt-1">Only WP Manager Pro export files are supported</p>
+                    </>
+                  )}
+                </div>
+
+                {/* Preview */}
+                {importPreview && (
+                  <div className="space-y-3">
+                    <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700 text-xs text-slate-500 space-y-1.5">
+                      <p className="font-medium text-slate-700 dark:text-slate-300 text-sm">File Preview</p>
+                      <div className="flex items-center gap-2">
+                        <Globe className="w-3.5 h-3.5 shrink-0" />
+                        <span>Exported from: {importPreview.site_url || 'unknown'}</span>
+                        {!importPreview.same_site && importPreview.site_url && (
+                          <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
+                            <AlertTriangle className="w-3 h-3" /> different site
+                          </span>
+                        )}
+                      </div>
+                      {importPreview.exported_at && (
+                        <div className="flex items-center gap-2">
+                          <Info className="w-3.5 h-3.5 shrink-0" />
+                          <span>Date: {new Date(importPreview.exported_at).toLocaleString()}</span>
+                        </div>
+                      )}
+                      {importPreview.plugin_version && (
+                        <div className="flex items-center gap-2">
+                          <Info className="w-3.5 h-3.5 shrink-0" />
+                          <span>Plugin version: v{importPreview.plugin_version}</span>
+                        </div>
+                      )}
+                      <div>
+                        <span>Sections detected: </span>
+                        <span className="font-medium text-slate-700 dark:text-slate-300">
+                          {importPreview.sections.map(s => EXPORT_SECTIONS.find(x => x.id === s)?.label || s).join(', ') || 'none'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Overwrite checkboxes */}
+                    {importPreview.sections.length > 0 && (
+                      <div>
+                        <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                          Overwrite existing data for:
+                        </p>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                          {importPreview.sections.map(id => {
+                            const label = EXPORT_SECTIONS.find(s => s.id === id)?.label || id
+                            const checked = importSections.includes(id)
+                            return (
+                              <button
+                                key={id}
+                                onClick={() => toggleImportSection(id)}
+                                className={cn(
+                                  'flex items-center gap-2 px-3 py-2 rounded-md border text-sm transition-colors text-left',
+                                  checked
+                                    ? 'border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300'
+                                    : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                                )}
+                              >
+                                {checked
+                                  ? <CheckSquare className="w-3.5 h-3.5 shrink-0" />
+                                  : <Square className="w-3.5 h-3.5 shrink-0" />}
+                                {label}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    <Button
+                      onClick={handleImport}
+                      disabled={isImporting || importSections.length === 0}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      {isImporting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                      Import Settings
+                    </Button>
+                  </div>
+                )}
+
+                {/* Import result */}
+                {importResult && (
+                  <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg text-sm space-y-1">
+                    <p className="font-medium text-green-800 dark:text-green-200">Import Complete</p>
+                    {importResult.imported.length > 0 && (
+                      <p className="text-green-700 dark:text-green-300 text-xs">
+                        Imported: {importResult.imported.map(s => EXPORT_SECTIONS.find(x => x.id === s)?.label || s).join(', ')}
+                      </p>
+                    )}
+                    {importResult.skipped.length > 0 && (
+                      <p className="text-slate-500 text-xs">
+                        Skipped: {importResult.skipped.join(', ')}
+                      </p>
+                    )}
+                    {importResult.warnings.length > 0 && (
+                      <div className="mt-1">
+                        {importResult.warnings.map((w, i) => (
+                          <p key={i} className="text-amber-600 dark:text-amber-400 text-xs flex items-center gap-1">
+                            <AlertTriangle className="w-3 h-3 shrink-0" />{w}
+                          </p>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* WordPress XML Export */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Globe className="w-5 h-5 text-purple-500" />
+                  WordPress Content Export
+                </CardTitle>
+                <CardDescription>
+                  Export site content in standard WordPress XML format — importable on any WordPress site via Tools → Import.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Content type</Label>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {WP_EXPORT_CONTENT_TYPES.map(ct => (
+                      <button
+                        key={ct.value}
+                        onClick={() => setWpExportContent(ct.value)}
+                        className={cn(
+                          'px-3 py-2 rounded-md border text-sm text-left transition-colors',
+                          wpExportContent === ct.value
+                            ? 'border-purple-300 dark:border-purple-700 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300'
+                            : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                        )}
+                      >
+                        {ct.label}
+                      </button>
+                    ))}
+                  </div>
+                  {wpExportContent === 'custom' && (
+                    <div className="mt-2">
+                      <Input
+                        placeholder="Post type slug, e.g. product"
+                        value={wpExportCustomType}
+                        onChange={e => setWpExportCustomType(e.target.value)}
+                        className="max-w-xs"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg text-xs text-blue-700 dark:text-blue-300">
+                  <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                  <span>Standard WordPress export format — importable on any WordPress site via <strong>Tools → Import → WordPress</strong>.</span>
+                </div>
+
+                <Button
+                  onClick={handleWpExport}
+                  disabled={isWpExporting || (wpExportContent === 'custom' && !wpExportCustomType.trim())}
+                  className="bg-purple-600 hover:bg-purple-700"
+                >
+                  {isWpExporting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                  Export as XML
+                </Button>
+              </CardContent>
+            </Card>
+
           </TabsContent>
 
           {/* ── Changelog Tab ────────────────────────────────────────────────── */}

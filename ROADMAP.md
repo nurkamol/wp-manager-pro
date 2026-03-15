@@ -2,7 +2,7 @@
 
 This document outlines the planned feature development for WP Manager Pro. Releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Minor versions (`1.x.0`) add new features; patch versions (`1.x.y`) deliver bug fixes and polish.
 
-> **Current version:** 2.4.0 — last updated 2026-03-16
+> **Current version:** 2.5.0 — last updated 2026-03-16
 
 ---
 
@@ -26,49 +26,91 @@ This document outlines the planned feature development for WP Manager Pro. Relea
 | [2.3.0] | Content Tools: Bulk Post Editor, Post Duplicator, Scheduled Post Manager, Options Table Editor — 10 new REST endpoints |
 | [2.3.1] | Bundled Redis drop-in (no external plugin needed), Redis admin bar node with flush cache, maintenance toggle visibility setting, custom bypass URL slug, asset cache-busting fix |
 | [2.4.0] | Dev Tools: wp-config.php visual editor, .htaccess editor with auto-backup, PHP Info viewer, Query Monitor (lite), Environment badge in sidebar |
+| [2.5.0] | Command Palette (Cmd+K), Settings Export/Import (signed JSON bundle), WordPress XML Content Export |
 
 ---
 
 ## 🔜 Upcoming
 
----
+### v2.5.0 — Command Palette + Settings Export/Import
+*Focus: keyboard-first navigation and cross-site portability*
 
-### v2.5.0 — Command Palette & Import / Export / Sync
-*Focus: portability of settings and content between environments*
-
-- **Settings Export / Import** — export all WP Manager Pro settings (SMTP, branding, redirects, snippets, image options) as a signed JSON bundle; import on any site
-- **WordPress Native Exporter** — trigger the built-in WordPress XML export (posts, pages, media) without navigating away from WP Manager Pro
-- **Remote Pull (FTP / SFTP)** — connect to a remote server via FTP/SFTP credentials; pull files or database to the local environment with progress indicator
-- **Environment Sync** — push/pull `wp_options` configuration keys between two connected sites (e.g. staging → production)
+- **Command Palette** — `Cmd+K` / `Ctrl+K` overlay with fuzzy search across all pages, quick actions (flush cache, toggle maintenance, clear log), and recent items
+- **Settings Export** — export all WP Manager Pro config (SMTP, branding, redirects, snippets, image options, maintenance settings) as a signed JSON bundle
+- **Settings Import** — import the bundle on any site with conflict resolution (skip / overwrite per section)
+- **WordPress XML Exporter** — trigger the native WP export (posts, pages, media, users) without leaving the plugin
 
 ---
 
-### v2.6.0 — Multisite Support
-*Focus: first-class WordPress Multisite / Network compatibility*
+### v2.6.0 — Update Manager
+*Focus: safe, informed updates on production sites*
 
-- **Network Dashboard** — aggregate stats across all subsites (plugin count, update alerts, storage usage)
-- **Network Plugin / Theme Manager** — network-activate, deactivate, and update plugins and themes across the whole network
-- **Per-Site Controls** — switch between subsites from within the plugin UI without a full page reload
-- **Super Admin Actions** — manage network users, add/remove subsites, and configure network options
+- **Changelog Preview** — show each plugin/theme's changelog before updating; fetches from WordPress.org API
+- **Smart Update Scheduler** — schedule plugin/theme updates for off-peak hours via WP Cron; queue multiple updates
+- **Auto-Rollback** — snapshot plugin files before update; one-click rollback if site breaks afterward
+- **Update History Log** — log of every update (what changed, when, by whom) with rollback link per entry
+- **Bulk Update Queue** — select updates, review all changelogs, then apply in one controlled batch
+
+---
+
+### v2.7.0 — Security Scanner
+*Focus: proactive threat detection*
+
+- **Malware Scanner** — scan all plugin/theme/core files for known malicious patterns (base64-encoded eval, obfuscated code, webshells)
+- **Vulnerability Database** — check installed plugins and themes against the Patchstack / WPScan CVE feed; show severity and fix status
+- **SSL Monitor** — verify SSL certificate validity and expiry for the site domain; alert N days before expiry
+- **Outdated Core Alert** — compare installed WP version against latest release; flag EOL PHP versions
+- **Security Score** — overall score card combining all checks with prioritised fix list
+
+---
+
+### v2.8.0 — Agency Tools
+*Focus: client delivery and white-labelling*
+
+- **Client Report Generator** — one-click HTML/PDF report: uptime, plugins installed, last backup, security score, performance overview; customisable with client logo
+- **White-label Login Page** — custom logo, background image, colours, and footer text on `wp-login.php`
+- **Admin UI Customiser** — hide/reorder WP dashboard widgets and admin menu items per role; clients only see what they need
+- **wp_mail Interceptor** — catch all outgoing WordPress emails in an inbox log; preview HTML render; resend button; disable actual sending (dev mode)
+- **Coming Soon Mode** — pre-launch page separate from Maintenance Mode, with email capture form and countdown
+
+---
+
+### v2.9.0 — Developer Utilities
+*Focus: day-to-day debugging and scaffolding*
+
+- **Hook Explorer** — browse all registered `add_action` / `add_filter` calls with priorities, source file, and callback name; filter by hook name or file
+- **REST API Tester** — built-in Postman-style tester pre-authenticated with site credentials; browse registered routes, send requests, inspect responses
+- **Dummy Data Generator** — create N test posts/pages/users/WooCommerce products with faker data; one-click cleanup
+- **Rewrite Rules Tester** — test any URL against registered rewrite rules; shows which rule matched and query vars produced
+- **Object Cache Browser** — browse Redis/Memcached keys by prefix, inspect cached values, delete individual keys (complements the bundled drop-in)
+- **Database Prefix Changer** — safely rename `wp_` prefix across all tables, options, and user-meta in one operation
+
+---
+
+### v3.0.0 — Notification Centre + Major UI Refresh
+*Focus: proactive monitoring and polished UX*
+
+- **Notification Centre** — persistent in-app alert bell for failed crons, backup errors, login lockouts, update failures, SSL expiry, vulnerability alerts
+- **Dashboard Widgets** — configurable widget grid on the Dashboard: uptime ping, recent audit events, cache hit ratio, pending updates count
+- **Global Search** — `Cmd+F` overlay searching across plugins, files, users, notes, options, and audit log simultaneously
+- **Mobile / Tablet Layout** — fully responsive layout for phones and tablets (sidebar collapses to bottom nav)
+- **Dark Mode Auto-Sync** — follow OS `prefers-color-scheme` when no manual preference is set
+- **Custom Post Type Manager** — register, edit, and delete CPTs and taxonomies from the UI with visual label builder
 
 ---
 
 ## 💡 Backlog (Unscheduled)
 
-These items are under consideration but have not been assigned to a release milestone.
-
 | Idea | Notes |
 |------|-------|
+| **Multisite / Network Support** | Network dashboard, network plugin/theme manager, per-site switching |
 | **Webhook Manager** | Register outgoing webhooks triggered by WP events (publish post, user register, etc.) |
 | **REST API Key Manager** | Generate and manage application passwords / API keys for external integrations |
-| **Global Search** | Search across plugins, files, users, notes, and options from a single input |
-| **Keyboard Shortcuts** | Site-wide shortcuts: `S` to save, `Esc` to close dialogs, `?` for help overlay |
-| **Mobile / Tablet Layout** | Responsive layout improvements for tablets and phones |
-| **Notification Centre** | Persistent in-app alert log for important events (failed crons, backup errors, login lockouts) |
-| **Dark Mode Sync** | Follow OS `prefers-color-scheme` automatically if no manual preference is set |
-| **Plugin Health Check** | Detect plugins known to cause conflicts, security issues, or performance problems |
-| **Custom Post Type Manager** | Register, edit, and delete custom post types and taxonomies from the UI |
-| **WooCommerce Tools** | Basic order stats, stock alerts, and coupon manager when WooCommerce is active |
+| **WooCommerce Tools** | Order stats, stock alerts, coupon manager — shown when WooCommerce is active |
+| **Keyboard Shortcuts** | `S` to save, `Esc` to close dialogs, `?` for help overlay |
+| **WP-CLI Runner** | Execute WP-CLI commands from the browser UI with live output |
+| **Template Hierarchy Viewer** | Show which template file is currently rendering the page |
+| **Plugin Health Check** | Flag plugins known for conflicts, security issues, or poor performance |
 
 ---
 
@@ -105,3 +147,4 @@ Have a feature request or want to vote on a backlog item? [Open an issue](https:
 [2.3.0]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v2.3.0
 [2.3.1]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v2.3.1
 [2.4.0]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v2.4.0
+[2.5.0]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v2.5.0
