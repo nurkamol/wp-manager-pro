@@ -37,9 +37,10 @@ class Maintenance_Controller {
             'bypass_roles'    => (array) get_option( 'wmp_maintenance_bypass_roles', [] ),
             'available_roles' => $available_roles,
             'bypass_key'      => self::get_or_generate_bypass_key(),
-            'scope'           => get_option( 'wmp_maintenance_scope', 'all' ),
-            'scope_paths'     => get_option( 'wmp_maintenance_scope_paths', '' ),
-            'home_url'        => trailingslashit( home_url() ),
+            'scope'                   => get_option( 'wmp_maintenance_scope', 'all' ),
+            'scope_paths'             => get_option( 'wmp_maintenance_scope_paths', '' ),
+            'show_adminbar_toggle'    => (bool) get_option( 'wmp_maintenance_show_adminbar_toggle', true ),
+            'home_url'                => trailingslashit( home_url() ),
         ], 200 );
     }
 
@@ -180,10 +181,12 @@ class Maintenance_Controller {
             }
         }
 
-        $show_badge     = $request->get_param( 'show_badge' );
-        $show_countdown = $request->get_param( 'show_countdown' );
-        if ( $show_badge !== null )     update_option( 'wmp_maintenance_show_badge',     (bool) $show_badge );
-        if ( $show_countdown !== null ) update_option( 'wmp_maintenance_show_countdown', (bool) $show_countdown );
+        $show_badge           = $request->get_param( 'show_badge' );
+        $show_countdown       = $request->get_param( 'show_countdown' );
+        $show_adminbar_toggle = $request->get_param( 'show_adminbar_toggle' );
+        if ( $show_badge !== null )           update_option( 'wmp_maintenance_show_badge',           (bool) $show_badge );
+        if ( $show_countdown !== null )       update_option( 'wmp_maintenance_show_countdown',       (bool) $show_countdown );
+        if ( $show_adminbar_toggle !== null ) update_option( 'wmp_maintenance_show_adminbar_toggle', (bool) $show_adminbar_toggle );
 
         // Bypass roles — array of role slugs allowed to see the site during maintenance.
         $bypass_roles = $request->get_param( 'bypass_roles' );

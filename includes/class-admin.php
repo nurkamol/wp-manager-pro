@@ -149,6 +149,11 @@ class Admin {
             return;
         }
 
+        // Respect the "Show in Admin Bar" setting.
+        if ( ! (bool) get_option( 'wmp_maintenance_show_adminbar_toggle', true ) ) {
+            return;
+        }
+
         $active = (bool) get_option( 'wmp_maintenance_active', false );
 
         $toggle = sprintf(

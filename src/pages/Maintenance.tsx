@@ -37,6 +37,7 @@ interface MaintenanceStatus {
   bypass_key: string
   scope: string
   scope_paths: string
+  show_adminbar_toggle: boolean
   home_url: string
 }
 
@@ -69,6 +70,7 @@ export function Maintenance() {
   const [bypassRoles, setBypassRoles] = useState<string[]>([])
   const [bypassKey, setBypassKey] = useState('')
   const [scope, setScope] = useState('all')
+  const [showAdminBarToggle, setShowAdminBarToggle] = useState(true)
   const [scopePaths, setScopePaths] = useState('')
   const [initialized, setInitialized] = useState(false)
 
@@ -117,6 +119,7 @@ export function Maintenance() {
       setBypassKey(data.bypass_key ?? '')
       setScope(data.scope ?? 'all')
       setScopePaths(data.scope_paths ?? '')
+      setShowAdminBarToggle(data.show_adminbar_toggle ?? true)
       setInitialized(true)
     }
   }, [data, initialized])
@@ -148,6 +151,7 @@ export function Maintenance() {
     bypass_key: bypassKey,
     scope,
     scope_paths: scopePaths,
+    show_adminbar_toggle: showAdminBarToggle,
   })
 
   const saveSettingsMutation = useMutation({
@@ -573,6 +577,15 @@ export function Maintenance() {
                       )}
                     </div>
 
+                    {/* Admin Bar Toggle visibility */}
+                    <div className="flex items-center justify-between py-2 border-t border-slate-100 dark:border-slate-700 pt-4">
+                      <div>
+                        <Label className="text-sm font-medium">Show Toggle in Admin Bar</Label>
+                        <p className="text-xs text-slate-500 mt-0.5">Display the maintenance on/off switch in the WordPress admin bar</p>
+                      </div>
+                      <Switch checked={showAdminBarToggle} onCheckedChange={setShowAdminBarToggle} />
+                    </div>
+
                     {/* Secret Bypass URL */}
                     <div className="space-y-3 pt-2 border-t border-slate-100 dark:border-slate-700">
                       <div>
@@ -584,36 +597,40 @@ export function Maintenance() {
                           Share this URL to let someone preview the site during maintenance. Sets a 7-day cookie.
                         </p>
                       </div>
-                      <div className="flex gap-2">
-                        <Input
-                          readOnly
-                          value={bypassKey ? `${data?.home_url ?? '/'}?wmp_preview=${bypassKey}` : ''}
-                          className="font-mono text-xs flex-1"
-                          placeholder="Save settings to generate a key…"
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          onClick={copyBypassUrl}
-                          title="Copy URL"
-                          disabled={!bypassKey}
-                        >
-                          <Copy className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          onClick={() => setBypassKey(generateBypassKey())}
-                          title="Regenerate key"
-                        >
-                          <RefreshCw className="w-4 h-4" />
-                        </Button>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs text-slate-400 font-mono shrink-0">{data?.home_url ?? '/'}?wmp_preview=</span>
+                          <Input
+                            value={bypassKey}
+                            onChange={e => setBypassKey(e.target.value.replace(/\s/g, ''))}
+                            className="font-mono text-sm flex-1 min-w-0"
+                            placeholder="your-secret-word"
+                            spellCheck={false}
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            onClick={copyBypassUrl}
+                            title="Copy full URL"
+                            disabled={!bypassKey}
+                          >
+                            <Copy className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            onClick={() => setBypassKey(generateBypassKey())}
+                            title="Auto-generate a random key"
+                          >
+                            <RefreshCw className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        <p className="text-xs text-slate-400">
+                          Type your own word or click <RefreshCw className="w-3 h-3 inline" /> to auto-generate. Changing it invalidates old links. Save settings to apply.
+                        </p>
                       </div>
-                      <p className="text-xs text-slate-400">
-                        Click <RefreshCw className="w-3 h-3 inline" /> to generate a new key (old links will stop working). Then save settings.
-                      </p>
                     </div>
                   </TabsContent>
                 </Tabs>
