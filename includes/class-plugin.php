@@ -51,6 +51,7 @@ class Plugin {
             'class-cron-controller',
             'class-media-controller',
             'class-content-controller',
+            'class-dev-tools-controller',
         ];
 
         foreach ( $controllers as $controller ) {

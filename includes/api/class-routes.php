@@ -26,6 +26,7 @@ use WP_Manager_Pro\API\Controllers\Security_Controller;
 use WP_Manager_Pro\API\Controllers\Cron_Controller;
 use WP_Manager_Pro\API\Controllers\Media_Controller;
 use WP_Manager_Pro\API\Controllers\Content_Controller;
+use WP_Manager_Pro\API\Controllers\Dev_Tools_Controller;
 
 class Routes {
 
@@ -824,6 +825,48 @@ class Routes {
         register_rest_route( $namespace, '/content/options', [
             'methods'             => 'DELETE',
             'callback'            => [ Content_Controller::class, 'delete_option_value' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+
+        // Dev Tools (v2.4.0).
+        register_rest_route( $namespace, '/dev-tools/wp-config', [
+            'methods'             => 'GET',
+            'callback'            => [ Dev_Tools_Controller::class, 'get_wp_config' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/dev-tools/wp-config', [
+            'methods'             => 'POST',
+            'callback'            => [ Dev_Tools_Controller::class, 'save_wp_config_constant' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/dev-tools/htaccess', [
+            'methods'             => 'GET',
+            'callback'            => [ Dev_Tools_Controller::class, 'get_htaccess' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/dev-tools/htaccess', [
+            'methods'             => 'POST',
+            'callback'            => [ Dev_Tools_Controller::class, 'save_htaccess' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/dev-tools/phpinfo', [
+            'methods'             => 'GET',
+            'callback'            => [ Dev_Tools_Controller::class, 'get_phpinfo' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/dev-tools/query-monitor', [
+            'methods'             => 'GET',
+            'callback'            => [ Dev_Tools_Controller::class, 'get_query_monitor' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/dev-tools/environment', [
+            'methods'             => 'GET',
+            'callback'            => [ Dev_Tools_Controller::class, 'get_environment' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/dev-tools/environment', [
+            'methods'             => 'POST',
+            'callback'            => [ Dev_Tools_Controller::class, 'save_environment' ],
             'permission_callback' => [ self::class, 'admin_permission' ],
         ] );
 

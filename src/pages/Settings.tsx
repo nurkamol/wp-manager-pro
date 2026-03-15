@@ -21,6 +21,32 @@ interface BrandingSettings {
 // ── Changelog data ─────────────────────────────────────────────────────────────
 const changelog: { version: string; date: string; features: string[] }[] = [
   {
+    version: '2.4.0',
+    date: '2026-03-16',
+    features: [
+      'Dev Tools page — new 5-tab developer toolkit (Terminal icon in sidebar Tools group)',
+      'wp-config.php Visual Editor — grouped constants (Database, Debug, Salts, URLs, Memory, Custom); Switches for booleans; DB_PASSWORD masked with eye toggle; "Regenerate All Salts" fetches fresh keys from wordpress.org',
+      '.htaccess Editor — textarea editor with file info bar; auto-backup to .htaccess.wmp-backup before every save; Restore from backup button',
+      'PHP Info Viewer — lazy-loaded on demand; search/filter across all sections; collapsible accordion tables; amber highlight when Local ≠ Master value',
+      'Query Monitor — reads $wpdb->queries when SAVEQUERIES is on; stat cards for total queries/time/slow count/memory peak; query table with >50 ms highlight; "Show slow only" toggle',
+      'Environment Badge — select Production / Staging / Development / Local from coloured cards; reads WP_ENVIRONMENT_TYPE constant or plugin option; badge shown in sidebar header',
+      '8 new REST endpoints under /dev-tools/*',
+    ],
+  },
+  {
+    version: '2.3.1',
+    date: '2026-03-16',
+    features: [
+      'Bundled Redis object-cache drop-in — install wp-content/object-cache.php without any third-party plugin',
+      'Object Cache tab in Performance — Overview (status rows, connection details, live Redis stats) and Diagnostics tabs; Install / Enable / Disable / Flush actions',
+      'Redis Cache admin bar node — green pulsing dot + Redis version badge; Flush Cache (AJAX with toast) and Object Cache Settings sub-items',
+      'Maintenance admin bar toggle visibility setting — hidden by default on fresh installs; custom ?wmp_preview= slug for bypass URL',
+      'Fix: JS/CSS versioned by filemtime() — browser always fetches the latest build after a deploy',
+      'Fix: maintenance boolean options (show_badge, show_countdown, show_adminbar_toggle) stored as 0/1 integers',
+      'Fix: page reloads ~800 ms after saving maintenance settings so admin bar reflects changes immediately',
+    ],
+  },
+  {
     version: '2.3.0',
     date: '2026-03-11',
     features: [

@@ -3,7 +3,7 @@
  * Plugin Name:       WP Manager Pro
  * Plugin URI:        https://github.com/nurkamol/wp-manager-pro
  * Description:       A comprehensive agency-ready WordPress management suite with plugin/theme management, file manager, database tools, system info, maintenance mode, user management, and more.
- * Version:           2.3.1
+ * Version:           2.4.0
  * Requires at least: 5.9
  * Requires PHP:      7.4
  * Author:            Nurkamol Vakhidov
@@ -20,7 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define plugin constants.
-define( 'WP_MANAGER_PRO_VERSION', '2.3.1' );
+define( 'WP_MANAGER_PRO_VERSION', '2.4.0' );
 define( 'WP_MANAGER_PRO_FILE', __FILE__ );
 define( 'WP_MANAGER_PRO_PATH', plugin_dir_path( __FILE__ ) );
 define( 'WP_MANAGER_PRO_URL', plugin_dir_url( __FILE__ ) );

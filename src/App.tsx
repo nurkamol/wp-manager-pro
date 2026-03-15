@@ -24,6 +24,7 @@ import { Performance } from './pages/Performance'
 import { Cron } from './pages/Cron'
 import { MediaManager } from './pages/MediaManager'
 import { ContentTools } from './pages/ContentTools'
+import { DevTools } from './pages/DevTools'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -64,6 +65,7 @@ export function App() {
             <Route path="cron" element={<Cron />} />
             <Route path="media-manager" element={<MediaManager />} />
             <Route path="content-tools" element={<ContentTools />} />
+            <Route path="dev-tools" element={<DevTools />} />
           </Route>
         </Routes>
       </HashRouter>

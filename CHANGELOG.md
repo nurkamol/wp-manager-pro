@@ -7,6 +7,30 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [2.4.0] — 2026-03-16
+
+### Added
+- **Dev Tools page** (`/dev-tools`) — new Tools section entry with Terminal icon; 5-tab developer toolkit
+- **wp-config.php Visual Editor** — accordion groups (Database, Debug, Salts, URLs, Memory/Settings, Custom); bool constants as Switches; DB_PASSWORD masked with eye toggle; Salts masked with "Regenerate All Salts" (fetches fresh keys from `api.wordpress.org`); each field has an inline Save button
+- **`.htaccess` Editor** — textarea editor with file info bar (path, size, writability); auto-backup to `.htaccess.wmp-backup` before every save; "Restore from backup" button
+- **PHP Info Viewer** — lazy-loaded on demand; search/filter input across all sections; collapsible accordion sections; table with Directive / Local Value / Master Value; amber highlight when local ≠ master value
+- **Query Monitor** — reads `$wpdb->queries` when `SAVEQUERIES` is on; stat cards (total queries, total time, slow query count, memory peak); query table with slow-query highlight (>50 ms); "Show slow only" toggle; clear instructions when `SAVEQUERIES` is off
+- **Environment Badge** — select Production / Staging / Development / Local from 4 colored cards; reads `WP_ENVIRONMENT_TYPE` constant (read-only) or plugin option; badge rendered in sidebar header under plugin name
+
+### API
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/dev-tools/wp-config` | All defined constants grouped with type/value/line metadata |
+| POST | `/dev-tools/wp-config` | Update a single constant value |
+| GET | `/dev-tools/htaccess` | Read .htaccess content + writability (`?backup=1` for backup copy) |
+| POST | `/dev-tools/htaccess` | Save new .htaccess content (auto-backups before write) |
+| GET | `/dev-tools/phpinfo` | Parsed phpinfo() sections with directive rows |
+| GET | `/dev-tools/query-monitor` | SAVEQUERIES data — slow queries, totals, memory peak |
+| GET | `/dev-tools/environment` | Current environment type (constant or option) |
+| POST | `/dev-tools/environment` | Save environment type to plugin option |
+
+---
+
 ## [2.3.1] — 2026-03-16
 
 ### Added
@@ -616,6 +640,7 @@ First public release of WP Manager Pro — a comprehensive, agency-ready WordPre
 [1.1.0]: https://github.com/nurkamol/wp-manager-pro/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v1.0.0
 
+[2.4.0]: https://github.com/nurkamol/wp-manager-pro/compare/v2.3.1...v2.4.0
 [2.3.1]: https://github.com/nurkamol/wp-manager-pro/compare/v2.3.0...v2.3.1
 [2.2.0]: https://github.com/nurkamol/wp-manager-pro/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/nurkamol/wp-manager-pro/compare/v2.0.0...v2.1.0

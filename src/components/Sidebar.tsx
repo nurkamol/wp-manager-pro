@@ -5,9 +5,10 @@ import {
   Server, Construction, Users, Bug, Image, StickyNote,
   ChevronLeft, ChevronRight, ExternalLink, Settings, RotateCcw,
   Sun, Moon, Shield, Activity, Code2, ArrowLeftRight, Mail, HardDrive,
-  PanelLeftClose, PanelLeftOpen, Gauge, Clock, Images, FileEdit,
+  PanelLeftClose, PanelLeftOpen, Gauge, Clock, Images, FileEdit, Terminal,
 } from 'lucide-react'
-import { getConfig, getBranding } from '@/lib/api'
+import { useQuery } from '@tanstack/react-query'
+import { getConfig, getBranding, api } from '@/lib/api'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import type { Theme } from '@/hooks/useTheme'
 import { useWpAdminSidebar } from '@/hooks/useWpAdminSidebar'
@@ -52,6 +53,7 @@ const navGroups: NavGroup[] = [
     items: [
       { to: '/maintenance', icon: Construction, label: 'Maintenance' },
       { to: '/debug', icon: Bug, label: 'Debug Tools' },
+      { to: '/dev-tools', icon: Terminal, label: 'Dev Tools' },
       { to: '/images', icon: Image, label: 'Image Tools' },
       { to: '/media-manager', icon: Images, label: 'Media Manager' },
       { to: '/performance', icon: Gauge, label: 'Performance' },
@@ -87,6 +89,14 @@ interface SidebarProps {
   onToggleTheme: () => void
 }
 
+function getEnvBadgeClass(type: string): string {
+  if (type === 'production') return 'bg-red-500/80 text-white'
+  if (type === 'staging') return 'bg-orange-500/80 text-white'
+  if (type === 'development') return 'bg-green-500/80 text-white'
+  if (type === 'local') return 'bg-blue-500/80 text-white'
+  return 'bg-purple-500/80 text-white'
+}
+
 export function Sidebar({ collapsed, onToggle, theme, onToggleTheme }: SidebarProps) {
   const config = getConfig()
   const branding = getBranding()
@@ -96,6 +106,12 @@ export function Sidebar({ collapsed, onToggle, theme, onToggleTheme }: SidebarPr
   const nameParts = pluginName.split(' ')
   const nameSub  = nameParts.length > 1 ? nameParts.pop()! : ''
   const nameMain = nameParts.join(' ')
+
+  const { data: envData } = useQuery<{ type: string; source: string; custom: string }>({
+    queryKey: ['dev-tools-environment'],
+    queryFn: () => api.get('/dev-tools/environment'),
+    staleTime: 60000,
+  })
 
   return (
     <aside
@@ -121,6 +137,11 @@ export function Sidebar({ collapsed, onToggle, theme, onToggleTheme }: SidebarPr
             <div>
               <p className="text-sm font-bold text-white leading-tight">{nameMain}</p>
               {nameSub && <p className="text-[10px] text-slate-400">{nameSub}</p>}
+              {envData?.type && (
+                <span className={cn('inline-block mt-0.5 px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wide leading-none', getEnvBadgeClass(envData.type))}>
+                  {envData.type}
+                </span>
+              )}
             </div>
           </div>
         )}
