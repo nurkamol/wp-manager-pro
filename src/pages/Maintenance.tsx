@@ -70,7 +70,7 @@ export function Maintenance() {
   const [bypassRoles, setBypassRoles] = useState<string[]>([])
   const [bypassKey, setBypassKey] = useState('')
   const [scope, setScope] = useState('all')
-  const [showAdminBarToggle, setShowAdminBarToggle] = useState(true)
+  const [showAdminBarToggle, setShowAdminBarToggle] = useState(false)
   const [scopePaths, setScopePaths] = useState('')
   const [initialized, setInitialized] = useState(false)
 

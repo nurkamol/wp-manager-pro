@@ -151,8 +151,8 @@ class Admin {
             return;
         }
 
-        // Respect the "Show in Admin Bar" setting.
-        if ( ! (bool) get_option( 'wmp_maintenance_show_adminbar_toggle', true ) ) {
+        // Respect the "Show in Admin Bar" setting (default OFF for fresh installs).
+        if ( ! (bool) get_option( 'wmp_maintenance_show_adminbar_toggle', false ) ) {
             return;
         }
 
@@ -176,6 +176,79 @@ class Admin {
             'meta'   => [
                 'class' => 'wmp-maintenance-item' . ( $active ? ' wmp-maint-active' : '' ),
             ],
+        ] );
+    }
+
+    // ── Admin Bar Redis Cache Node ─────────────────────────────────────────────
+
+    /**
+     * Add a Redis Cache node to the admin bar when the object cache drop-in is
+     * active and Redis is reachable. Shows Flush Cache + link to settings.
+     *
+     * @param \WP_Admin_Bar $wp_admin_bar
+     */
+    public static function add_redis_bar_item( \WP_Admin_Bar $wp_admin_bar ) {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            return;
+        }
+
+        // Respect the show/hide setting (default ON).
+        if ( ! (bool) get_option( 'wmp_redis_show_adminbar', 1 ) ) {
+            return;
+        }
+
+        // Only show when our (or any) object-cache drop-in is installed.
+        if ( ! file_exists( WP_CONTENT_DIR . '/object-cache.php' ) ) {
+            return;
+        }
+
+        // Require our drop-in's is_connected() method on the global cache object.
+        global $wp_object_cache;
+        if ( ! isset( $wp_object_cache ) || ! method_exists( $wp_object_cache, 'is_connected' ) ) {
+            return;
+        }
+        if ( ! $wp_object_cache->is_connected() ) {
+            return;
+        }
+
+        // Grab Redis version for the badge.
+        $redis_ver = '';
+        if ( method_exists( $wp_object_cache, 'get_redis_server_info' ) ) {
+            $info = $wp_object_cache->get_redis_server_info();
+            if ( ! empty( $info['redis_version'] ) ) {
+                $redis_ver = esc_html( $info['redis_version'] );
+            }
+        }
+
+        $plugin_url = admin_url( 'admin.php?page=wp-manager-pro#/performance' );
+
+        // Parent node.
+        $title = '<span class="wmp-redis-dot"></span>'
+               . '<span class="wmp-redis-label">Redis Cache</span>'
+               . ( $redis_ver ? '<span class="wmp-redis-ver">' . $redis_ver . '</span>' : '' );
+
+        $wp_admin_bar->add_node( [
+            'id'    => 'wmp-redis',
+            'title' => $title,
+            'href'  => $plugin_url,
+            'meta'  => [ 'class' => 'wmp-redis-item' ],
+        ] );
+
+        // Sub-node: Flush Cache.
+        $wp_admin_bar->add_node( [
+            'id'     => 'wmp-redis-flush',
+            'parent' => 'wmp-redis',
+            'title'  => '🗑&nbsp; Flush Cache',
+            'href'   => '#',
+            'meta'   => [ 'class' => 'wmp-redis-flush-btn' ],
+        ] );
+
+        // Sub-node: Go to settings.
+        $wp_admin_bar->add_node( [
+            'id'     => 'wmp-redis-settings',
+            'parent' => 'wmp-redis',
+            'title'  => '⚙&nbsp; Object Cache Settings',
+            'href'   => $plugin_url,
         ] );
     }
 
@@ -324,6 +397,108 @@ class Admin {
             })();',
             wp_json_encode( $api_url ),
             wp_json_encode( $nonce )
+        ) );
+
+        // ── Redis admin bar CSS ──────────────────────────────────────────────────
+        wp_add_inline_style( 'wmp-adminbar', '
+            #wpadminbar #wp-admin-bar-wmp-redis > .ab-item {
+                display: flex !important;
+                align-items: center !important;
+                gap: 6px !important;
+                padding: 0 12px !important;
+            }
+            #wpadminbar #wp-admin-bar-wmp-redis .wmp-redis-dot {
+                display: inline-block !important;
+                width: 8px !important;
+                height: 8px !important;
+                min-width: 8px !important;
+                min-height: 8px !important;
+                border-radius: 50% !important;
+                background: #22c55e !important;
+                box-shadow: 0 0 0 2px rgba(34,197,94,.25) !important;
+                flex-shrink: 0 !important;
+            }
+            #wpadminbar #wp-admin-bar-wmp-redis .wmp-redis-label {
+                font-size: 13px !important;
+                font-weight: 500 !important;
+            }
+            #wpadminbar #wp-admin-bar-wmp-redis .wmp-redis-ver {
+                font-size: 10px !important;
+                background: rgba(34,197,94,.18) !important;
+                color: #86efac !important;
+                border-radius: 4px !important;
+                padding: 1px 5px !important;
+                font-weight: 600 !important;
+                letter-spacing: .02em !important;
+            }
+            #wpadminbar #wp-admin-bar-wmp-redis-flush.wmp-redis-flushing > .ab-item {
+                opacity: .55 !important;
+                pointer-events: none !important;
+            }
+            .wmp-redis-toast {
+                position: fixed !important;
+                bottom: 24px !important;
+                right: 24px !important;
+                z-index: 999999 !important;
+                padding: 10px 18px !important;
+                border-radius: 7px !important;
+                font-size: 13px !important;
+                font-weight: 500 !important;
+                color: #fff !important;
+                box-shadow: 0 4px 14px rgba(0,0,0,.22) !important;
+                transition: opacity .3s !important;
+                pointer-events: none !important;
+            }
+        ' );
+
+        // ── Redis admin bar JS ───────────────────────────────────────────────────
+        $flush_url = esc_url_raw( rest_url( 'wp-manager-pro/v1/performance/object-cache/flush' ) );
+        $flush_nonce = wp_create_nonce( 'wp_rest' );
+
+        wp_add_inline_script( 'wmp-adminbar', sprintf(
+            '(function(){
+                var FLUSH_API = %s;
+                var FLUSH_NON = %s;
+
+                function wmpRedisToast(msg, ok) {
+                    var d = document.createElement("div");
+                    d.className = "wmp-redis-toast";
+                    d.style.background = ok ? "#22c55e" : "#ef4444";
+                    d.textContent = msg;
+                    document.body.appendChild(d);
+                    setTimeout(function(){ d.style.opacity = "0"; setTimeout(function(){ if(d.parentNode) d.parentNode.removeChild(d); }, 350); }, 2600);
+                }
+
+                function wmpBindRedisFlush() {
+                    var btn = document.getElementById("wp-admin-bar-wmp-redis-flush");
+                    if (!btn || btn.dataset.wmpBound) return;
+                    btn.dataset.wmpBound = "1";
+                    var link = btn.querySelector(".ab-item");
+                    if (!link) return;
+                    link.addEventListener("click", function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (btn.classList.contains("wmp-redis-flushing")) return;
+                        btn.classList.add("wmp-redis-flushing");
+                        fetch(FLUSH_API, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json", "X-WP-Nonce": FLUSH_NON },
+                            body: "{}"
+                        })
+                        .then(function(r){ return r.json(); })
+                        .then(function(data){
+                            wmpRedisToast(data.message || "Redis cache cleared", true);
+                        })
+                        .catch(function(){ wmpRedisToast("Flush failed — check connection", false); })
+                        .finally(function(){ btn.classList.remove("wmp-redis-flushing"); });
+                    });
+                }
+
+                wmpBindRedisFlush();
+                document.addEventListener("DOMContentLoaded", wmpBindRedisFlush);
+            })();',
+            wp_json_encode( $flush_url ),
+            wp_json_encode( $flush_nonce )
         ) );
     }
 }

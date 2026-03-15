@@ -119,9 +119,10 @@ class Plugin {
         // Maintenance mode — template_redirect fires only for frontend, never for REST API.
         add_action( 'template_redirect', [ API\Controllers\Maintenance_Controller::class, 'handle_maintenance' ] );
 
-        // Maintenance toggle in WP admin bar (frontend + backend).
-        add_action( 'admin_bar_menu',       [ Admin::class, 'add_maintenance_bar_item' ], 100 );
-        add_action( 'wp_enqueue_scripts',   [ Admin::class, 'enqueue_admin_bar_assets' ] );
+        // Maintenance toggle + Redis node in WP admin bar (frontend + backend).
+        add_action( 'admin_bar_menu',        [ Admin::class, 'add_maintenance_bar_item' ], 100 );
+        add_action( 'admin_bar_menu',        [ Admin::class, 'add_redis_bar_item' ], 101 );
+        add_action( 'wp_enqueue_scripts',    [ Admin::class, 'enqueue_admin_bar_assets' ] );
         add_action( 'admin_enqueue_scripts', [ Admin::class, 'enqueue_admin_bar_assets' ] );
 
         // Redirects — template_redirect hook.

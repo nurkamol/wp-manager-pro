@@ -39,7 +39,7 @@ class Maintenance_Controller {
             'bypass_key'      => self::get_or_generate_bypass_key(),
             'scope'                   => get_option( 'wmp_maintenance_scope', 'all' ),
             'scope_paths'             => get_option( 'wmp_maintenance_scope_paths', '' ),
-            'show_adminbar_toggle'    => (bool) get_option( 'wmp_maintenance_show_adminbar_toggle', true ),
+            'show_adminbar_toggle'    => (bool) get_option( 'wmp_maintenance_show_adminbar_toggle', false ),
             'home_url'                => trailingslashit( home_url() ),
         ], 200 );
     }
