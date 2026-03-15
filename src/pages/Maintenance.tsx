@@ -159,6 +159,10 @@ export function Maintenance() {
     onSuccess: () => {
       toast.success('Maintenance settings saved')
       queryClient.invalidateQueries({ queryKey: ['maintenance'] })
+      // Admin bar is server-rendered — reload if its visibility setting changed
+      if (showAdminBarToggle !== (data?.show_adminbar_toggle ?? true)) {
+        setTimeout(() => window.location.reload(), 800)
+      }
     },
     onError: (err: Error) => toast.error(err.message),
   })
