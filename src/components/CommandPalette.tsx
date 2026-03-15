@@ -298,7 +298,7 @@ export function CommandPalette() {
   return (
     <Dialog open={isOpen} onOpenChange={open => !open && close()}>
       <DialogContent
-        className="p-0 gap-0 max-w-xl overflow-hidden"
+        className="p-0 gap-0 max-w-xl overflow-hidden [&>button.absolute]:hidden"
         style={{ top: '20%', transform: 'translateX(-50%)' }}
       >
         {/* Search input */}

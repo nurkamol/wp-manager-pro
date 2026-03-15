@@ -248,6 +248,22 @@ const faq: { q: string; a: string }[] = [
     q: 'Why does the admin menu label not update immediately after saving?',
     a: 'The WordPress admin menu is rendered server-side on every page load. After saving a new menu label in Settings → Branding, simply reload the browser tab and the new label will appear in the WordPress left-hand menu.',
   },
+  {
+    q: 'How do I open the Command Palette and can I change its shortcut?',
+    a: 'Press Cmd+Shift+P (Mac) or Ctrl+Shift+P (Windows/Linux) from anywhere inside the plugin to open the Command Palette. You can change the shortcut to ⌘ Shift K or ⌘ K in Settings → Branding → Command Palette Shortcut. The shortcut is saved in localStorage so it takes effect immediately without a page reload. Note: ⌘ K conflicts with WordPress\'s own command palette on admin pages — the default ⌘ Shift P avoids this.',
+  },
+  {
+    q: 'Is it safe to edit wp-config.php and .htaccess from inside the plugin?',
+    a: 'Yes, with caveats. The wp-config.php editor in Dev Tools only modifies individual define() constants — it does not rewrite the whole file. The .htaccess editor saves a backup to .htaccess.wmp-backup before every save so you can restore the previous version instantly. Both files must be writable by the web server user. We recommend making a manual backup before editing production configuration files.',
+  },
+  {
+    q: 'How does the Redis object cache drop-in work?',
+    a: 'WP Manager Pro bundles its own object-cache.php drop-in at includes/object-cache.php. When you click "Install Drop-in" in Performance → Object Cache, the file is copied to wp-content/object-cache.php. WordPress automatically loads this file on every request, routing all wp_cache_* calls through Redis via the PhpRedis extension. No third-party redis-cache plugin is needed. You can enable, disable, or flush the cache from the Object Cache tab at any time.',
+  },
+  {
+    q: 'What does Settings Export/Import include and is it safe to import on a different site?',
+    a: 'The export bundle includes: Branding, Maintenance settings, SMTP/Email config, Image settings, Code Snippets, Redirects, and Notes. It is signed with an HMAC using the source site\'s WordPress auth salt. When importing on a different site, the plugin shows a cross-site warning (the signature will not match) but still allows the import — you choose which sections to overwrite. Sensitive values like SMTP passwords are included in plain text, so treat the bundle as a secret file.',
+  },
 ]
 
 // ── Export/Import section types ───────────────────────────────────────────────

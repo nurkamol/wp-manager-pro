@@ -32,16 +32,6 @@ This document outlines the planned feature development for WP Manager Pro. Relea
 
 ## 🔜 Upcoming
 
-### v2.5.0 — Command Palette + Settings Export/Import
-*Focus: keyboard-first navigation and cross-site portability*
-
-- **Command Palette** — `Cmd+K` / `Ctrl+K` overlay with fuzzy search across all pages, quick actions (flush cache, toggle maintenance, clear log), and recent items
-- **Settings Export** — export all WP Manager Pro config (SMTP, branding, redirects, snippets, image options, maintenance settings) as a signed JSON bundle
-- **Settings Import** — import the bundle on any site with conflict resolution (skip / overwrite per section)
-- **WordPress XML Exporter** — trigger the native WP export (posts, pages, media, users) without leaving the plugin
-
----
-
 ### v2.6.0 — Update Manager
 *Focus: safe, informed updates on production sites*
 

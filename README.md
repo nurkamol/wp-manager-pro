@@ -57,15 +57,15 @@ All operations happen through a secured REST API (`wp-manager-pro/v1`) that requ
 
 ---
 
-## What's New in v2.4.0 — Dev Tools
+## What's New in v2.5.0 — Command Palette & Export
 
 | Feature | Description |
 |---------|-------------|
-| 🔴 Bundled Redis drop-in | Installs its own `object-cache.php` — no third-party redis-cache plugin required; works with PhpRedis out of the box |
-| 📊 Object Cache tab | Overview: status rows, connection details, live Redis stats (hit ratio, keys, memory, uptime, clients, ops/sec) + per-request WP cache stats; Diagnostics tab with full text dump |
-| ⚡ Redis admin bar node | Green pulsing dot + Redis version badge in WP admin bar; sub-items: **Flush Cache** (AJAX with "Redis cache cleared" toast) and **Object Cache Settings** link |
-| 🔧 Maintenance bar setting | "Show Toggle in Admin Bar" toggle in Access & Extras — hidden by default on fresh installs; custom `?wmp_preview=` slug for bypass URL |
-| 🛠️ Bug fixes | Asset cache-busting via `filemtime()`, maintenance booleans stored as 0/1, page reloads after save so admin bar updates instantly |
+| ⌨️ Command Palette | `Cmd+Shift+P` global overlay — fuzzy search across all 25 pages + 5 quick actions; keyboard navigation; recent pages history; configurable shortcut in Settings |
+| 📦 Settings Export | Export all WP Manager Pro config (Branding, Maintenance, SMTP, Snippets, Redirects, Notes) as a signed JSON bundle with HMAC integrity |
+| 📥 Settings Import | Drag-and-drop import with client-side preview, cross-site warning, per-section overwrite control, and result summary |
+| 🗂️ WordPress XML Export | Trigger WordPress's native content export (All / Posts / Pages / Media / Custom CPT) without leaving the plugin |
+| 🛠️ CI/CD fix | GitHub Actions release workflow now detects existing releases and only uploads the asset — no more "already_exists" errors |
 
 ---
 
