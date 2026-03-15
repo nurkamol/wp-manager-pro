@@ -251,206 +251,128 @@ class Performance_Controller {
 
     // ── Object Cache ─────────────────────────────────────────────────────────
 
+    /** Path to our bundled drop-in inside the plugin. */
+    private static function bundled_dropin_path(): string {
+        return WP_MANAGER_PRO_PATH . 'includes/object-cache.php';
+    }
+
+    /** Returns true if the installed drop-in was installed by WP Manager Pro. */
+    private static function drop_in_is_ours( string $path ): bool {
+        if ( ! file_exists( $path ) ) return false;
+        $head = @file_get_contents( $path, false, null, 0, 512 ); // phpcs:ignore
+        return $head !== false && strpos( $head, '@wmp-dropin true' ) !== false;
+    }
+
+    /**
+     * Attempts a direct Redis connection and returns [connected, info, error].
+     * Always uses WP_REDIS_* constants.
+     */
+    private static function try_redis_connect(): array {
+        if ( ! class_exists( 'Redis' ) ) {
+            return [ false, null, 'PhpRedis extension not loaded.' ];
+        }
+
+        $scheme  = defined( 'WP_REDIS_SCHEME' )      ? WP_REDIS_SCHEME             : 'tcp';
+        $host    = defined( 'WP_REDIS_HOST' )         ? WP_REDIS_HOST               : '127.0.0.1';
+        $port    = defined( 'WP_REDIS_PORT' )         ? (int) WP_REDIS_PORT         : 6379;
+        $db      = defined( 'WP_REDIS_DATABASE' )     ? (int) WP_REDIS_DATABASE     : 0;
+        $timeout = defined( 'WP_REDIS_TIMEOUT' )      ? (float) WP_REDIS_TIMEOUT    : 1.0;
+
+        try {
+            $r = new \Redis();
+            if ( in_array( $scheme, [ 'unix', 'socket' ], true ) ) {
+                $r->connect( $host );
+            } else {
+                $r->connect( $host, $port, $timeout );
+            }
+
+            if ( defined( 'WP_REDIS_PASSWORD' ) && WP_REDIS_PASSWORD !== '' ) {
+                if ( defined( 'WP_REDIS_USERNAME' ) && WP_REDIS_USERNAME !== '' ) {
+                    $r->auth( [ WP_REDIS_USERNAME, WP_REDIS_PASSWORD ] );
+                } else {
+                    $r->auth( WP_REDIS_PASSWORD );
+                }
+            }
+
+            if ( $db > 0 ) $r->select( $db );
+
+            $info     = $r->info();
+            $keyspace = $r->info( 'keyspace' );
+            $r->close();
+
+            return [ true, [ 'info' => $info, 'keyspace' => $keyspace, 'db' => $db ], '' ];
+
+        } catch ( \Exception $e ) {
+            return [ false, null, $e->getMessage() ];
+        }
+    }
+
     /**
      * GET /wp-manager-pro/v1/performance/object-cache
-     *
-     * Returns full Redis / Memcached / APCu status, connection info, and live stats.
      */
     public static function get_object_cache( WP_REST_Request $request ) {
         $drop_in_path     = WP_CONTENT_DIR . '/object-cache.php';
         $drop_in_disabled = WP_CONTENT_DIR . '/object-cache.php.disabled';
         $drop_in_exists   = file_exists( $drop_in_path );
-        $drop_in_writable = $drop_in_exists ? is_writable( $drop_in_path ) : is_writable( WP_CONTENT_DIR );
+        $drop_in_is_ours  = self::drop_in_is_ours( $drop_in_path );
         $disabled_exists  = file_exists( $drop_in_disabled );
+        $content_writable = wp_is_writable( WP_CONTENT_DIR );
+        $drop_in_writable = $drop_in_exists ? wp_is_writable( $drop_in_path ) : $content_writable;
+        $bundled_exists   = file_exists( self::bundled_dropin_path() );
 
-        // Detect cache type from drop-in content or loaded PHP extensions.
-        $cache_type = 'none';
-        if ( $drop_in_exists ) {
-            $contents = @file_get_contents( $drop_in_path ); // phpcs:ignore WordPress.WP.AlternativeFunctions
-            if ( $contents !== false ) {
-                $lower = strtolower( $contents );
-                if ( strpos( $lower, 'redis' ) !== false ) {
-                    $cache_type = 'redis';
-                } elseif ( strpos( $lower, 'memcach' ) !== false ) {
-                    $cache_type = 'memcached';
-                } elseif ( strpos( $lower, 'apcu' ) !== false || strpos( $lower, 'apc_' ) !== false ) {
-                    $cache_type = 'apcu';
-                } else {
-                    $cache_type = 'custom';
-                }
-            }
-        } elseif ( wp_using_ext_object_cache() ) {
-            if ( class_exists( 'Redis' ) || defined( 'WP_REDIS_HOST' ) ) {
-                $cache_type = 'redis';
-            } elseif ( class_exists( 'Memcached' ) || class_exists( 'Memcache' ) ) {
-                $cache_type = 'memcached';
-            } elseif ( function_exists( 'apcu_cache_info' ) ) {
-                $cache_type = 'apcu';
-            }
+        // ── Redis config ──────────────────────────────────────────────────────
+        $scheme   = defined( 'WP_REDIS_SCHEME' )      ? WP_REDIS_SCHEME             : 'tcp';
+        $host     = defined( 'WP_REDIS_HOST' )         ? WP_REDIS_HOST               : '127.0.0.1';
+        $port     = defined( 'WP_REDIS_PORT' )         ? (int) WP_REDIS_PORT         : 6379;
+        $db       = defined( 'WP_REDIS_DATABASE' )     ? (int) WP_REDIS_DATABASE     : 0;
+        $timeout  = defined( 'WP_REDIS_TIMEOUT' )      ? (float) WP_REDIS_TIMEOUT    : 1.0;
+        $read_to  = defined( 'WP_REDIS_READ_TIMEOUT' ) ? (float) WP_REDIS_READ_TIMEOUT : 1.0;
+        $prefix   = '';
+        if ( defined( 'WP_REDIS_PREFIX' ) && WP_REDIS_PREFIX !== '' ) {
+            $prefix = WP_REDIS_PREFIX;
+        } elseif ( defined( 'WP_CACHE_KEY_SALT' ) && WP_CACHE_KEY_SALT !== '' ) {
+            $prefix = WP_CACHE_KEY_SALT;
         }
 
-        $status      = 'not_configured';
-        $connection  = [];
-        $stats       = [];
-        $diagnostics = [];
+        // ── Try connecting to Redis directly (always, for reachability check) ─
+        list( $redis_reachable, $redis_data, $redis_error ) = self::try_redis_connect();
 
-        // ── Redis ────────────────────────────────────────────────────────────
-        if ( $cache_type === 'redis' ) {
-            $scheme   = defined( 'WP_REDIS_SCHEME' )   ? WP_REDIS_SCHEME             : 'tcp';
-            $host     = defined( 'WP_REDIS_HOST' )     ? WP_REDIS_HOST               : '127.0.0.1';
-            $port     = defined( 'WP_REDIS_PORT' )     ? (int) WP_REDIS_PORT         : 6379;
-            $db       = defined( 'WP_REDIS_DATABASE' ) ? (int) WP_REDIS_DATABASE     : 0;
-            $timeout  = defined( 'WP_REDIS_TIMEOUT' )  ? (float) WP_REDIS_TIMEOUT    : 1.0;
-            $prefix   = defined( 'WP_REDIS_PREFIX' )   ? WP_REDIS_PREFIX
-                      : ( defined( 'WP_CACHE_KEY_SALT' ) ? WP_CACHE_KEY_SALT : '' );
+        // ── Build stats from Redis INFO ────────────────────────────────────────
+        $stats = [];
+        if ( $redis_reachable && $redis_data ) {
+            $info     = $redis_data['info'];
+            $keyspace = $redis_data['keyspace'];
+            $dbkey    = 'db' . $redis_data['db'];
 
-            $connection = [
-                'scheme'   => $scheme,
-                'host'     => $host,
-                'port'     => $port,
-                'database' => $db,
-                'timeout'  => $timeout,
-                'prefix'   => $prefix,
+            $keys_in_db = 0;
+            if ( ! empty( $keyspace[ $dbkey ] ) ) {
+                preg_match( '/keys=(\d+)/', $keyspace[ $dbkey ], $m );
+                $keys_in_db = isset( $m[1] ) ? (int) $m[1] : 0;
+            }
+
+            $hits   = (int) ( $info['keyspace_hits']   ?? 0 );
+            $misses = (int) ( $info['keyspace_misses'] ?? 0 );
+            $total  = $hits + $misses;
+
+            $stats = [
+                'hits'              => $hits,
+                'misses'            => $misses,
+                'hit_ratio'         => $total > 0 ? round( ( $hits / $total ) * 100, 1 ) : null,
+                'keys_count'        => $keys_in_db,
+                'memory_used'       => $info['used_memory_human']      ?? null,
+                'memory_peak'       => $info['used_memory_peak_human'] ?? null,
+                'uptime_seconds'    => (int) ( $info['uptime_in_seconds'] ?? 0 ),
+                'connected_clients' => (int) ( $info['connected_clients'] ?? 0 ),
+                'evicted_keys'      => (int) ( $info['evicted_keys']   ?? 0 ),
+                'expired_keys'      => (int) ( $info['expired_keys']   ?? 0 ),
+                'ops_per_sec'       => (int) ( $info['instantaneous_ops_per_sec'] ?? 0 ),
+                'redis_version'     => $info['redis_version']    ?? null,
+                'maxmemory_policy'  => $info['maxmemory_policy'] ?? null,
+                'php_redis_version' => phpversion( 'redis' ) ?: null,
             ];
-
-            if ( ! class_exists( 'Redis' ) ) {
-                $status = 'extension_missing';
-                $diagnostics['error'] = 'The PHP Redis extension is not installed on this server.';
-            } else {
-                try {
-                    $redis = new \Redis();
-                    if ( $scheme === 'unix' ) {
-                        $redis->connect( $host );
-                    } else {
-                        $redis->connect( $host, $port, $timeout );
-                    }
-
-                    if ( defined( 'WP_REDIS_PASSWORD' ) && WP_REDIS_PASSWORD ) {
-                        if ( defined( 'WP_REDIS_USERNAME' ) && WP_REDIS_USERNAME ) {
-                            $redis->auth( [ WP_REDIS_USERNAME, WP_REDIS_PASSWORD ] );
-                        } else {
-                            $redis->auth( WP_REDIS_PASSWORD );
-                        }
-                    }
-
-                    $redis->select( $db );
-                    $info     = $redis->info();
-                    $keyspace = $redis->info( 'keyspace' );
-                    $dbkey    = "db{$db}";
-                    $keys_in_db = 0;
-                    if ( ! empty( $keyspace[ $dbkey ] ) ) {
-                        preg_match( '/keys=(\d+)/', $keyspace[ $dbkey ], $m );
-                        $keys_in_db = isset( $m[1] ) ? (int) $m[1] : 0;
-                    }
-
-                    $hits  = (int) ( $info['keyspace_hits']   ?? 0 );
-                    $misses = (int) ( $info['keyspace_misses'] ?? 0 );
-                    $total  = $hits + $misses;
-
-                    $stats = [
-                        'hits'              => $hits,
-                        'misses'            => $misses,
-                        'hit_ratio'         => $total > 0 ? round( ( $hits / $total ) * 100, 1 ) : null,
-                        'keys_count'        => $keys_in_db,
-                        'memory_used'       => $info['used_memory_human']      ?? null,
-                        'memory_peak'       => $info['used_memory_peak_human'] ?? null,
-                        'uptime_seconds'    => (int) ( $info['uptime_in_seconds'] ?? 0 ),
-                        'connected_clients' => (int) ( $info['connected_clients'] ?? 0 ),
-                        'evicted_keys'      => (int) ( $info['evicted_keys']   ?? 0 ),
-                        'expired_keys'      => (int) ( $info['expired_keys']   ?? 0 ),
-                        'ops_per_sec'       => (int) ( $info['instantaneous_ops_per_sec'] ?? 0 ),
-                        'redis_version'     => $info['redis_version']    ?? null,
-                        'maxmemory_policy'  => $info['maxmemory_policy'] ?? null,
-                    ];
-
-                    $status = 'connected';
-                    $redis->close();
-
-                } catch ( \Exception $e ) {
-                    $status = 'error';
-                    $diagnostics['error'] = $e->getMessage();
-                }
-            }
         }
 
-        // ── Memcached ────────────────────────────────────────────────────────
-        elseif ( $cache_type === 'memcached' ) {
-            $host = '127.0.0.1';
-            $port = 11211;
-            // Some setups define this via object-cache.php globals.
-            if ( defined( 'MEMCACHED_HOST' ) ) { $host = MEMCACHED_HOST; }
-            if ( defined( 'MEMCACHED_PORT' ) ) { $port = (int) MEMCACHED_PORT; }
-
-            $connection = [ 'host' => $host, 'port' => $port ];
-
-            if ( ! class_exists( 'Memcached' ) ) {
-                $status = 'extension_missing';
-                $diagnostics['error'] = 'The PHP Memcached extension is not installed on this server.';
-            } else {
-                try {
-                    $mc = new \Memcached();
-                    $mc->addServer( $host, $port );
-                    $raw = $mc->getStats();
-
-                    if ( $raw && ! empty( $raw ) ) {
-                        $sk = array_key_first( $raw );
-                        $s  = $raw[ $sk ];
-                        $hits   = (int) ( $s['get_hits']   ?? 0 );
-                        $misses = (int) ( $s['get_misses'] ?? 0 );
-                        $total  = $hits + $misses;
-                        $stats = [
-                            'hits'              => $hits,
-                            'misses'            => $misses,
-                            'hit_ratio'         => $total > 0 ? round( ( $hits / $total ) * 100, 1 ) : null,
-                            'keys_count'        => (int) ( $s['curr_items']       ?? 0 ),
-                            'memory_used'       => self::format_bytes( (int) ( $s['bytes']        ?? 0 ) ),
-                            'memory_peak'       => self::format_bytes( (int) ( $s['limit_maxbytes'] ?? 0 ) ),
-                            'uptime_seconds'    => (int) ( $s['uptime']           ?? 0 ),
-                            'connected_clients' => (int) ( $s['curr_connections'] ?? 0 ),
-                            'evicted_keys'      => (int) ( $s['evictions']        ?? 0 ),
-                            'expired_keys'      => (int) ( $s['expired_unfetched'] ?? 0 ),
-                            'version'           => $s['version'] ?? null,
-                        ];
-                        $status = 'connected';
-                    } else {
-                        $status = 'error';
-                        $diagnostics['error'] = 'No stats returned — server may be unreachable.';
-                    }
-                } catch ( \Exception $e ) {
-                    $status = 'error';
-                    $diagnostics['error'] = $e->getMessage();
-                }
-            }
-        }
-
-        // ── APCu ─────────────────────────────────────────────────────────────
-        elseif ( $cache_type === 'apcu' ) {
-            if ( ! function_exists( 'apcu_cache_info' ) ) {
-                $status = 'extension_missing';
-                $diagnostics['error'] = 'The APCu PHP extension is not installed.';
-            } else {
-                $info  = apcu_cache_info( true );
-                $sinfo = apcu_sma_info( true );
-                $hits   = (int) ( $info['nhits']   ?? 0 );
-                $misses = (int) ( $info['nmisses'] ?? 0 );
-                $total  = $hits + $misses;
-                $stats  = [
-                    'hits'           => $hits,
-                    'misses'         => $misses,
-                    'hit_ratio'      => $total > 0 ? round( ( $hits / $total ) * 100, 1 ) : null,
-                    'keys_count'     => (int) ( $info['num_entries'] ?? 0 ),
-                    'memory_used'    => self::format_bytes( (int) ( $sinfo['seg_size'] ?? 0 ) - (int) ( $sinfo['avail_mem'] ?? 0 ) ),
-                    'memory_peak'    => self::format_bytes( (int) ( $sinfo['seg_size'] ?? 0 ) ),
-                    'uptime_seconds' => (int) ( $info['start_time'] ?? 0 ) > 0 ? time() - (int) $info['start_time'] : 0,
-                    'evicted_keys'   => (int) ( $info['nexpunges'] ?? 0 ),
-                    'expired_keys'   => (int) ( $info['nexpired']  ?? 0 ),
-                    'version'        => phpversion( 'apcu' ) ?: null,
-                ];
-                $status = 'connected';
-            }
-        }
-
-        // WordPress object-cache global stats.
+        // ── WP runtime object cache stats ─────────────────────────────────────
         global $wp_object_cache;
         $wp_stats = [];
         if ( is_object( $wp_object_cache ) ) {
@@ -459,27 +381,87 @@ class Performance_Controller {
             if ( isset( $wp_object_cache->cache ) && is_array( $wp_object_cache->cache ) ) {
                 $wp_stats['groups'] = array_keys( $wp_object_cache->cache );
             }
+            // Extra info if our own drop-in is running
+            if ( method_exists( $wp_object_cache, 'get_ignored_groups' ) ) {
+                $wp_stats['global_groups']  = $wp_object_cache->get_global_groups();
+                $wp_stats['ignored_groups'] = $wp_object_cache->get_ignored_groups();
+            }
         }
+
+        // ── Determine overall status ──────────────────────────────────────────
+        if ( $drop_in_exists && wp_using_ext_object_cache() ) {
+            $status = $redis_reachable ? 'connected' : 'error';
+        } elseif ( $drop_in_exists && ! wp_using_ext_object_cache() ) {
+            // Drop-in present but not loaded (edge case on this request)
+            $status = $redis_reachable ? 'not_enabled' : 'error';
+        } elseif ( ! class_exists( 'Redis' ) ) {
+            $status = 'extension_missing';
+        } else {
+            $status = 'not_enabled';
+        }
+
+        // ── Diagnostics text dump ─────────────────────────────────────────────
+        $diag_lines = [
+            'Status: '        . ( $drop_in_exists && wp_using_ext_object_cache() ? ( $redis_reachable ? 'Connected' : 'Error' ) : 'Not enabled' ),
+            'Drop-in: '       . ( $drop_in_exists ? ( $drop_in_is_ours ? 'WP Manager Pro v1.0.0' : 'Third-party' ) : 'Not installed' ),
+            'Redis: '         . ( $redis_reachable ? 'Reachable' : 'Unreachable' ),
+            'Filesystem: '    . ( $content_writable ? 'Writable' : 'Not writable' ),
+            'PhpRedis: '      . ( class_exists( 'Redis' ) ? ( phpversion( 'redis' ) ?: 'loaded' ) : 'Not loaded' ),
+            'PHP Version: '   . PHP_VERSION,
+            'Redis Version: ' . ( $stats['redis_version'] ?? 'unknown' ),
+            'Host: '          . $host,
+            'Port: '          . $port,
+            'Database: '      . $db,
+            'Timeout: '       . $timeout,
+            'Read Timeout: '  . $read_to,
+            'Scheme: '        . $scheme,
+            'Key Prefix: '    . ( $prefix !== '' ? '"' . $prefix . '"' : '(none)' ),
+            'Multisite: '     . ( is_multisite() ? 'Yes' : 'No' ),
+        ];
+        if ( $redis_error ) {
+            $diag_lines[] = 'Error: ' . $redis_error;
+        }
+        if ( $redis_reachable && isset( $info['maxmemory_policy'] ) ) {
+            $diag_lines[] = 'Max Memory Policy: ' . $info['maxmemory_policy'];
+        }
+        if ( isset( $wp_stats['global_groups'] ) ) {
+            $diag_lines[] = 'Global Groups: ' . implode( ', ', $wp_stats['global_groups'] );
+        }
+        if ( isset( $wp_stats['ignored_groups'] ) ) {
+            $diag_lines[] = 'Ignored Groups: ' . implode( ', ', $wp_stats['ignored_groups'] );
+        }
+
+        $connection = [
+            'scheme'        => $scheme,
+            'host'          => $host,
+            'port'          => $port,
+            'database'      => $db,
+            'timeout'       => $timeout,
+            'read_timeout'  => $read_to,
+            'key_prefix'    => $prefix,
+            'php_redis'     => class_exists( 'Redis' ) ? ( phpversion( 'redis' ) ?: 'loaded' ) : null,
+        ];
 
         return new WP_REST_Response( [
             'enabled'          => wp_using_ext_object_cache(),
+            'redis_reachable'  => $redis_reachable,
+            'redis_error'      => $redis_error,
             'drop_in_exists'   => $drop_in_exists,
+            'drop_in_is_ours'  => $drop_in_is_ours,
             'drop_in_writable' => $drop_in_writable,
             'disabled_exists'  => $disabled_exists,
-            'content_writable' => is_writable( WP_CONTENT_DIR ),
-            'cache_type'       => $cache_type,
+            'content_writable' => $content_writable,
+            'bundled_available'=> $bundled_exists,
             'status'           => $status,
             'connection'       => $connection,
             'stats'            => $stats,
             'wp_stats'         => $wp_stats,
-            'diagnostics'      => $diagnostics,
+            'diagnostics_text' => implode( "\n", $diag_lines ),
         ], 200 );
     }
 
     /**
      * POST /wp-manager-pro/v1/performance/object-cache/flush
-     *
-     * Flushes the entire object cache via wp_cache_flush().
      */
     public static function flush_object_cache( WP_REST_Request $request ) {
         $ok = wp_cache_flush();
@@ -494,19 +476,50 @@ class Performance_Controller {
     /**
      * POST /wp-manager-pro/v1/performance/object-cache/drop-in
      *
-     * Enables or disables the object-cache.php drop-in by renaming the file.
-     * Body: { action: 'enable' | 'disable' }
+     * Body: { action: 'install' | 'enable' | 'disable' }
+     *
+     * install  – copies bundled object-cache.php into wp-content/ (fails if a
+     *            non-WMP drop-in already exists unless force:true is passed)
+     * disable  – renames object-cache.php to object-cache.php.disabled
+     * enable   – renames object-cache.php.disabled back to object-cache.php
      */
     public static function manage_drop_in( WP_REST_Request $request ) {
-        $action           = sanitize_key( $request->get_param( 'action' ) ?? '' );
+        $action           = sanitize_key( (string) ( $request->get_param( 'action' ) ?? '' ) );
+        $force            = (bool) ( $request->get_param( 'force' ) ?? false );
         $drop_in_path     = WP_CONTENT_DIR . '/object-cache.php';
         $drop_in_disabled = WP_CONTENT_DIR . '/object-cache.php.disabled';
+        $bundled          = self::bundled_dropin_path();
 
+        // ── install ──────────────────────────────────────────────────────────
+        if ( $action === 'install' ) {
+            if ( ! file_exists( $bundled ) ) {
+                return new WP_Error( 'bundled_missing', 'Bundled drop-in not found inside the plugin.', [ 'status' => 500 ] );
+            }
+            if ( ! wp_is_writable( WP_CONTENT_DIR ) ) {
+                return new WP_Error( 'not_writable', 'wp-content directory is not writable.', [ 'status' => 403 ] );
+            }
+            if ( file_exists( $drop_in_path ) && ! self::drop_in_is_ours( $drop_in_path ) && ! $force ) {
+                return new WP_Error(
+                    'conflict',
+                    'Another plugin\'s object-cache.php is already installed. Pass force:true to overwrite it.',
+                    [ 'status' => 409 ]
+                );
+            }
+            $ok = @copy( $bundled, $drop_in_path ); // phpcs:ignore WordPress.PHP.NoSilencedErrors
+            return new WP_REST_Response( [
+                'success' => $ok,
+                'message' => $ok
+                    ? 'Object cache drop-in installed. Redis caching is now active.'
+                    : 'Could not copy the drop-in file.',
+            ], $ok ? 200 : 500 );
+        }
+
+        // ── disable ──────────────────────────────────────────────────────────
         if ( $action === 'disable' ) {
             if ( ! file_exists( $drop_in_path ) ) {
                 return new WP_Error( 'not_found', 'object-cache.php does not exist.', [ 'status' => 404 ] );
             }
-            if ( ! is_writable( $drop_in_path ) ) {
+            if ( ! wp_is_writable( $drop_in_path ) ) {
                 return new WP_Error( 'not_writable', 'object-cache.php is not writable.', [ 'status' => 403 ] );
             }
             $ok = rename( $drop_in_path, $drop_in_disabled );
@@ -516,11 +529,12 @@ class Performance_Controller {
             ], $ok ? 200 : 500 );
         }
 
+        // ── enable ───────────────────────────────────────────────────────────
         if ( $action === 'enable' ) {
             if ( ! file_exists( $drop_in_disabled ) ) {
                 return new WP_Error( 'not_found', 'No disabled drop-in found (object-cache.php.disabled).', [ 'status' => 404 ] );
             }
-            if ( ! is_writable( WP_CONTENT_DIR ) ) {
+            if ( ! wp_is_writable( WP_CONTENT_DIR ) ) {
                 return new WP_Error( 'not_writable', 'wp-content directory is not writable.', [ 'status' => 403 ] );
             }
             $ok = rename( $drop_in_disabled, $drop_in_path );
@@ -530,7 +544,7 @@ class Performance_Controller {
             ], $ok ? 200 : 500 );
         }
 
-        return new WP_Error( 'invalid_action', 'action must be "enable" or "disable".', [ 'status' => 400 ] );
+        return new WP_Error( 'invalid_action', 'action must be install, enable, or disable.', [ 'status' => 400 ] );
     }
 
     /**
