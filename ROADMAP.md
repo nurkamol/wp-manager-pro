@@ -2,7 +2,7 @@
 
 This document outlines the planned feature development for WP Manager Pro. Releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Minor versions (`1.x.0`) add new features; patch versions (`1.x.y`) deliver bug fixes and polish.
 
-> **Current version:** 2.3.0 — last updated 2026-03-11
+> **Current version:** 2.3.1 — last updated 2026-03-16
 
 ---
 
@@ -24,6 +24,7 @@ This document outlines the planned feature development for WP Manager Pro. Relea
 | [2.1.0] | Cron Manager: Event Browser, Manual Trigger, Delete Events, Custom Schedules, Cron Health tab with real-cron setup guide |
 | [2.2.0] | Media Manager: Orphaned finder, Unused bulk delete, Duplicate detector (MD5), JPEG/PNG compression — 9 new REST endpoints |
 | [2.3.0] | Content Tools: Bulk Post Editor, Post Duplicator, Scheduled Post Manager, Options Table Editor — 10 new REST endpoints |
+| [2.3.1] | Bundled Redis drop-in (no external plugin needed), Redis admin bar node with flush cache, maintenance toggle visibility setting, custom bypass URL slug, asset cache-busting fix |
 
 ---
 
@@ -111,3 +112,4 @@ Have a feature request or want to vote on a backlog item? [Open an issue](https:
 [2.1.0]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v2.1.0
 [2.2.0]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v2.2.0
 [2.3.0]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v2.3.0
+[2.3.1]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v2.3.1

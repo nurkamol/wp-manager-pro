@@ -7,6 +7,23 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [2.3.1] — 2026-03-16
+
+### Added
+- **Bundled Redis object-cache drop-in** (`includes/object-cache.php`) — installs its own `wp-content/object-cache.php`; no third-party redis-cache plugin required
+- **Object Cache tab** in Performance — Overview/Diagnostics tabs; status rows, connection details, live Redis stats (hit ratio, keys, memory, uptime, clients, ops/sec), per-request WP cache stats; Install / Enable / Disable / Flush actions
+- **Redis Cache admin bar node** — green pulsing dot + Redis version badge; appears automatically when object cache drop-in is active and Redis is reachable; sub-items: Flush Cache (AJAX with toast) and Object Cache Settings link
+- **Maintenance admin bar toggle visibility** setting in Access & Extras tab — hidden by default on fresh installs
+- **Custom bypass URL slug** — type your own `?wmp_preview=` key; auto-generate button still available
+
+### Fixed
+- **Asset cache-busting** — JS/CSS now versioned by `filemtime()` instead of the plugin version constant; browser always fetches the latest build after a deploy
+- **Maintenance boolean options not persisting** — `show_badge`, `show_countdown`, `show_adminbar_toggle` stored as `0`/`1` integers to avoid WordPress `update_option(false)` edge case
+- **Page not reloading after maintenance save** — "Save Settings" now reloads ~800 ms after success so the server-rendered admin bar reflects saved settings immediately
+- **Admin bar toggle unresponsive** — binding JS now runs immediately at footer time (admin bar is already in DOM) with `DOMContentLoaded` as fallback
+
+---
+
 ## [2.3.0] — 2026-03-11
 
 ### Added
@@ -599,5 +616,6 @@ First public release of WP Manager Pro — a comprehensive, agency-ready WordPre
 [1.1.0]: https://github.com/nurkamol/wp-manager-pro/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v1.0.0
 
+[2.3.1]: https://github.com/nurkamol/wp-manager-pro/compare/v2.3.0...v2.3.1
 [2.2.0]: https://github.com/nurkamol/wp-manager-pro/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/nurkamol/wp-manager-pro/compare/v2.0.0...v2.1.0

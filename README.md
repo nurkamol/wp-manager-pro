@@ -2,7 +2,7 @@
 
 > A comprehensive, agency-ready WordPress management suite — built with React 19, TypeScript, and the WordPress REST API.
 
-![Version](https://img.shields.io/badge/version-2.3.0-blue)
+![Version](https://img.shields.io/badge/version-2.3.1-blue)
 ![WordPress](https://img.shields.io/badge/WordPress-5.9%2B-21759b)
 ![PHP](https://img.shields.io/badge/PHP-7.4%2B-8892be)
 ![License](https://img.shields.io/badge/license-GPL--2.0%2B-green)
@@ -57,15 +57,15 @@ All operations happen through a secured REST API (`wp-manager-pro/v1`) that requ
 
 ---
 
-## What's New in v2.3.0 — Content Tools
+## What's New in v2.3.1 — Redis Drop-in & Admin Bar
 
 | Feature | Description |
 |---------|-------------|
-| 📝 Bulk Post Editor | Filter by type/status/search; checkbox multi-select; bulk-update status, author, or publish date across many posts at once |
-| 📋 Post Duplicator | Clone any post/page/CPT as a new draft; options to copy post meta, taxonomies/categories, and featured image |
-| 📅 Scheduled Posts | List all future-scheduled content across post types with live time-until countdown; overdue posts highlighted in red |
-| ⚙️ Options Editor | Paginated, searchable `wp_options` browser; type detection (string/integer/JSON/serialized); inline edit + delete with protected-key guard |
-| 10 new endpoints | `GET /content/post-types`, `GET /content/authors`, `GET/POST /content/posts`, `POST /content/posts/bulk-edit`, `POST /content/posts/duplicate`, `GET /content/scheduled`, `GET/POST/DELETE /content/options`, `GET /content/options/{name}` |
+| 🔴 Bundled Redis drop-in | Installs its own `object-cache.php` — no third-party redis-cache plugin required; works with PhpRedis out of the box |
+| 📊 Object Cache tab | Overview: status rows, connection details, live Redis stats (hit ratio, keys, memory, uptime, clients, ops/sec) + per-request WP cache stats; Diagnostics tab with full text dump |
+| ⚡ Redis admin bar node | Green pulsing dot + Redis version badge in WP admin bar; sub-items: **Flush Cache** (AJAX with "Redis cache cleared" toast) and **Object Cache Settings** link |
+| 🔧 Maintenance bar setting | "Show Toggle in Admin Bar" toggle in Access & Extras — hidden by default on fresh installs; custom `?wmp_preview=` slug for bypass URL |
+| 🛠️ Bug fixes | Asset cache-busting via `filemtime()`, maintenance booleans stored as 0/1, page reloads after save so admin bar updates instantly |
 
 ---
 
