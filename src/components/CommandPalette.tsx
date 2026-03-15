@@ -112,16 +112,31 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }) {
   const open  = useCallback(() => setIsOpen(true),  [])
   const close = useCallback(() => setIsOpen(false), [])
 
-  // Global Cmd+K / Ctrl+K listener
+  // Read shortcut preference from localStorage (set in Settings)
+  // Default: Cmd/Ctrl+Shift+P to avoid conflict with WordPress's native Cmd+K palette
+  const getShortcut = () => {
+    try { return localStorage.getItem('wmp-palette-shortcut') || 'shift+p' } catch { return 'shift+p' }
+  }
+
+  // Global keyboard listener — matches the configured shortcut
   useEffect(() => {
     function handler(e: globalThis.KeyboardEvent) {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      const shortcut = getShortcut()
+      const mod = e.metaKey || e.ctrlKey
+      if (!mod) return
+      const key = e.key.toLowerCase()
+      const matches =
+        (shortcut === 'shift+p' && e.shiftKey && key === 'p') ||
+        (shortcut === 'shift+k' && e.shiftKey && key === 'k') ||
+        (shortcut === 'k'       && !e.shiftKey && key === 'k')
+      if (matches) {
         e.preventDefault()
+        e.stopPropagation()
         setIsOpen(prev => !prev)
       }
     }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
+    window.addEventListener('keydown', handler, true) // capture phase beats WP
+    return () => window.removeEventListener('keydown', handler, true)
   }, [])
 
   return (

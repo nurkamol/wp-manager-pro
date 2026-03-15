@@ -99,6 +99,15 @@ class Admin {
             ] );
         }
 
+        // Dequeue WordPress's own command palette (WP 6.3+) on our page.
+        // Our plugin ships its own palette — having both causes Cmd+K conflicts.
+        wp_dequeue_script( 'wp-commands' );
+        wp_dequeue_script( 'wp-command-palette' );
+        add_action( 'admin_print_scripts', function() {
+            // Block the commands package loaded inline by Gutenberg core
+            wp_dequeue_script( 'wp-commands' );
+        }, 100 );
+
         // Suppress third-party admin notices on our full-screen page.
         // remove_all_actions clears callbacks already registered by the time
         // admin_enqueue_scripts fires (covers admin_init / early-registered notices).

@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { toast } from 'sonner'
 import {
-  Save, RefreshCw, Palette, BookOpen, HelpCircle, ChevronDown, ChevronRight, ExternalLink,
+  Save, RefreshCw, Palette, BookOpen, HelpCircle, ChevronDown, ChevronRight, ExternalLink, Keyboard,
   Download, Upload, FileJson, Globe, CheckSquare, Square, FileDown, AlertTriangle, Info,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -293,6 +293,9 @@ export function Settings() {
   const [menuLabel, setMenuLabel] = useState('')
   const [logoUrl, setLogoUrl] = useState('')
   const [initialized, setInitialized] = useState(false)
+  const [paletteShortcut, setPaletteShortcut] = useState<string>(
+    () => { try { return localStorage.getItem('wmp-palette-shortcut') || 'shift+p' } catch { return 'shift+p' } }
+  )
 
   if (data && !initialized) {
     setPluginName(data.plugin_name)
@@ -577,6 +580,44 @@ export function Settings() {
                     </div>
                   </div>
                 )}
+
+                {/* ── Command Palette Shortcut ─────────────────────────── */}
+                <div className="space-y-3 pt-2 border-t pt-4">
+                  <div>
+                    <Label className="flex items-center gap-2 text-sm font-medium">
+                      <Keyboard className="w-4 h-4" /> Command Palette Shortcut
+                    </Label>
+                    <p className="text-xs text-slate-500 mt-1">
+                      WordPress uses <kbd className="bg-slate-100 border border-slate-200 rounded px-1 font-mono text-xs">⌘K</kbd> on all admin pages.
+                      Choose a different shortcut to avoid conflict, or keep <kbd className="bg-slate-100 border border-slate-200 rounded px-1 font-mono text-xs">⌘K</kbd> if you prefer.
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { value: 'shift+p', label: '⌘ Shift P', desc: 'VS Code style (default, no conflict)' },
+                      { value: 'shift+k', label: '⌘ Shift K', desc: 'Shift variant' },
+                      { value: 'k',       label: '⌘ K',       desc: 'Same as WordPress (may conflict)' },
+                    ].map(opt => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => {
+                          setPaletteShortcut(opt.value)
+                          localStorage.setItem('wmp-palette-shortcut', opt.value)
+                          toast.success(`Shortcut updated to ${opt.label}`)
+                        }}
+                        className={`flex flex-col items-start gap-0.5 border rounded-lg px-3 py-2 text-left transition-colors ${
+                          paletteShortcut === opt.value
+                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400'
+                            : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
+                        }`}
+                      >
+                        <span className="font-mono font-semibold text-sm">{opt.label}</span>
+                        <span className="text-[11px] text-slate-500">{opt.desc}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
                 <div className="pt-2">
                   <Button
