@@ -58,13 +58,15 @@ class Admin {
         $build_url = WP_MANAGER_PRO_URL . 'assets/build/';
 
         // Enqueue main CSS (Vite outputs as style.css or index.css).
+        // Use filemtime() as the version so the browser always fetches the
+        // latest build after a deploy — no manual version bump required.
         $css_file = file_exists( $build_dir . 'index.css' ) ? 'index.css' : 'style.css';
         if ( file_exists( $build_dir . $css_file ) ) {
             wp_enqueue_style(
                 'wp-manager-pro',
                 $build_url . $css_file,
                 [],
-                WP_MANAGER_PRO_VERSION
+                filemtime( $build_dir . $css_file )
             );
         }
 
@@ -74,7 +76,7 @@ class Admin {
                 'wp-manager-pro',
                 $build_url . 'index.js',
                 [],
-                WP_MANAGER_PRO_VERSION,
+                filemtime( $build_dir . 'index.js' ),
                 true
             );
 

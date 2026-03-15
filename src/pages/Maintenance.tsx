@@ -158,11 +158,8 @@ export function Maintenance() {
     mutationFn: () => api.post('/maintenance/settings', currentSettings()),
     onSuccess: () => {
       toast.success('Maintenance settings saved')
-      queryClient.invalidateQueries({ queryKey: ['maintenance'] })
-      // Admin bar is server-rendered — reload if its visibility setting changed
-      if (showAdminBarToggle !== (data?.show_adminbar_toggle ?? true)) {
-        setTimeout(() => window.location.reload(), 800)
-      }
+      // Reload so the server-rendered admin bar reflects the new settings
+      setTimeout(() => window.location.reload(), 800)
     },
     onError: (err: Error) => toast.error(err.message),
   })
