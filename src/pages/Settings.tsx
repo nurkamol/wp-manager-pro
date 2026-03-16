@@ -11,9 +11,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { toast } from 'sonner'
 import {
   Save, RefreshCw, Palette, BookOpen, HelpCircle, ChevronDown, ChevronRight, ExternalLink, Keyboard,
-  Download, Upload, FileJson, Globe, CheckSquare, Square, FileDown, AlertTriangle, Info,
+  Download, Upload, FileJson, Globe, CheckSquare, Square, FileDown, AlertTriangle, Info, ImageIcon,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+
+declare global {
+  interface Window {
+    wmpOpenMedia?: (title: string, cb: (url: string) => void) => void
+  }
+}
 
 interface BrandingSettings {
   plugin_name: string
@@ -23,6 +29,14 @@ interface BrandingSettings {
 
 // ── Changelog data ─────────────────────────────────────────────────────────────
 const changelog: { version: string; date: string; features: string[] }[] = [
+  {
+    version: '2.9.2',
+    date: '2026-03-17',
+    features: [
+      'Media Library picker — all "Select image" / "Media" buttons across the plugin now reliably open the native WordPress Media Library modal instead of falling back to a browser prompt(). Root cause was wp.media not being callable at React bundle evaluation time; fix: a bridge function (window.wmpOpenMedia) is injected after all media scripts are fully initialised via wp_add_inline_script("after")',
+      'Settings → Branding — Custom Logo URL field now has a "Select" button that opens the WordPress Media Library to choose the sidebar logo image, consistent with all other media pickers',
+    ],
+  },
   {
     version: '2.9.1',
     date: '2026-03-17',
@@ -712,16 +726,35 @@ export function Settings() {
 
                 <div className="space-y-2">
                   <Label htmlFor="logo-url">Custom Logo URL</Label>
-                  <Input
-                    id="logo-url"
-                    type="url"
-                    placeholder="https://example.com/logo.png"
-                    value={logoUrl}
-                    onChange={e => setLogoUrl(e.target.value)}
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      id="logo-url"
+                      type="url"
+                      placeholder="https://example.com/logo.png"
+                      value={logoUrl}
+                      onChange={e => setLogoUrl(e.target.value)}
+                      className="flex-1"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        if (typeof window !== 'undefined' && typeof window.wmpOpenMedia === 'function') {
+                          window.wmpOpenMedia('Select Logo', url => setLogoUrl(url))
+                        } else {
+                          const url = prompt('Enter logo image URL:')
+                          if (url) setLogoUrl(url.trim())
+                        }
+                      }}
+                    >
+                      <ImageIcon className="w-4 h-4 mr-1" />
+                      Select
+                    </Button>
+                  </div>
                   <p className="text-xs text-slate-500">
                     If set, this image will replace the default icon in the sidebar header.
-                    Recommended size: 28×28 px.
+                    Recommended size: 28×28 px. Click "Select" to choose from the Media Library.
                   </p>
                 </div>
 

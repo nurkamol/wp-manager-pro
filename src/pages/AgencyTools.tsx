@@ -34,26 +34,35 @@ declare global {
         open: () => void
       }
     }
+    wmpOpenMedia?: (title: string, cb: (url: string) => void) => void
   }
 }
 
 function openMediaPicker(title: string, onSelect: (url: string) => void) {
-  if (typeof window === 'undefined' || !window.wp?.media) {
-    const url = prompt('Enter image URL:')
-    if (url) onSelect(url.trim())
+  // Prefer the bridge function injected by class-admin.php (admin_footer),
+  // which guarantees window.wp.media is initialised before the call.
+  if (typeof window !== 'undefined' && typeof window.wmpOpenMedia === 'function') {
+    window.wmpOpenMedia(title, onSelect)
     return
   }
-  const frame = window.wp.media({
-    title,
-    multiple: false,
-    library: { type: 'image' },
-    button: { text: 'Use this image' },
-  })
-  frame.on('select', () => {
-    const att = frame.state().get('selection').first().toJSON()
-    onSelect(att.url)
-  })
-  frame.open()
+  // Direct fallback: call wp.media if somehow the bridge wasn't injected
+  if (typeof window !== 'undefined' && window.wp?.media) {
+    const frame = window.wp.media({
+      title,
+      multiple: false,
+      library: { type: 'image' },
+      button: { text: 'Use this image' },
+    })
+    frame.on('select', () => {
+      const att = frame.state().get('selection').first().toJSON()
+      onSelect(att.url)
+    })
+    frame.open()
+    return
+  }
+  // Last resort fallback
+  const url = prompt('Enter image URL:')
+  if (url) onSelect(url.trim())
 }
 
 // ── Types ──────────────────────────────────────────────────────────────────────

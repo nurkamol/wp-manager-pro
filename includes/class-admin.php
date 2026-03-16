@@ -109,6 +109,35 @@ class Admin {
         // open the native media picker (window.wp.media).
         wp_enqueue_media();
 
+        // ── Media picker bridge ──────────────────────────────────────────────
+        // Printed as an inline script AFTER our bundle ('after' position), so
+        // window.wp.media is fully initialised before the closure is stored.
+        // React calls window.wmpOpenMedia() from any "Select image" button —
+        // this replaces the old window.wp?.media check that fell back to prompt().
+        $bridge_js = '
+window.wmpOpenMedia = function(title, cb) {
+    if (typeof wp === "undefined" || typeof wp.media !== "function") {
+        var u = window.prompt(title + " \u2014 Enter image URL:");
+        if (u && u.trim()) cb(u.trim());
+        return;
+    }
+    var frame = wp.media({
+        title: title,
+        multiple: false,
+        library: { type: "image" },
+        button: { text: "Use this image" }
+    });
+    frame.on("select", function() {
+        var sel = frame.state().get("selection").first();
+        if (sel) cb(sel.toJSON().url);
+    });
+    frame.open();
+};
+';
+        if ( file_exists( $build_dir . 'index.js' ) ) {
+            wp_add_inline_script( 'wp-manager-pro', $bridge_js, 'after' );
+        }
+
         // Dequeue WordPress's own command palette (WP 6.3+) on our page.
         // Our plugin ships its own palette — having both causes Cmd+K conflicts.
         wp_dequeue_script( 'wp-commands' );

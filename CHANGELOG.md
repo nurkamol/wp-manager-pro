@@ -7,6 +7,14 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [2.9.2] — 2026-03-17
+
+### Fixed
+- **Media Library picker** — all "Select image" / "Media" buttons now reliably open the native WordPress Media Library modal instead of falling back to a browser `prompt()`. Root cause: `window.wp.media` was not yet callable at the time the React bundle first evaluated the check. Fix: a bridge function (`window.wmpOpenMedia`) is now injected via `wp_add_inline_script('after')`, which runs after all media scripts are fully initialised; React calls this bridge instead of calling `wp.media` directly.
+- **Settings → Branding → Custom Logo URL** — added a "Select" button that opens the WordPress Media Library to pick the sidebar logo image, consistent with all other media pickers in the plugin.
+
+---
+
 ## [2.9.1] — 2026-03-17
 
 ### Fixed
