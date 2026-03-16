@@ -88,9 +88,8 @@ export function UpdateManager() {
   const [changelogHtml, setChangelogHtml] = useState('')
   const [changelogLoading, setChangelogLoading] = useState(false)
 
-  // Schedule form
-  const [scheduleType, setScheduleType] = useState('plugin')
-  const [scheduleSlug, setScheduleSlug] = useState('')
+  // Schedule form — single combined value: "type::slug"
+  const [scheduleTarget, setScheduleTarget] = useState('')
   const [scheduleDate, setScheduleDate] = useState('')
 
   // ── Queries ────────────────────────────────────────────────────────────────
@@ -210,7 +209,7 @@ export function UpdateManager() {
     onSuccess: () => {
       toast.success('Update scheduled')
       refetchScheduled()
-      setScheduleSlug('')
+      setScheduleTarget('')
       setScheduleDate('')
     },
     onError: (err: Error) => toast.error(err.message || 'Scheduling failed'),
@@ -226,10 +225,12 @@ export function UpdateManager() {
 
   const handleScheduleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!scheduleSlug || !scheduleDate) { toast.error('Fill in all fields'); return }
+    if (!scheduleTarget || !scheduleDate) { toast.error('Select an update and a date/time'); return }
     const run_at = Math.floor(new Date(scheduleDate).getTime() / 1000)
     if (run_at <= Math.floor(Date.now() / 1000)) { toast.error('Scheduled time must be in the future'); return }
-    addScheduleMutation.mutate({ type: scheduleType, slug: scheduleSlug, run_at })
+    const [type, ...slugParts] = scheduleTarget.split('::')
+    const slug = slugParts.join('::')
+    addScheduleMutation.mutate({ type, slug, run_at })
   }
 
   const updates = updatesData?.updates ?? []
@@ -473,27 +474,71 @@ export function UpdateManager() {
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-5">
             <h3 className="font-medium text-slate-800 dark:text-slate-100 mb-1">Schedule an Update</h3>
             <p className="text-xs text-slate-500 mb-4">Updates run automatically via WP Cron at the scheduled time with a pre-update backup.</p>
-            <form onSubmit={handleScheduleSubmit} className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
-              <div>
-                <Label className="text-xs mb-1 block">Type</Label>
-                <Select value={scheduleType} onValueChange={setScheduleType}>
-                  <SelectTrigger className="h-9 text-sm">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="plugin">Plugin</SelectItem>
-                    <SelectItem value="theme">Theme</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <form onSubmit={handleScheduleSubmit} className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
               <div className="sm:col-span-2">
-                <Label className="text-xs mb-1 block">Slug / File Path</Label>
-                <Input
-                  className="h-9 text-sm font-mono"
-                  placeholder={scheduleType === 'plugin' ? 'woocommerce/woocommerce.php' : 'twentytwentyfour'}
-                  value={scheduleSlug}
-                  onChange={e => setScheduleSlug(e.target.value)}
-                />
+                <Label className="text-xs mb-1 block">Select Update</Label>
+                {(() => {
+                  const pluginUpdates = updates.filter(u => u.type === 'plugin')
+                  const themeUpdates  = updates.filter(u => u.type === 'theme')
+                  const coreUpdates   = updates.filter(u => u.type === 'core')
+                  const hasUpdates = updates.length > 0
+
+                  return (
+                    <Select
+                      value={scheduleTarget}
+                      onValueChange={setScheduleTarget}
+                      disabled={!hasUpdates}
+                    >
+                      <SelectTrigger className="h-9 text-sm">
+                        <SelectValue placeholder={hasUpdates ? 'Choose a pending update…' : 'No updates available'} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {pluginUpdates.length > 0 && (
+                          <>
+                            <div className="px-2 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-slate-400">Plugins</div>
+                            {pluginUpdates.map(u => (
+                              <SelectItem key={u.id} value={`plugin::${u.file}`}>
+                                <span className="flex items-center gap-2">
+                                  {u.name}
+                                  <span className="text-xs text-slate-400 font-mono">{u.current} → {u.new_version}</span>
+                                </span>
+                              </SelectItem>
+                            ))}
+                          </>
+                        )}
+                        {themeUpdates.length > 0 && (
+                          <>
+                            <div className="px-2 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-slate-400 mt-1">Themes</div>
+                            {themeUpdates.map(u => (
+                              <SelectItem key={u.id} value={`theme::${u.slug}`}>
+                                <span className="flex items-center gap-2">
+                                  {u.name}
+                                  <span className="text-xs text-slate-400 font-mono">{u.current} → {u.new_version}</span>
+                                </span>
+                              </SelectItem>
+                            ))}
+                          </>
+                        )}
+                        {coreUpdates.length > 0 && (
+                          <>
+                            <div className="px-2 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-slate-400 mt-1">Core</div>
+                            {coreUpdates.map(u => (
+                              <SelectItem key={u.id} value={`core::${u.slug}`}>
+                                <span className="flex items-center gap-2">
+                                  {u.name}
+                                  <span className="text-xs text-slate-400 font-mono">{u.current} → {u.new_version}</span>
+                                </span>
+                              </SelectItem>
+                            ))}
+                          </>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  )
+                })()}
+                {updates.length === 0 && !updatesLoading && (
+                  <p className="text-xs text-slate-400 mt-1">All plugins and themes are up to date. Nothing to schedule.</p>
+                )}
               </div>
               <div>
                 <Label className="text-xs mb-1 block">Run At</Label>
@@ -504,7 +549,12 @@ export function UpdateManager() {
                   onChange={e => setScheduleDate(e.target.value)}
                 />
               </div>
-              <Button type="submit" size="sm" disabled={addScheduleMutation.isPending} className="sm:col-span-4 w-full sm:w-auto">
+              <Button
+                type="submit"
+                size="sm"
+                disabled={addScheduleMutation.isPending || !scheduleTarget || updates.length === 0}
+                className="sm:col-span-3"
+              >
                 {addScheduleMutation.isPending
                   ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Scheduling…</>
                   : <><Calendar className="w-4 h-4 mr-2" /> Schedule Update</>}
