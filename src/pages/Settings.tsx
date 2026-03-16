@@ -24,6 +24,18 @@ interface BrandingSettings {
 // ── Changelog data ─────────────────────────────────────────────────────────────
 const changelog: { version: string; date: string; features: string[] }[] = [
   {
+    version: '2.8.0',
+    date: '2026-03-16',
+    features: [
+      'Agency Tools page — new dedicated page in the Pro group (Briefcase icon) with 5-tab layout',
+      'Mail Interceptor — log all outgoing WordPress emails; Dev Mode prevents real delivery; preview HTML/plain-text emails in-plugin; one-click Resend; Clear Log',
+      'White-label Login Page — custom logo, background colour and image, button colour, heading text, footer text; live preview pane',
+      'Admin UI Customiser — hide admin menu items and dashboard widgets for non-administrator roles (admins always see full interface)',
+      'Client Report Generator — one-click HTML report: health score, WP/PHP/DB versions, SSL status, WP_DEBUG, pending updates, last backup, active plugins; download or copy to clipboard',
+      'Coming Soon Mode — pre-launch page with custom title, message, launch date countdown, colour scheme; optional email capture form with captured email list',
+    ],
+  },
+  {
     version: '2.7.1',
     date: '2026-03-16',
     features: [
@@ -325,6 +337,14 @@ const faq: { q: string; a: string }[] = [
   {
     q: 'Why does logout not work when I have a custom login URL configured?',
     a: 'This was a bug fixed in v2.7.1. When a custom login slug is set (Security → Login Protection → Admin URL Protection), the logout request to wp-login.php?action=logout was being intercepted and redirected to the homepage before WordPress could destroy the session. The fix adds "logout" to the list of allowed wp-login.php actions. After updating to v2.7.1, logout works correctly and you are redirected to your custom login URL instead of wp-login.php.',
+  },
+  {
+    q: 'What is the difference between Maintenance Mode and Coming Soon Mode?',
+    a: 'Both show a page to visitors while allowing admins to see the live site. Maintenance Mode (Tools → Maintenance) is for temporary downtime during updates or deployments — it serves a standard 503 "Service Unavailable" response with a custom message. Coming Soon Mode (Agency Tools → Coming Soon) is for pre-launch sites — it serves a 200 OK response, looks like a marketing page, and can optionally capture visitor email addresses with a countdown to launch day.',
+  },
+  {
+    q: 'Can I use Mail Interceptor in development to prevent emails from reaching real users?',
+    a: 'Yes — enable Dev Mode in Agency Tools → Mail Interceptor. When Dev Mode is on, every outgoing wp_mail() call is logged as usual but the recipient address is replaced with devnull@wmp-intercepted.invalid before sending, so no real emails are delivered. You can preview and resend individual emails from the log at any time. Disable Dev Mode before going live.',
   },
   {
     q: 'Why does the plugin not work when WordPress permalinks are set to "Plain"?',

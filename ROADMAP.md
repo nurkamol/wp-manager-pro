@@ -2,7 +2,7 @@
 
 This document outlines the planned feature development for WP Manager Pro. Releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Minor versions (`1.x.0`) add new features; patch versions (`1.x.y`) deliver bug fixes and polish.
 
-> **Current version:** 2.7.0 — last updated 2026-03-16
+> **Current version:** 2.8.0 — last updated 2026-03-16
 
 ---
 
@@ -29,21 +29,12 @@ This document outlines the planned feature development for WP Manager Pro. Relea
 | [2.5.0] | Command Palette (Cmd+Shift+P), Settings Export/Import (signed JSON bundle), WordPress XML Content Export |
 | [2.6.0] | Update Manager: changelog preview, pre-update backup, rollback, scheduled updates via WP Cron — 9 new REST endpoints |
 | [2.7.0] | Security Scanner: Malware Scanner (13 patterns, 8k files), Vulnerability Database (WPScan CVE API), SSL Monitor, Outdated Core/PHP Alert, Security Score ring — 6 new REST endpoints |
+| [2.7.1] | Bug fixes: self-update system (GitHub Releases), premium plugin false "Done", 2FA QR code, custom login logout, plain permalink warning |
+| [2.8.0] | Agency Tools: Mail Interceptor (log + dev mode + preview + resend), White-label Login Page, Admin UI Customiser, Client Report Generator, Coming Soon Mode — 9 new REST endpoints |
 
 ---
 
 ## 🔜 Upcoming
-
-### v2.8.0 — Agency Tools
-*Focus: client delivery and white-labelling*
-
-- **Client Report Generator** — one-click HTML/PDF report: uptime, plugins installed, last backup, security score, performance overview; customisable with client logo
-- **White-label Login Page** — custom logo, background image, colours, and footer text on `wp-login.php`
-- **Admin UI Customiser** — hide/reorder WP dashboard widgets and admin menu items per role; clients only see what they need
-- **wp_mail Interceptor** — catch all outgoing WordPress emails in an inbox log; preview HTML render; resend button; disable actual sending (dev mode)
-- **Coming Soon Mode** — pre-launch page separate from Maintenance Mode, with email capture form and countdown
-
----
 
 ### v2.9.0 — Developer Utilities
 *Focus: day-to-day debugging and scaffolding*

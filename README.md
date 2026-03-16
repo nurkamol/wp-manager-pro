@@ -2,7 +2,7 @@
 
 > A comprehensive, agency-ready WordPress management suite — built with React 19, TypeScript, and the WordPress REST API.
 
-![Version](https://img.shields.io/badge/version-2.7.0-blue)
+![Version](https://img.shields.io/badge/version-2.8.0-blue)
 ![WordPress](https://img.shields.io/badge/WordPress-5.9%2B-21759b)
 ![PHP](https://img.shields.io/badge/PHP-7.4%2B-8892be)
 ![License](https://img.shields.io/badge/license-GPL--2.0%2B-green)
@@ -57,15 +57,15 @@ All operations happen through a secured REST API (`wp-manager-pro/v1`) that requ
 
 ---
 
-## What's New in v2.7.0 — Security Scanner
+## What's New in v2.8.0 — Agency Tools
 
 | Feature | Description |
 |---------|-------------|
-| 🔍 Malware Scanner | Scans up to 8,000 PHP/JS/HTML files in plugins and themes against 13 detection patterns — eval+base64, webshells, preg_replace /e, assert/exec with user input, and more |
-| 🛡️ Vulnerability Database | Checks all installed plugins and themes against the WPScan CVE API; shows CVSS severity, fix version, and CVE reference links |
-| 🔒 SSL Monitor | Connects to your site domain on port 443 and parses the certificate — subject, issuer, SAN, days remaining, colour-coded expiry alerts |
-| ⚙️ Core & PHP Alerts | Compares installed WordPress version against latest from api.wordpress.org; flags EOL and near-EOL PHP versions (built-in table for PHP 5.6–8.4) |
-| 📊 Security Score | Animated 0–100 scorecard with letter grade (A+→F) combining all scan results — click any summary card to run individual checks |
+| 📧 Mail Interceptor | Log every outgoing `wp_mail()` call — to, subject, body, date; Dev Mode prevents real delivery; preview HTML/plain emails in-plugin; one-click Resend |
+| 🎨 White-label Login Page | Custom logo, background colour/image, button colour, heading, and footer text injected into `wp-login.php` — with a live preview pane |
+| 🧩 Admin UI Customiser | Hide any WP admin menu item or dashboard widget for non-admin roles — clients only see what they need |
+| 📊 Client Report Generator | One-click standalone HTML report: health score, WP/PHP/DB versions, SSL, WP_DEBUG, pending updates, last backup, active plugins — download or copy |
+| 🚀 Coming Soon Mode | Pre-launch page (200 OK) with custom title, message, countdown timer, and accent colours; optional email-capture form with exported list |
 
 ---
 

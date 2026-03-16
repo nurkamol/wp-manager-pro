@@ -29,6 +29,7 @@ use WP_Manager_Pro\API\Controllers\Content_Controller;
 use WP_Manager_Pro\API\Controllers\Dev_Tools_Controller;
 use WP_Manager_Pro\API\Controllers\Update_Manager_Controller;
 use WP_Manager_Pro\API\Controllers\Security_Scanner_Controller;
+use WP_Manager_Pro\API\Controllers\Agency_Controller;
 
 class Routes {
 
@@ -975,6 +976,59 @@ class Routes {
         register_rest_route( $namespace, '/scanner/api-key', [
             'methods'             => 'POST',
             'callback'            => [ Security_Scanner_Controller::class, 'save_api_key' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+
+        // ── Agency Tools ─────────────────────────────────────────────────────
+
+        // Mail Interceptor
+        register_rest_route( $namespace, '/agency/mail-settings', [
+            [ 'methods' => 'GET',  'callback' => [ Agency_Controller::class, 'get_mail_settings'  ], 'permission_callback' => [ self::class, 'admin_permission' ] ],
+            [ 'methods' => 'POST', 'callback' => [ Agency_Controller::class, 'save_mail_settings' ], 'permission_callback' => [ self::class, 'admin_permission' ] ],
+        ] );
+        register_rest_route( $namespace, '/agency/mail-log', [
+            'methods'             => 'GET',
+            'callback'            => [ Agency_Controller::class, 'get_mail_log' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/agency/mail-log/clear', [
+            'methods'             => 'DELETE',
+            'callback'            => [ Agency_Controller::class, 'clear_mail_log' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/agency/mail-resend', [
+            'methods'             => 'POST',
+            'callback'            => [ Agency_Controller::class, 'resend_mail' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+
+        // Login Page
+        register_rest_route( $namespace, '/agency/login-page', [
+            [ 'methods' => 'GET',  'callback' => [ Agency_Controller::class, 'get_login_settings'  ], 'permission_callback' => [ self::class, 'admin_permission' ] ],
+            [ 'methods' => 'POST', 'callback' => [ Agency_Controller::class, 'save_login_settings' ], 'permission_callback' => [ self::class, 'admin_permission' ] ],
+        ] );
+
+        // Admin Customiser
+        register_rest_route( $namespace, '/agency/admin-customiser', [
+            [ 'methods' => 'GET',  'callback' => [ Agency_Controller::class, 'get_admin_customiser'  ], 'permission_callback' => [ self::class, 'admin_permission' ] ],
+            [ 'methods' => 'POST', 'callback' => [ Agency_Controller::class, 'save_admin_customiser' ], 'permission_callback' => [ self::class, 'admin_permission' ] ],
+        ] );
+
+        // Client Report
+        register_rest_route( $namespace, '/agency/report', [
+            'methods'             => 'GET',
+            'callback'            => [ Agency_Controller::class, 'generate_report' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+
+        // Coming Soon
+        register_rest_route( $namespace, '/agency/coming-soon', [
+            [ 'methods' => 'GET',  'callback' => [ Agency_Controller::class, 'get_coming_soon'  ], 'permission_callback' => [ self::class, 'admin_permission' ] ],
+            [ 'methods' => 'POST', 'callback' => [ Agency_Controller::class, 'save_coming_soon' ], 'permission_callback' => [ self::class, 'admin_permission' ] ],
+        ] );
+        register_rest_route( $namespace, '/agency/coming-soon/emails/clear', [
+            'methods'             => 'DELETE',
+            'callback'            => [ Agency_Controller::class, 'clear_coming_soon_emails' ],
             'permission_callback' => [ self::class, 'admin_permission' ],
         ] );
     }

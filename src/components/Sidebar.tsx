@@ -5,7 +5,7 @@ import {
   Server, Construction, Users, Bug, Image, StickyNote,
   ChevronLeft, ChevronRight, ExternalLink, Settings, RotateCcw,
   Sun, Moon, Shield, Activity, Code2, ArrowLeftRight, Mail, HardDrive,
-  PanelLeftClose, PanelLeftOpen, Gauge, Clock, Images, FileEdit, Terminal, Keyboard, RefreshCw, ScanLine,
+  PanelLeftClose, PanelLeftOpen, Gauge, Clock, Images, FileEdit, Terminal, Keyboard, RefreshCw, ScanLine, Briefcase,
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { getConfig, getBranding, api } from '@/lib/api'
@@ -71,6 +71,7 @@ const navGroups: NavGroup[] = [
       { to: '/redirects', icon: ArrowLeftRight, label: 'Redirects' },
       { to: '/email', icon: Mail, label: 'Email / SMTP' },
       { to: '/audit-log', icon: Activity, label: 'Audit Log' },
+      { to: '/agency', icon: Briefcase, label: 'Agency Tools' },
     ],
   },
   {

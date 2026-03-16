@@ -7,6 +7,31 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [2.8.0] — 2026-03-16
+
+### Added
+- **Agency Tools page** (`/agency`) — new page in the Pro group (Briefcase icon) with 5-tab layout: Mail Interceptor, Login Page, Admin UI, Client Report, Coming Soon
+- **Mail Interceptor** — hooks `wp_mail` filter to log all outgoing emails (to, subject, message, content-type, date, status); **Dev Mode** replaces recipient with `devnull@wmp-intercepted.invalid` to prevent real delivery; preview HTML/plain-text emails in an in-plugin dialog (iframe for HTML emails); one-click Resend (temporarily disables dev mode for that send); Clear Log action; log capped at 100 entries
+- **White-label Login Page** — custom logo URL, background colour, background image, button colour, heading text, and footer text injected into `wp-login.php` via `login_enqueue_scripts` / `login_headerurl` / `login_headertext` / `login_footer` hooks; live colour/preview pane in the settings UI
+- **Admin UI Customiser** — hide any WP admin menu item (`remove_menu_page`) and dashboard widget (`remove_meta_box`) for non-administrator roles; admins always see the full interface; settings persisted in `wp_options`
+- **Client Report Generator** — on-demand fetch of site health data (WP/PHP/DB versions, SSL, WP_DEBUG, pending updates, last backup, active plugins); animated score ring (0–100); download as standalone `.html` file or copy HTML to clipboard
+- **Coming Soon Mode** — `template_redirect` hook shows a branded pre-launch page (200 OK) to visitors while admins see the live site; custom title, message, launch date countdown (JS), background colour, accent colour; optional email-capture form stores emails in `wp_options`; captured email list with copy/clear actions
+
+### API
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET/POST | `/agency/mail-settings` | Get or save mail interceptor settings (dev_mode) |
+| GET | `/agency/mail-log` | Retrieve email log (newest first) |
+| DELETE | `/agency/mail-log/clear` | Clear email log |
+| POST | `/agency/mail-resend` | Resend a logged email by ID |
+| GET/POST | `/agency/login-page` | Get or save white-label login settings |
+| GET/POST | `/agency/admin-customiser` | Get or save hidden menus/widgets |
+| GET | `/agency/report` | Generate client report data |
+| GET/POST | `/agency/coming-soon` | Get or save coming soon settings |
+| DELETE | `/agency/coming-soon/emails/clear` | Clear captured email list |
+
+---
+
 ## [2.7.1] — 2026-03-16
 
 ### Added

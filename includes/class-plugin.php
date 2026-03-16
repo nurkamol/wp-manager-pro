@@ -3,6 +3,8 @@ namespace WP_Manager_Pro;
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
+use WP_Manager_Pro\API\Controllers\Agency_Controller;
+
 /**
  * Main Plugin Class - Singleton
  */
@@ -55,6 +57,7 @@ class Plugin {
             'class-dev-tools-controller',
             'class-update-manager-controller',
             'class-security-scanner-controller',
+            'class-agency-controller',
         ];
 
         foreach ( $controllers as $controller ) {
@@ -126,6 +129,22 @@ class Plugin {
 
         // Maintenance mode — template_redirect fires only for frontend, never for REST API.
         add_action( 'template_redirect', [ API\Controllers\Maintenance_Controller::class, 'handle_maintenance' ] );
+
+        // Agency — mail interceptor
+        add_filter( 'wp_mail', [ Agency_Controller::class, 'intercept_mail' ], 1 );
+
+        // Agency — white-label login page
+        add_action( 'login_enqueue_scripts', [ Agency_Controller::class, 'apply_login_styles' ] );
+        add_filter( 'login_headerurl',       [ Agency_Controller::class, 'login_header_url'   ] );
+        add_filter( 'login_headertext',      [ Agency_Controller::class, 'login_header_text'  ] );
+        add_action( 'login_footer',          [ Agency_Controller::class, 'apply_login_footer' ] );
+
+        // Agency — admin customiser (priority 999 to run after all menus are registered)
+        add_action( 'admin_menu',        [ Agency_Controller::class, 'apply_admin_customiser'  ], 999 );
+        add_action( 'wp_dashboard_setup',[ Agency_Controller::class, 'apply_widget_customiser' ], 999 );
+
+        // Agency — coming soon
+        add_action( 'template_redirect', [ Agency_Controller::class, 'apply_coming_soon' ] );
 
         // Maintenance toggle + Redis node in WP admin bar (frontend + backend).
         add_action( 'admin_bar_menu',        [ Admin::class, 'add_maintenance_bar_item' ], 100 );
