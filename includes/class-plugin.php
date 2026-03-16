@@ -24,6 +24,7 @@ class Plugin {
 
     private function load_dependencies() {
         require_once WP_MANAGER_PRO_PATH . 'includes/class-admin.php';
+        require_once WP_MANAGER_PRO_PATH . 'includes/class-self-updater.php';
         require_once WP_MANAGER_PRO_PATH . 'includes/api/class-routes.php';
 
         // Load controllers.
@@ -70,9 +71,13 @@ class Plugin {
         add_filter( 'plugin_row_meta', [ Admin::class, 'add_plugin_meta' ], 10, 2 );
         add_action( 'rest_api_init', [ API\Routes::class, 'register_routes' ] );
 
+        // Self-updater — GitHub Releases integration.
+        Self_Updater::init();
+
         // Admin URL protection (conditional on settings).
         add_action( 'login_init', [ API\Controllers\Security_Controller::class, 'protect_login' ] );
         add_action( 'init', [ API\Controllers\Security_Controller::class, 'handle_custom_login_url' ] );
+        add_filter( 'logout_redirect', [ API\Controllers\Security_Controller::class, 'handle_logout_redirect' ], 10, 3 );
 
         // Security v2.0.0 — login limiter and IP blocklist.
         add_action( 'wp_login_failed', [ API\Controllers\Security_Controller::class, 'record_failed_login' ] );

@@ -301,7 +301,7 @@ class Security_Controller {
         $label    = rawurlencode( $user->user_email );
         $issuer   = rawurlencode( get_bloginfo( 'name' ) ?: 'WP Manager Pro' );
         $otp_url  = "otpauth://totp/{$issuer}:{$label}?secret={$secret}&issuer={$issuer}&algorithm=SHA1&digits=6&period=30";
-        $qr_url   = 'https://chart.googleapis.com/chart?chs=200x200&cht=qr&chl=' . rawurlencode( $otp_url ) . '&choe=UTF-8';
+        $qr_url   = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&ecc=M&data=' . rawurlencode( $otp_url );
 
         // Store pending secret (not yet confirmed).
         update_user_meta( $user_id, self::META_2FA_SECRET . '_pending', $secret );
@@ -366,7 +366,7 @@ class Security_Controller {
         if ( isset( $_SERVER['REQUEST_METHOD'] ) && 'GET' !== strtoupper( $_SERVER['REQUEST_METHOD'] ) ) return;
 
         $action  = isset( $_GET['action'] ) ? sanitize_text_field( wp_unslash( $_GET['action'] ) ) : '';
-        $bypass  = [ 'lostpassword', 'retrievepassword', 'resetpass', 'rp', 'confirm_admin_email', 'register' ];
+        $bypass  = [ 'logout', 'lostpassword', 'retrievepassword', 'resetpass', 'rp', 'confirm_admin_email', 'register' ];
         if ( in_array( $action, $bypass, true ) ) return;
 
         if ( array_key_exists( $slug, $_GET ) ) return;
@@ -458,6 +458,15 @@ class Security_Controller {
                 wp_die( 'Access denied.', 'Forbidden', [ 'response' => 403 ] );
             }
         }
+    }
+
+    /** Called from logout_redirect filter — redirect to custom login URL after logout. */
+    public static function handle_logout_redirect( string $redirect_to, string $requested_redirect_to, $user ): string {
+        $slug = get_option( self::OPT_ADMIN_SLUG, '' );
+        if ( ! empty( $slug ) ) {
+            return home_url( '/' . trim( $slug, '/' ) . '/' );
+        }
+        return $redirect_to;
     }
 
     // ── TOTP helpers ──────────────────────────────────────────────────────────

@@ -224,7 +224,30 @@ class Update_Manager_Controller {
             $error = $e->getMessage();
         }
 
-        $success = ( null === $error && ! is_wp_error( $result ) && false !== $result );
+        // null result means no update was actually performed (e.g. premium/unlicensed plugin).
+        // Also check the upgrader skin's own result for captured errors.
+        $skin_error = null;
+        if ( isset( $upgrader ) && is_a( $upgrader->skin, 'WP_Upgrader_Skin' ) ) {
+            $skin_result = $upgrader->skin->result;
+            if ( is_wp_error( $skin_result ) ) {
+                $skin_error = $skin_result->get_error_message();
+            }
+        }
+
+        $success = (
+            null === $error &&
+            null === $skin_error &&
+            ! is_wp_error( $result ) &&
+            false !== $result &&
+            null !== $result        // null = no update performed (e.g. license required)
+        );
+
+        if ( null === $error && null !== $skin_error ) {
+            $error = $skin_error;
+        }
+        if ( null === $error && null === $result && ! is_wp_error( $result ) ) {
+            $error = 'Update could not be completed. The plugin or theme may require a valid license key, or no update package was available.';
+        }
 
         // Step 3: Resolve new version
         if ( $success && 'plugin' === $type ) {
@@ -254,7 +277,14 @@ class Update_Manager_Controller {
 
         if ( ! $success ) {
             $msg = $error ?? ( is_wp_error( $result ) ? $result->get_error_message() : 'Update failed.' );
-            return new WP_Error( 'update_failed', $msg, [ 'status' => 500 ] );
+            // Classify the error for a better frontend message
+            $code = 'update_failed';
+            if ( str_contains( (string) $msg, 'license' ) || str_contains( (string) $msg, 'License' ) ) {
+                $code = 'license_required';
+            } elseif ( null === $result ) {
+                $code = 'update_unavailable';
+            }
+            return new WP_Error( $code, $msg, [ 'status' => 500 ] );
         }
 
         return new WP_REST_Response( [

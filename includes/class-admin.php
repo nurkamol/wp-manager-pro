@@ -96,6 +96,9 @@ class Admin {
                     'menuLabel'  => get_option( 'wmp_menu_label', '' ),
                     'logoUrl'    => get_option( 'wmp_logo_url', '' ),
                 ],
+                'permalinks' => [
+                    'isPlain' => '' === get_option( 'permalink_structure', '' ),
+                ],
             ] );
         }
 

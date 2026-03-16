@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { RefreshCw, History, Clock, Play, RotateCcw, Trash2, Eye, ChevronRight, AlertTriangle, CheckCircle2, XCircle, Loader2, Calendar } from 'lucide-react'
 import { toast } from 'sonner'
-import { api } from '@/lib/api'
+import { api, ApiError } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -48,7 +48,7 @@ interface ScheduledJob {
   next_run_human: string
 }
 
-type ItemStatus = 'idle' | 'updating' | 'done' | 'failed'
+type ItemStatus = 'idle' | 'updating' | 'done' | 'failed' | 'license_required' | 'update_unavailable'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -59,9 +59,19 @@ function typeBadge(type: string) {
 }
 
 function statusIcon(status: ItemStatus) {
-  if (status === 'updating') return <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
-  if (status === 'done')     return <CheckCircle2 className="w-4 h-4 text-green-500" />
-  if (status === 'failed')   return <XCircle className="w-4 h-4 text-red-500" />
+  if (status === 'updating')          return <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
+  if (status === 'done')              return <CheckCircle2 className="w-4 h-4 text-green-500" />
+  if (status === 'failed')            return <XCircle className="w-4 h-4 text-red-500" />
+  if (status === 'license_required')  return <XCircle className="w-4 h-4 text-amber-500" />
+  if (status === 'update_unavailable') return <XCircle className="w-4 h-4 text-slate-400" />
+  return null
+}
+
+function statusLabel(status: ItemStatus): string | null {
+  if (status === 'license_required')   return 'License Required'
+  if (status === 'update_unavailable') return 'Update Unavailable'
+  if (status === 'failed')             return 'Failed'
+  if (status === 'done')               return 'Done'
   return null
 }
 
@@ -133,7 +143,9 @@ export function UpdateManager() {
     },
     onError: (err: Error, { type, slug }) => {
       const id = `${type}:${slug}`
-      setItemStatuses(prev => ({ ...prev, [id]: 'failed' }))
+      const code = err instanceof ApiError ? err.code : 'update_failed'
+      const st: ItemStatus = code === 'license_required' ? 'license_required' : code === 'update_unavailable' ? 'update_unavailable' : 'failed'
+      setItemStatuses(prev => ({ ...prev, [id]: st }))
       toast.error(err.message || 'Update failed')
     },
   })
@@ -147,7 +159,9 @@ export function UpdateManager() {
       toast.success(`${item.name} updated successfully`)
       queryClient.invalidateQueries({ queryKey: ['updates-available'] })
     } catch (err: any) {
-      setItemStatuses(prev => ({ ...prev, [idKey]: 'failed' }))
+      const code = err instanceof ApiError ? err.code : 'update_failed'
+      const st: ItemStatus = code === 'license_required' ? 'license_required' : code === 'update_unavailable' ? 'update_unavailable' : 'failed'
+      setItemStatuses(prev => ({ ...prev, [idKey]: st }))
       toast.error(err?.message || 'Update failed')
     }
   }
@@ -162,8 +176,10 @@ export function UpdateManager() {
       try {
         await api.post('/updates/run', { type: item.type, slug: item.type === 'plugin' ? item.file : item.slug })
         setItemStatuses(prev => ({ ...prev, [idKey]: 'done' }))
-      } catch {
-        setItemStatuses(prev => ({ ...prev, [idKey]: 'failed' }))
+      } catch (err: any) {
+        const code = err instanceof ApiError ? err.code : 'update_failed'
+        const st: ItemStatus = code === 'license_required' ? 'license_required' : code === 'update_unavailable' ? 'update_unavailable' : 'failed'
+        setItemStatuses(prev => ({ ...prev, [idKey]: st }))
       }
     }
     setBatchRunning(false)
@@ -368,6 +384,11 @@ export function UpdateManager() {
 
                     <div className="flex items-center gap-2 shrink-0">
                       {statusIcon(st)}
+                      {statusLabel(st) && (
+                        <span className={`text-xs font-medium ${st === 'license_required' ? 'text-amber-600 dark:text-amber-400' : st === 'update_unavailable' ? 'text-slate-500' : st === 'failed' ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
+                          {statusLabel(st)}
+                        </span>
+                      )}
 
                       {item.type !== 'core' && (
                         <Button
@@ -379,7 +400,7 @@ export function UpdateManager() {
                         </Button>
                       )}
 
-                      {st === 'idle' || st === 'failed' ? (
+                      {(st === 'idle' || st === 'failed' || st === 'license_required' || st === 'update_unavailable') ? (
                         <Button
                           size="sm"
                           className="h-7 px-3 text-xs"

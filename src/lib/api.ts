@@ -17,7 +17,20 @@ declare global {
         menuLabel: string
         logoUrl: string
       }
+      permalinks?: {
+        isPlain: boolean
+      }
     }
+  }
+}
+
+/** Extended error that carries the WP REST API error code alongside the message. */
+export class ApiError extends Error {
+  code: string
+  constructor(message: string, code = 'unknown_error') {
+    super(message)
+    this.name = 'ApiError'
+    this.code = code
   }
 }
 
@@ -64,7 +77,7 @@ async function apiRequest<T = unknown>(
   const data = await response.json()
 
   if (!response.ok) {
-    throw new Error(data.message || `HTTP error! status: ${response.status}`)
+    throw new ApiError(data.message || `HTTP error! status: ${response.status}`, data.code || 'http_error')
   }
 
   return data as T
@@ -101,7 +114,7 @@ export const api = {
       body: formData,
     }).then(async (res) => {
       const data = await res.json()
-      if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`)
+      if (!res.ok) throw new ApiError(data.message || `HTTP ${res.status}`, data.code || 'http_error')
       return data as T
     })
   },

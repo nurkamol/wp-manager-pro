@@ -24,6 +24,18 @@ interface BrandingSettings {
 // ── Changelog data ─────────────────────────────────────────────────────────────
 const changelog: { version: string; date: string; features: string[] }[] = [
   {
+    version: '2.7.1',
+    date: '2026-03-16',
+    features: [
+      'Self-Update System — plugin now checks GitHub Releases for new versions and appears in the standard WordPress Plugins update list; shows "View Release Notes" link in the update row; changelog modal accessible from the Plugins page',
+      'Update Manager — fixed false "Done" status for premium/unlicensed plugins: null result from upgrader and errors captured by WP_Ajax_Upgrader_Skin are now correctly detected; new error badges: "License Required" (amber) and "Update Unavailable" (grey)',
+      'Security — 2FA QR code switched from deprecated Google Charts API to api.qrserver.com (reliable, no API key required)',
+      'Security — Custom Login logout fix: "logout" action added to bypass list so WordPress logout handler now runs correctly instead of being intercepted',
+      'Security — after logout, users are redirected to the custom login URL slug instead of wp-login.php',
+      'Plain Permalinks detection — amber warning banner shown when WordPress permalink structure is Plain; direct link to WP Settings → Permalinks included',
+    ],
+  },
+  {
     version: '2.7.0',
     date: '2026-03-16',
     features: [
@@ -305,6 +317,18 @@ const faq: { q: string; a: string }[] = [
   {
     q: 'Do I need a WPScan API key and what are the limits?',
     a: 'Yes — the Vulnerability Database tab requires a free API key from wpscan.com. The free tier allows 25 API requests per day, which is enough to check a typical site (1 request per plugin/theme). Enter your token in Security Scanner → Vulnerabilities → WPScan API Key and click Save. The raw key is never exposed in the UI — only the last 4 characters are shown after saving. Enterprise plans with higher limits are available from WPScan directly.',
+  },
+  {
+    q: 'Will WP Manager Pro update itself automatically?',
+    a: 'Yes — starting from v2.7.1, WP Manager Pro checks GitHub Releases for new versions and integrates with the standard WordPress update system. When a new release is available, you will see an update notice in WP Admin → Plugins just like any other plugin. Click "View Release Notes" in the update row to read the changelog before updating. The update process uses WordPress\'s own upgrade mechanism — it downloads the release ZIP directly from GitHub and replaces the plugin files in-place.',
+  },
+  {
+    q: 'Why does logout not work when I have a custom login URL configured?',
+    a: 'This was a bug fixed in v2.7.1. When a custom login slug is set (Security → Login Protection → Admin URL Protection), the logout request to wp-login.php?action=logout was being intercepted and redirected to the homepage before WordPress could destroy the session. The fix adds "logout" to the list of allowed wp-login.php actions. After updating to v2.7.1, logout works correctly and you are redirected to your custom login URL instead of wp-login.php.',
+  },
+  {
+    q: 'Why does the plugin not work when WordPress permalinks are set to "Plain"?',
+    a: 'WP Manager Pro communicates with WordPress via the REST API. WordPress\'s REST API requires pretty permalinks to function — with the "Plain" permalink structure, REST API requests fail because WordPress cannot route the /wp-json/ URL. To fix this, go to WordPress Admin → Settings → Permalinks and select any structure other than "Plain" (e.g. "Post name" is recommended). WP Manager Pro detects plain permalinks and shows an amber warning banner at the top of every page with a direct link to the Permalinks settings.',
   },
 ]
 

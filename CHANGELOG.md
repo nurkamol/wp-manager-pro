@@ -7,6 +7,22 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [2.7.1] — 2026-03-16
+
+### Added
+- **Self-Update System** — `class-self-updater.php` integrates WP Manager Pro with WordPress's native plugin update mechanism; checks GitHub Releases API (12-hour cache); injects update data into `update_plugins` site transient; supplies plugin info modal via `plugins_api` filter; shows "View Release Notes" link in the Plugins list update row; clears cache after a successful self-update
+
+### Fixed
+- **Update Manager — false "Done" for premium/unlicensed plugins** — `$result === null` from `Plugin_Upgrader::upgrade()` (no update performed) was incorrectly treated as success; also added check of `$upgrader->skin->result` for errors captured by `WP_Ajax_Upgrader_Skin`; frontend now shows distinct badges: "License Required" (amber) and "Update Unavailable" (grey) in addition to "Failed" (red)
+- **2FA QR code not rendering** — switched from the deprecated Google Charts QR API (`chart.googleapis.com`) to `api.qrserver.com`; QR codes now render correctly for Google Authenticator, Authy, and all standard TOTP apps
+- **Custom Login — logout not working** — added `'logout'` to the `protect_login()` bypass array; the action=logout request to `wp-login.php` was being intercepted and redirected to the homepage before WordPress's logout handler could run; session now destroys correctly; added `logout_redirect` filter to redirect to the custom login URL after logout
+- **Plain Permalinks** — added `permalinks.isPlain` flag to `wp_localize_script` data; amber warning banner shown across all plugin pages when WordPress is configured with Plain permalinks (REST API requires pretty permalinks)
+
+### Changed
+- `ApiError` class added to `api.ts`; all REST API errors now expose the WP error code to the frontend alongside the message
+
+---
+
 ## [2.7.0] — 2026-03-16
 
 ### Added
