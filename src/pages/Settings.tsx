@@ -24,6 +24,16 @@ interface BrandingSettings {
 // ── Changelog data ─────────────────────────────────────────────────────────────
 const changelog: { version: string; date: string; features: string[] }[] = [
   {
+    version: '2.8.1',
+    date: '2026-03-16',
+    features: [
+      'Self-update badge no longer reappears after a successful update — root cause was a missing version bump in the plugin file header (WP_MANAGER_PRO_VERSION was still 2.8.0 after the 2.8.1 release)',
+      'Update badge now appears immediately on the WordPress Plugins page without waiting for WP\'s 12-hour update cycle — added site_transient_update_plugins read-path hook alongside the existing write-path hook',
+      'Changelog dialog now shows the actual GitHub release notes for WP Manager Pro instead of "No changelog available" — the endpoint no longer queries wordpress.org (which has no listing for this plugin)',
+      'New POST /updates/check-self REST endpoint — clears the cached GitHub transient and forces an immediate fresh update check; accessible via the "Check WMP Update" button in Update Manager → Available Updates',
+    ],
+  },
+  {
     version: '2.8.0',
     date: '2026-03-16',
     features: [
@@ -345,6 +355,14 @@ const faq: { q: string; a: string }[] = [
   {
     q: 'Can I use Mail Interceptor in development to prevent emails from reaching real users?',
     a: 'Yes — enable Dev Mode in Agency Tools → Mail Interceptor. When Dev Mode is on, every outgoing wp_mail() call is logged as usual but the recipient address is replaced with devnull@wmp-intercepted.invalid before sending, so no real emails are delivered. You can preview and resend individual emails from the log at any time. Disable Dev Mode before going live.',
+  },
+  {
+    q: 'After updating WP Manager Pro, the update badge keeps reappearing — how do I fix it?',
+    a: 'This was a bug fixed in v2.8.1. The release ZIP for v2.8.1 did not include an updated version constant in the plugin file, so after installing it WordPress still saw the installed version as 2.8.0 and kept re-showing the update badge. Install the corrected v2.8.1 ZIP (or any later version) and the badge will clear permanently. You can also use the "Check WMP Update" button in Update Manager → Available Updates to force a fresh check and confirm the installed version matches the latest release.',
+  },
+  {
+    q: 'What is the "Check WMP Update" button in Update Manager?',
+    a: 'The "Check WMP Update" button (added in v2.8.1) clears the 12-hour GitHub release cache and immediately calls wp_update_plugins() to force a fresh check. It then shows a toast telling you whether a new version of WP Manager Pro is available or whether you are already on the latest version. Use it any time you want to confirm your installed version is up to date without waiting for WordPress\'s normal 12-hour update cycle.',
   },
   {
     q: 'Why does the plugin not work when WordPress permalinks are set to "Plain"?',
