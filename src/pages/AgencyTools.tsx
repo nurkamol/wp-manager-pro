@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Mail, Eye, RotateCcw, Trash2, Shield, LayoutDashboard, FileBarChart2,
-  Rocket, Download, Copy, Check, Loader2, ExternalLink,
+  Rocket, Download, Copy, Check, Loader2, ExternalLink, ImageIcon, X,
+  Palette, Type, Layout, Image,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { api } from '@/lib/api'
@@ -16,6 +17,44 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/textarea'
+
+// ── WordPress Media Library helper ────────────────────────────────────────────
+
+declare global {
+  interface Window {
+    wp?: {
+      media?: (args: {
+        title?: string
+        multiple?: boolean
+        library?: { type?: string }
+        button?: { text?: string }
+      }) => {
+        on: (event: string, cb: () => void) => void
+        state: () => { get: (key: string) => { first: () => { toJSON: () => { url: string; width: number; height: number; filename: string } } } }
+        open: () => void
+      }
+    }
+  }
+}
+
+function openMediaPicker(title: string, onSelect: (url: string) => void) {
+  if (typeof window === 'undefined' || !window.wp?.media) {
+    const url = prompt('Enter image URL:')
+    if (url) onSelect(url.trim())
+    return
+  }
+  const frame = window.wp.media({
+    title,
+    multiple: false,
+    library: { type: 'image' },
+    button: { text: 'Use this image' },
+  })
+  frame.on('select', () => {
+    const att = frame.state().get('selection').first().toJSON()
+    onSelect(att.url)
+  })
+  frame.open()
+}
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -268,103 +307,293 @@ export function AgencyTools() {
 
         {/* ── White-label Login Page ───────────────────────────────────────── */}
         <TabsContent value="login" className="space-y-4">
+          {/* Header card: enable toggle */}
           <Card>
-            <CardHeader>
+            <CardContent className="py-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>White-label Login Page</CardTitle>
-                  <CardDescription>Customise the WordPress login page for each client.</CardDescription>
+                  <p className="font-semibold text-slate-800 dark:text-slate-100">White-label Login Page</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Customise wp-login.php with your client's branding</p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="text-sm text-slate-500">{merged.enabled ? 'Enabled' : 'Disabled'}</span>
+                  <span className={`text-sm font-medium ${merged.enabled ? 'text-green-600 dark:text-green-400' : 'text-slate-400'}`}>
+                    {merged.enabled ? 'Active' : 'Inactive'}
+                  </span>
                   <Switch checked={merged.enabled ?? false} onCheckedChange={v => updateLogin('enabled', v)} />
                 </div>
               </div>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <div className="space-y-1.5">
-                  <Label>Logo URL</Label>
-                  <Input placeholder="https://example.com/logo.png" value={merged.logo_url ?? ''} onChange={e => updateLogin('logo_url', e.target.value)} />
-                  <p className="text-xs text-slate-400">Recommended: transparent PNG, 220×80 px or similar wide format</p>
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Heading Text</Label>
-                  <Input placeholder="Log in to your site" value={merged.heading ?? ''} onChange={e => updateLogin('heading', e.target.value)} />
-                  <p className="text-xs text-slate-400">Replaces "Powered by WordPress" tooltip on the logo</p>
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Background Colour</Label>
-                  <div className="flex gap-2">
-                    <input type="color" value={merged.bg_color ?? '#f0f0f1'} onChange={e => updateLogin('bg_color', e.target.value)} className="h-9 w-14 rounded border border-slate-200 p-0.5 cursor-pointer" />
-                    <Input value={merged.bg_color ?? '#f0f0f1'} onChange={e => updateLogin('bg_color', e.target.value)} className="font-mono" />
-                  </div>
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Button Colour</Label>
-                  <div className="flex gap-2">
-                    <input type="color" value={merged.btn_color ?? '#2271b1'} onChange={e => updateLogin('btn_color', e.target.value)} className="h-9 w-14 rounded border border-slate-200 p-0.5 cursor-pointer" />
-                    <Input value={merged.btn_color ?? '#2271b1'} onChange={e => updateLogin('btn_color', e.target.value)} className="font-mono" />
-                  </div>
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Background Image URL</Label>
-                  <Input placeholder="https://example.com/bg.jpg" value={merged.bg_image ?? ''} onChange={e => updateLogin('bg_image', e.target.value)} />
-                  <p className="text-xs text-slate-400">Optional — overrides background colour if set</p>
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Footer Text</Label>
-                  <Input placeholder="© 2026 Your Company" value={merged.footer ?? ''} onChange={e => updateLogin('footer', e.target.value)} />
-                  <p className="text-xs text-slate-400">Small text shown below the login form</p>
-                </div>
-              </div>
+            </CardContent>
+          </Card>
 
-              {/* Live preview */}
-              <div className="rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
-                <div className="px-3 py-2 bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 text-xs text-slate-500 font-medium flex items-center gap-1.5">
-                  <Eye className="w-3.5 h-3.5" /> Preview
-                </div>
-                <div
-                  className="h-48 flex flex-col items-center justify-center gap-3 text-white transition-colors"
-                  style={{ background: merged.bg_image ? `url(${merged.bg_image}) center/cover` : (merged.bg_color ?? '#f0f0f1') }}
-                >
-                  {merged.logo_url ? (
-                    <img src={merged.logo_url} alt="Logo" className="max-h-12 max-w-40 object-contain" />
-                  ) : (
-                    <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center">
-                      <Shield className="w-8 h-8 text-white/60" />
+          {/* Main layout: settings + live preview side-by-side */}
+          <div className="grid grid-cols-1 xl:grid-cols-5 gap-4 items-start">
+
+            {/* ── Left: Settings ── */}
+            <div className="xl:col-span-3 space-y-4">
+
+              {/* Logo section */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                    <ImageIcon className="w-4 h-4 text-slate-500" /> Logo
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {/* Logo URL + thumbnail + media picker */}
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="https://example.com/logo.png"
+                        value={merged.logo_url ?? ''}
+                        onChange={e => updateLogin('logo_url', e.target.value)}
+                        className="flex-1"
+                      />
+                      <Button
+                        variant="outline" size="sm" type="button"
+                        onClick={() => openMediaPicker('Choose Logo', url => updateLogin('logo_url', url))}
+                        className="shrink-0 gap-1.5"
+                      >
+                        <ImageIcon className="w-3.5 h-3.5" /> Media
+                      </Button>
+                      {merged.logo_url && (
+                        <Button
+                          variant="ghost" size="sm" type="button"
+                          onClick={() => updateLogin('logo_url', '')}
+                          className="shrink-0 text-slate-400 hover:text-red-500"
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      )}
                     </div>
-                  )}
-                  <p className="text-sm font-semibold" style={{ color: merged.bg_image ? '#fff' : '#1e293b' }}>
-                    {merged.heading || 'Log in'}
-                  </p>
-                  <div
-                    className="px-6 py-1.5 rounded text-sm font-medium text-white"
-                    style={{ background: merged.btn_color ?? '#2271b1' }}
-                  >
-                    Log In
+                    {merged.logo_url && (
+                      <div className="flex items-center gap-3 p-2.5 rounded-md bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                        <img
+                          src={merged.logo_url} alt="Logo preview"
+                          className="max-h-10 max-w-[140px] object-contain rounded"
+                          onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
+                        />
+                        <p className="text-xs text-slate-400 truncate">{merged.logo_url}</p>
+                      </div>
+                    )}
+                    <p className="text-xs text-slate-400">Recommended: transparent PNG, 220×80 px or wider</p>
                   </div>
-                  {merged.footer && (
-                    <p className="text-xs opacity-60" style={{ color: merged.bg_image ? '#fff' : '#64748b' }}>{merged.footer}</p>
-                  )}
-                </div>
-              </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
+                      <Type className="w-3.5 h-3.5" /> Logo tooltip / heading text
+                    </Label>
+                    <Input
+                      placeholder="Log in to your site"
+                      value={merged.heading ?? ''}
+                      onChange={e => updateLogin('heading', e.target.value)}
+                    />
+                    <p className="text-xs text-slate-400">Replaces the "Powered by WordPress" tooltip shown on hover</p>
+                  </div>
+                </CardContent>
+              </Card>
 
-              <div className="flex justify-between items-center pt-2">
+              {/* Colours section */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                    <Palette className="w-4 h-4 text-slate-500" /> Colours
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium text-slate-600 dark:text-slate-400">Background colour</Label>
+                    <div className="flex gap-2 items-center">
+                      <label className="relative cursor-pointer shrink-0">
+                        <input
+                          type="color"
+                          value={merged.bg_color ?? '#f0f0f1'}
+                          onChange={e => updateLogin('bg_color', e.target.value)}
+                          className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+                        />
+                        <span
+                          className="block w-9 h-9 rounded-md border-2 border-white dark:border-slate-700 shadow-sm"
+                          style={{ background: merged.bg_color ?? '#f0f0f1' }}
+                        />
+                      </label>
+                      <Input
+                        value={merged.bg_color ?? '#f0f0f1'}
+                        onChange={e => updateLogin('bg_color', e.target.value)}
+                        className="font-mono text-sm"
+                        maxLength={7}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium text-slate-600 dark:text-slate-400">Button colour</Label>
+                    <div className="flex gap-2 items-center">
+                      <label className="relative cursor-pointer shrink-0">
+                        <input
+                          type="color"
+                          value={merged.btn_color ?? '#2271b1'}
+                          onChange={e => updateLogin('btn_color', e.target.value)}
+                          className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+                        />
+                        <span
+                          className="block w-9 h-9 rounded-md border-2 border-white dark:border-slate-700 shadow-sm"
+                          style={{ background: merged.btn_color ?? '#2271b1' }}
+                        />
+                      </label>
+                      <Input
+                        value={merged.btn_color ?? '#2271b1'}
+                        onChange={e => updateLogin('btn_color', e.target.value)}
+                        className="font-mono text-sm"
+                        maxLength={7}
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Background image section */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                    <Image className="w-4 h-4 text-slate-500" /> Background Image
+                    <span className="text-xs font-normal text-slate-400">(optional)</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="https://example.com/bg.jpg"
+                      value={merged.bg_image ?? ''}
+                      onChange={e => updateLogin('bg_image', e.target.value)}
+                      className="flex-1"
+                    />
+                    <Button
+                      variant="outline" size="sm" type="button"
+                      onClick={() => openMediaPicker('Choose Background Image', url => updateLogin('bg_image', url))}
+                      className="shrink-0 gap-1.5"
+                    >
+                      <ImageIcon className="w-3.5 h-3.5" /> Media
+                    </Button>
+                    {merged.bg_image && (
+                      <Button
+                        variant="ghost" size="sm" type="button"
+                        onClick={() => updateLogin('bg_image', '')}
+                        className="shrink-0 text-slate-400 hover:text-red-500"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-400">Overrides background colour when set. Recommended: 1920×1080 JPG.</p>
+                </CardContent>
+              </Card>
+
+              {/* Text section */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                    <Layout className="w-4 h-4 text-slate-500" /> Page Text
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium text-slate-600 dark:text-slate-400">Footer text</Label>
+                    <Input
+                      placeholder="© 2026 Your Company. All rights reserved."
+                      value={merged.footer ?? ''}
+                      onChange={e => updateLogin('footer', e.target.value)}
+                    />
+                    <p className="text-xs text-slate-400">Small text shown below the login form</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Save + open */}
+              <div className="flex items-center justify-between pt-1">
                 <a
                   href={typeof window !== 'undefined' ? `${window.wpManagerPro?.siteUrl || ''}/wp-login.php` : '#'}
                   target="_blank" rel="noopener"
-                  className="text-sm text-blue-600 dark:text-blue-400 flex items-center gap-1 hover:underline"
+                  className="text-sm text-blue-600 dark:text-blue-400 flex items-center gap-1.5 hover:underline"
                 >
                   <ExternalLink className="w-3.5 h-3.5" /> Open login page
                 </a>
                 <Button onClick={() => saveLogin.mutate()} disabled={saveLogin.isPending}>
-                  {saveLogin.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                  {saveLogin.isPending && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
                   Save Login Settings
                 </Button>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+
+            {/* ── Right: Live preview ── */}
+            <div className="xl:col-span-2 sticky top-6">
+              <Card className="overflow-hidden">
+                <CardHeader className="py-3 px-4 border-b border-slate-100 dark:border-slate-800">
+                  <CardTitle className="text-xs font-semibold flex items-center gap-1.5 text-slate-500 uppercase tracking-wide">
+                    <Eye className="w-3.5 h-3.5" /> Live Preview
+                  </CardTitle>
+                </CardHeader>
+                {/* Simulated login page */}
+                <div
+                  className="min-h-[460px] flex flex-col items-center justify-center gap-4 p-6 transition-all duration-300"
+                  style={{
+                    background: merged.bg_image
+                      ? `url(${merged.bg_image}) center/cover no-repeat`
+                      : (merged.bg_color ?? '#f0f0f1'),
+                  }}
+                >
+                  {/* Logo */}
+                  <div className="mb-1">
+                    {merged.logo_url ? (
+                      <img
+                        src={merged.logo_url} alt="Logo"
+                        className="max-h-16 max-w-[200px] object-contain drop-shadow"
+                        onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
+                      />
+                    ) : (
+                      <div className="w-16 h-16 rounded-full bg-white/30 backdrop-blur-sm flex items-center justify-center shadow-md">
+                        <Shield className="w-8 h-8 text-white/70" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Simulated login form */}
+                  <div className="w-full max-w-[280px] bg-white dark:bg-slate-900 rounded-lg shadow-xl p-5 space-y-3">
+                    {merged.heading && (
+                      <p className="text-center text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1">
+                        {merged.heading}
+                      </p>
+                    )}
+                    <div className="space-y-1">
+                      <div className="text-xs text-slate-500 mb-0.5">Username or Email</div>
+                      <div className="h-8 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+                    </div>
+                    <div className="space-y-1">
+                      <div className="text-xs text-slate-500 mb-0.5">Password</div>
+                      <div className="h-8 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+                    </div>
+                    <div className="flex items-center justify-between gap-2 pt-1">
+                      <div
+                        className="flex-1 h-8 rounded text-xs font-semibold text-white flex items-center justify-center shadow-sm transition-colors"
+                        style={{ background: merged.btn_color ?? '#2271b1' }}
+                      >
+                        Log In
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <span className="text-xs text-slate-400 hover:text-slate-600 cursor-default">Lost your password?</span>
+                    </div>
+                  </div>
+
+                  {/* Footer text */}
+                  {merged.footer && (
+                    <p
+                      className="text-xs text-center max-w-[240px] opacity-80 mt-1"
+                      style={{ color: merged.bg_image ? '#fff' : '#64748b' }}
+                    >
+                      {merged.footer}
+                    </p>
+                  )}
+                </div>
+              </Card>
+            </div>
+          </div>
         </TabsContent>
 
         {/* ── Admin UI Customiser ──────────────────────────────────────────── */}

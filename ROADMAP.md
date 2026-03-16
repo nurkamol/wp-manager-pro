@@ -2,7 +2,7 @@
 
 This document outlines the planned feature development for WP Manager Pro. Releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Minor versions (`1.x.0`) add new features; patch versions (`1.x.y`) deliver bug fixes and polish.
 
-> **Current version:** 2.8.1 — last updated 2026-03-16
+> **Current version:** 2.9.0 — last updated 2026-03-17
 
 ---
 
@@ -32,20 +32,7 @@ This document outlines the planned feature development for WP Manager Pro. Relea
 | [2.7.1] | Bug fixes: self-update system (GitHub Releases), premium plugin false "Done", 2FA QR code, custom login logout, plain permalink warning |
 | [2.8.0] | Agency Tools: Mail Interceptor (log + dev mode + preview + resend), White-label Login Page, Admin UI Customiser, Client Report Generator, Coming Soon Mode — 9 new REST endpoints |
 | [2.8.1] | Bug fixes: self-update badge stuck after update (missing version bump), Changelog dialog showing "No changelog available", read-path transient hook, Check WMP Update button |
-
----
-
-## 🔜 Upcoming
-
-### v2.9.0 — Developer Utilities
-*Focus: day-to-day debugging and scaffolding*
-
-- **Hook Explorer** — browse all registered `add_action` / `add_filter` calls with priorities, source file, and callback name; filter by hook name or file
-- **REST API Tester** — built-in Postman-style tester pre-authenticated with site credentials; browse registered routes, send requests, inspect responses
-- **Dummy Data Generator** — create N test posts/pages/users/WooCommerce products with faker data; one-click cleanup
-- **Rewrite Rules Tester** — test any URL against registered rewrite rules; shows which rule matched and query vars produced
-- **Object Cache Browser** — browse Redis/Memcached keys by prefix, inspect cached values, delete individual keys (complements the bundled drop-in)
-- **Database Prefix Changer** — safely rename `wp_` prefix across all tables, options, and user-meta in one operation
+| [2.9.0] | Developer Utilities: Hook Explorer, REST API Tester, Dummy Data Generator, Rewrite Rules Tester, Object Cache Browser, Database Prefix Changer — 12 new REST endpoints; Login Page UI redesign with Media Library picker and side-by-side live preview |
 
 ---
 

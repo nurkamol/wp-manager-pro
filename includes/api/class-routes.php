@@ -30,6 +30,7 @@ use WP_Manager_Pro\API\Controllers\Dev_Tools_Controller;
 use WP_Manager_Pro\API\Controllers\Update_Manager_Controller;
 use WP_Manager_Pro\API\Controllers\Security_Scanner_Controller;
 use WP_Manager_Pro\API\Controllers\Agency_Controller;
+use WP_Manager_Pro\API\Controllers\Developer_Controller;
 
 class Routes {
 
@@ -1034,6 +1035,68 @@ class Routes {
         register_rest_route( $namespace, '/agency/coming-soon/emails/clear', [
             'methods'             => 'DELETE',
             'callback'            => [ Agency_Controller::class, 'clear_coming_soon_emails' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+
+        // ── Developer Utilities (v2.9.0) ───────────────────────────────────────
+        register_rest_route( $namespace, '/developer/hooks', [
+            'methods'             => 'GET',
+            'callback'            => [ Developer_Controller::class, 'get_hooks' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/developer/rest-routes', [
+            'methods'             => 'GET',
+            'callback'            => [ Developer_Controller::class, 'get_rest_routes' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/developer/rest-request', [
+            'methods'             => 'POST',
+            'callback'            => [ Developer_Controller::class, 'proxy_rest_request' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/developer/generate', [
+            'methods'             => 'POST',
+            'callback'            => [ Developer_Controller::class, 'generate_dummy' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/developer/dummy-stats', [
+            'methods'             => 'GET',
+            'callback'            => [ Developer_Controller::class, 'get_dummy_stats' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/developer/dummy', [
+            'methods'             => 'DELETE',
+            'callback'            => [ Developer_Controller::class, 'delete_dummy' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/developer/rewrite-test', [
+            'methods'             => 'GET',
+            'callback'            => [ Developer_Controller::class, 'test_rewrite' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/developer/cache-keys', [
+            'methods'             => 'GET',
+            'callback'            => [ Developer_Controller::class, 'get_cache_keys' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/developer/cache-value', [
+            'methods'             => 'GET',
+            'callback'            => [ Developer_Controller::class, 'get_cache_value' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/developer/cache-key', [
+            'methods'             => 'DELETE',
+            'callback'            => [ Developer_Controller::class, 'delete_cache_key' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/developer/prefix-info', [
+            'methods'             => 'GET',
+            'callback'            => [ Developer_Controller::class, 'get_prefix_info' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/developer/change-prefix', [
+            'methods'             => 'POST',
+            'callback'            => [ Developer_Controller::class, 'change_prefix' ],
             'permission_callback' => [ self::class, 'admin_permission' ],
         ] );
     }

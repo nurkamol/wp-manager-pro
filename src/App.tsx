@@ -28,6 +28,7 @@ import { DevTools } from './pages/DevTools'
 import { UpdateManager } from './pages/UpdateManager'
 import { SecurityScanner } from './pages/SecurityScanner'
 import { AgencyTools } from './pages/AgencyTools'
+import { DeveloperUtils } from './pages/DeveloperUtils'
 import { CommandPaletteProvider, CommandPalette } from './components/CommandPalette'
 
 const queryClient = new QueryClient({
@@ -75,6 +76,7 @@ export function App() {
               <Route path="updates" element={<UpdateManager />} />
               <Route path="security-scanner" element={<SecurityScanner />} />
               <Route path="agency" element={<AgencyTools />} />
+              <Route path="developer" element={<DeveloperUtils />} />
             </Route>
           </Routes>
         </CommandPaletteProvider>

@@ -7,6 +7,36 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [2.9.0] — 2026-03-17
+
+### Added
+- **Developer Utilities page** (`/developer`) — new page in the sidebar under a dedicated "Developer" group (Webhook icon) with 6-tab layout
+- **Hook Explorer** — browses all registered `add_action`/`add_filter` calls from `$wp_filter`; shows hook name, priority badge, callback name (with source file + line via Reflection); searchable by hook name and file
+- **REST API Tester** — built-in Postman-style tester pre-authenticated with WordPress credentials; browse registered routes grouped by namespace; set method, path, body (JSON), headers; response panel shows status, duration, headers, and formatted response body
+- **Dummy Data Generator** — create up to 50 test posts, pages, users, or WooCommerce products (when active) with generated names and lorem ipsum content; items tagged with `_wmp_dummy_data` meta for safe bulk cleanup
+- **Rewrite Rules Tester** — input any URL path and see which rewrite rule matched, the redirect query string, and resolved `$query_vars`; expandable full rules table
+- **Object Cache Browser** — lists Redis keys (via SCAN) or WP internal cache entries by prefix; inspect value per key (string/list/set/hash/zset); delete individual keys
+- **Database Prefix Changer** — safely rename `wp_` prefix: dry-run preview, RENAME TABLE for all tables, updates `option_name` and `meta_key` rows, rewrites `$table_prefix` in wp-config.php; confirmation dialog requires checkbox + typed prefix
+- **Agency Tools → Login Page** redesigned with side-by-side layout (settings + persistent live preview), WordPress Media Library picker for logo and background image, colour swatches with overlay native picker, logo thumbnail preview, organised into Logo / Colours / Background Image / Text sections
+
+### API
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/developer/hooks` | Browse all WordPress hooks (search, file filter, limit) |
+| GET | `/developer/rest-routes` | List all registered REST API routes |
+| POST | `/developer/rest-request` | Proxy an authenticated REST request |
+| POST | `/developer/generate` | Generate dummy posts/pages/users/products |
+| GET | `/developer/dummy-stats` | Count items tagged as dummy data |
+| DELETE | `/developer/dummy` | Delete all dummy-tagged items |
+| GET | `/developer/rewrite-test` | Test URL against rewrite rules |
+| GET | `/developer/cache-keys` | Browse object cache keys by prefix |
+| GET | `/developer/cache-value` | Get a specific cache key value |
+| DELETE | `/developer/cache-key` | Delete a specific cache key |
+| GET | `/developer/prefix-info` | Get current DB prefix + table list |
+| POST | `/developer/change-prefix` | Rename database table prefix |
+
+---
+
 ## [2.8.1] — 2026-03-16
 
 ### Fixed

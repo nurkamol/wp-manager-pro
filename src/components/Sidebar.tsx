@@ -5,7 +5,7 @@ import {
   Server, Construction, Users, Bug, Image, StickyNote,
   ChevronLeft, ChevronRight, ExternalLink, Settings, RotateCcw,
   Sun, Moon, Shield, Activity, Code2, ArrowLeftRight, Mail, HardDrive,
-  PanelLeftClose, PanelLeftOpen, Gauge, Clock, Images, FileEdit, Terminal, Keyboard, RefreshCw, ScanLine, Briefcase,
+  PanelLeftClose, PanelLeftOpen, Gauge, Clock, Images, FileEdit, Terminal, Keyboard, RefreshCw, ScanLine, Briefcase, Webhook,
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { getConfig, getBranding, api } from '@/lib/api'
@@ -62,6 +62,12 @@ const navGroups: NavGroup[] = [
       { to: '/cron', icon: Clock, label: 'Cron Manager' },
       { to: '/content-tools', icon: FileEdit, label: 'Content Tools' },
       { to: '/notes', icon: StickyNote, label: 'Notes' },
+    ],
+  },
+  {
+    label: 'Developer',
+    items: [
+      { to: '/developer', icon: Webhook, label: 'Dev Utilities' },
     ],
   },
   {
