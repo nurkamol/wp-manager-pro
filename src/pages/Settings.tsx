@@ -24,6 +24,18 @@ interface BrandingSettings {
 // ── Changelog data ─────────────────────────────────────────────────────────────
 const changelog: { version: string; date: string; features: string[] }[] = [
   {
+    version: '2.9.1',
+    date: '2026-03-17',
+    features: [
+      'Login Page — fixed CSS not applying on wp-login.php: switched from echo <style> to wp_add_inline_style("login") so custom styles load AFTER WordPress\'s own login stylesheet and correctly override defaults',
+      'Login Page — wp_enqueue_media() now called on the plugin admin page so the "Media" buttons for logo and background image open the native WordPress Media Library instead of a browser prompt() fallback',
+      'Login Page — Privacy Policy & Terms links section: toggle to show the site\'s built-in Privacy Policy link below the login form; custom links HTML textarea for Terms of Service, Cookie Policy, or any anchor links',
+      'Login Page — additional CSS improvements: background-repeat, background-position, and display:block ensure the custom logo replaces the WP logo reliably',
+      'Coming Soon — fully redesigned UI: side-by-side settings + live preview layout (matching Login Page), logo media picker, background image media picker, colour swatches with native picker overlay, content section (heading/message/launch date), organised into Logo & Background / Content / Colours / Email Capture cards',
+      'Coming Soon — rendered page redesigned: modern countdown timer with individual Day/Hours/Min/Sec tiles, accent-coloured divider, background-image support, logo image support, improved typography',
+    ],
+  },
+  {
     version: '2.9.0',
     date: '2026-03-17',
     features: [

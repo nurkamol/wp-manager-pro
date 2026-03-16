@@ -34,6 +34,8 @@ class Agency_Controller {
     const OPT_LOGIN_FOOTER       = 'wmp_login_footer';
     const OPT_LOGIN_BTN_COLOR    = 'wmp_login_btn_color';
     const OPT_LOGIN_ENABLED      = 'wmp_login_custom_enabled';
+    const OPT_LOGIN_SHOW_PRIVACY = 'wmp_login_show_privacy';
+    const OPT_LOGIN_LINKS_HTML   = 'wmp_login_links_html';
 
     // Admin Customiser
     const OPT_HIDDEN_MENUS   = 'wmp_hidden_admin_menus';
@@ -48,6 +50,8 @@ class Agency_Controller {
     const OPT_CS_EMAILS          = 'wmp_coming_soon_emails';
     const OPT_CS_BG_COLOR        = 'wmp_coming_soon_bg_color';
     const OPT_CS_ACCENT_COLOR    = 'wmp_coming_soon_accent_color';
+    const OPT_CS_BG_IMAGE        = 'wmp_coming_soon_bg_image';
+    const OPT_CS_LOGO_URL        = 'wmp_coming_soon_logo_url';
 
     // ── Mail Interceptor ───────────────────────────────────────────────────────
 
@@ -166,25 +170,29 @@ class Agency_Controller {
 
     public static function get_login_settings( WP_REST_Request $request ): WP_REST_Response {
         return new WP_REST_Response( [
-            'enabled'    => (bool) get_option( self::OPT_LOGIN_ENABLED, false ),
-            'logo_url'   => (string) get_option( self::OPT_LOGIN_LOGO, '' ),
-            'bg_color'   => (string) get_option( self::OPT_LOGIN_BG_COLOR, '#f0f0f1' ),
-            'bg_image'   => (string) get_option( self::OPT_LOGIN_BG_IMAGE, '' ),
-            'heading'    => (string) get_option( self::OPT_LOGIN_HEADING, '' ),
-            'footer'     => (string) get_option( self::OPT_LOGIN_FOOTER, '' ),
-            'btn_color'  => (string) get_option( self::OPT_LOGIN_BTN_COLOR, '#2271b1' ),
+            'enabled'          => (bool) get_option( self::OPT_LOGIN_ENABLED, false ),
+            'logo_url'         => (string) get_option( self::OPT_LOGIN_LOGO, '' ),
+            'bg_color'         => (string) get_option( self::OPT_LOGIN_BG_COLOR, '#f0f0f1' ),
+            'bg_image'         => (string) get_option( self::OPT_LOGIN_BG_IMAGE, '' ),
+            'heading'          => (string) get_option( self::OPT_LOGIN_HEADING, '' ),
+            'footer'           => (string) get_option( self::OPT_LOGIN_FOOTER, '' ),
+            'btn_color'        => (string) get_option( self::OPT_LOGIN_BTN_COLOR, '#2271b1' ),
+            'show_privacy'     => (bool) get_option( self::OPT_LOGIN_SHOW_PRIVACY, false ),
+            'custom_links_html'=> (string) get_option( self::OPT_LOGIN_LINKS_HTML, '' ),
         ], 200 );
     }
 
     public static function save_login_settings( WP_REST_Request $request ): WP_REST_Response {
         $fields = [
-            'enabled'   => [ self::OPT_LOGIN_ENABLED,  'bool'   ],
-            'logo_url'  => [ self::OPT_LOGIN_LOGO,     'url'    ],
-            'bg_color'  => [ self::OPT_LOGIN_BG_COLOR, 'color'  ],
-            'bg_image'  => [ self::OPT_LOGIN_BG_IMAGE, 'url'    ],
-            'heading'   => [ self::OPT_LOGIN_HEADING,  'text'   ],
-            'footer'    => [ self::OPT_LOGIN_FOOTER,   'text'   ],
-            'btn_color' => [ self::OPT_LOGIN_BTN_COLOR,'color'  ],
+            'enabled'          => [ self::OPT_LOGIN_ENABLED,      'bool'  ],
+            'logo_url'         => [ self::OPT_LOGIN_LOGO,         'url'   ],
+            'bg_color'         => [ self::OPT_LOGIN_BG_COLOR,     'color' ],
+            'bg_image'         => [ self::OPT_LOGIN_BG_IMAGE,     'url'   ],
+            'heading'          => [ self::OPT_LOGIN_HEADING,      'text'  ],
+            'footer'           => [ self::OPT_LOGIN_FOOTER,       'text'  ],
+            'btn_color'        => [ self::OPT_LOGIN_BTN_COLOR,    'color' ],
+            'show_privacy'     => [ self::OPT_LOGIN_SHOW_PRIVACY, 'bool'  ],
+            'custom_links_html'=> [ self::OPT_LOGIN_LINKS_HTML,   'html'  ],
         ];
 
         foreach ( $fields as $param => [ $opt, $type ] ) {
@@ -194,6 +202,7 @@ class Agency_Controller {
                 case 'bool':  update_option( $opt, (bool) $val ); break;
                 case 'url':   update_option( $opt, esc_url_raw( $val ) ); break;
                 case 'color': update_option( $opt, sanitize_hex_color( $val ) ?: $val ); break;
+                case 'html':  update_option( $opt, wp_kses_post( $val ) ); break;
                 default:      update_option( $opt, sanitize_text_field( $val ) ); break;
             }
         }
@@ -210,21 +219,23 @@ class Agency_Controller {
         $bg_image  = esc_url( get_option( self::OPT_LOGIN_BG_IMAGE, '' ) );
         $btn_color = esc_attr( get_option( self::OPT_LOGIN_BTN_COLOR, '#2271b1' ) );
 
-        $css = "body.login { background-color: {$bg_color} !important; }";
+        $css  = "body.login { background-color: {$bg_color} !important; }";
 
         if ( $bg_image ) {
             $css .= "body.login { background-image: url('{$bg_image}') !important; background-size: cover !important; background-position: center !important; }";
         }
 
         if ( $logo ) {
-            $css .= "#login h1 a, .login h1 a { background-image: url('{$logo}') !important; background-size: contain !important; width: 220px !important; height: 80px !important; }";
+            $css .= "#login h1 a, .login h1 a { background-image: url('{$logo}') !important; background-size: contain !important; background-repeat: no-repeat !important; background-position: center center !important; width: 220px !important; height: 80px !important; display: block !important; }";
         }
 
         $css .= ".wp-core-ui .button-primary { background: {$btn_color} !important; border-color: {$btn_color} !important; box-shadow: none !important; }";
         $css .= ".wp-core-ui .button-primary:hover { filter: brightness(1.1) !important; }";
         $css .= "#login_error, .login .message, .login .success { border-left-color: {$btn_color} !important; }";
 
-        echo '<style>' . $css . '</style>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+        // Use wp_add_inline_style so our rules load AFTER WordPress's own login
+        // stylesheet — this guarantees our !important overrides actually win.
+        wp_add_inline_style( 'login', $css );
     }
 
     /** Hooked to login_headerurl */
@@ -240,12 +251,27 @@ class Agency_Controller {
         return $heading ? esc_html( $heading ) : get_bloginfo( 'name' );
     }
 
-    /** Hooked to login_footer — inject custom footer text. */
+    /** Hooked to login_footer — inject custom footer text + privacy/terms links. */
     public static function apply_login_footer(): void {
         if ( ! get_option( self::OPT_LOGIN_ENABLED, false ) ) return;
+
         $footer = get_option( self::OPT_LOGIN_FOOTER, '' );
         if ( $footer ) {
             echo '<p style="text-align:center;color:#666;font-size:12px;margin-top:12px;">' . esc_html( $footer ) . '</p>';
+        }
+
+        // Privacy Policy link (uses WP's built-in privacy page)
+        if ( get_option( self::OPT_LOGIN_SHOW_PRIVACY, false ) ) {
+            $privacy_url = get_privacy_policy_url();
+            if ( $privacy_url ) {
+                echo '<p style="text-align:center;font-size:12px;margin-top:8px;"><a href="' . esc_url( $privacy_url ) . '" style="color:#666;text-decoration:none;" rel="noopener">Privacy Policy</a></p>';
+            }
+        }
+
+        // Custom links HTML (e.g. Terms, Cookie Policy)
+        $links_html = get_option( self::OPT_LOGIN_LINKS_HTML, '' );
+        if ( $links_html ) {
+            echo '<div style="text-align:center;font-size:12px;margin-top:8px;color:#666;">' . wp_kses_post( $links_html ) . '</div>';
         }
     }
 
@@ -433,6 +459,8 @@ class Agency_Controller {
             'emails'        => (array) get_option( self::OPT_CS_EMAILS, [] ),
             'bg_color'      => (string) get_option( self::OPT_CS_BG_COLOR, '#0f172a' ),
             'accent_color'  => (string) get_option( self::OPT_CS_ACCENT_COLOR, '#6366f1' ),
+            'bg_image'      => (string) get_option( self::OPT_CS_BG_IMAGE, '' ),
+            'logo_url'      => (string) get_option( self::OPT_CS_LOGO_URL, '' ),
         ], 200 );
     }
 
@@ -445,6 +473,8 @@ class Agency_Controller {
             'email_capture' => [ self::OPT_CS_EMAIL_CAPTURE, 'bool'  ],
             'bg_color'      => [ self::OPT_CS_BG_COLOR,      'color' ],
             'accent_color'  => [ self::OPT_CS_ACCENT_COLOR,  'color' ],
+            'bg_image'      => [ self::OPT_CS_BG_IMAGE,      'url'   ],
+            'logo_url'      => [ self::OPT_CS_LOGO_URL,      'url'   ],
         ];
 
         foreach ( $fields as $param => [ $opt, $type ] ) {
@@ -453,6 +483,7 @@ class Agency_Controller {
             switch ( $type ) {
                 case 'bool':  update_option( $opt, (bool) $val ); break;
                 case 'color': update_option( $opt, sanitize_hex_color( $val ) ?: $val ); break;
+                case 'url':   update_option( $opt, esc_url_raw( $val ) ); break;
                 default:      update_option( $opt, sanitize_text_field( $val ) ); break;
             }
         }
@@ -494,6 +525,8 @@ class Agency_Controller {
         $email_capture = (bool) get_option( self::OPT_CS_EMAIL_CAPTURE, false );
         $bg_color      = esc_attr( get_option( self::OPT_CS_BG_COLOR, '#0f172a' ) );
         $accent_color  = esc_attr( get_option( self::OPT_CS_ACCENT_COLOR, '#6366f1' ) );
+        $bg_image      = esc_url( get_option( self::OPT_CS_BG_IMAGE, '' ) );
+        $logo_url      = esc_url( get_option( self::OPT_CS_LOGO_URL, '' ) );
         $site_name     = esc_html( get_bloginfo( 'name' ) );
 
         $countdown_js = '';
@@ -509,8 +542,10 @@ class Agency_Controller {
                         var h = Math.floor((diff %% 86400000) / 3600000);
                         var m = Math.floor((diff %% 3600000) / 60000);
                         var s = Math.floor((diff %% 60000) / 1000);
-                        var el = document.getElementById("wmp-cs-countdown");
-                        if (el) el.innerHTML = d+"d "+h+"h "+m+"m "+s+"s";
+                        var ed = document.getElementById("wmp-d"); if (ed) ed.textContent = d;
+                        var eh = document.getElementById("wmp-h"); if (eh) eh.textContent = h;
+                        var em = document.getElementById("wmp-m"); if (em) em.textContent = m;
+                        var es = document.getElementById("wmp-s"); if (es) es.textContent = s;
                         if (diff > 0) setTimeout(tick, 1000);
                     }
                     tick();
@@ -533,6 +568,14 @@ class Agency_Controller {
         status_header( 200 );
         nocache_headers();
 
+        $bg_css = $bg_image
+            ? "background: url('{$bg_image}') center/cover no-repeat; background-color: {$bg_color};"
+            : "background: {$bg_color};";
+
+        $logo_html = $logo_url
+            ? "<img src='{$logo_url}' alt='{$site_name}' style='max-height:70px;max-width:260px;object-fit:contain;margin-bottom:1.5rem;display:block;margin-left:auto;margin-right:auto;'>"
+            : "<div style='font-size:2.5rem;margin-bottom:1rem'>🚀</div>";
+
         echo '<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -541,25 +584,30 @@ class Agency_Controller {
 <title>' . $title . ' — ' . $site_name . '</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:' . $bg_color . ';color:#f8fafc;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2rem}
-  .wmp-cs-inner{max-width:560px;width:100%}
-  .wmp-cs-logo{font-size:2.5rem;margin-bottom:1rem}
-  h1{font-size:2.75rem;font-weight:800;letter-spacing:-.03em;margin-bottom:1rem}
-  p{font-size:1.125rem;color:#94a3b8;line-height:1.7;margin-bottom:2rem}
-  #wmp-cs-countdown{font-size:1.5rem;font-weight:700;color:' . $accent_color . ';margin-bottom:2rem;letter-spacing:.05em}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;' . $bg_css . 'color:#f8fafc;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2rem}
+  .wmp-cs-inner{max-width:600px;width:100%}
+  h1{font-size:clamp(2rem,5vw,3rem);font-weight:800;letter-spacing:-.03em;margin-bottom:1rem;line-height:1.1}
+  .wmp-cs-sub{font-size:1.125rem;color:rgba(248,250,252,.7);line-height:1.7;margin-bottom:2rem}
+  #wmp-cs-countdown{display:flex;gap:1rem;justify-content:center;margin-bottom:2.5rem;flex-wrap:wrap}
+  .wmp-cs-unit{background:rgba(255,255,255,.08);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.1);border-radius:.75rem;padding:.75rem 1.25rem;min-width:70px}
+  .wmp-cs-unit span{display:block;font-size:1.75rem;font-weight:700;color:' . $accent_color . ';line-height:1}
+  .wmp-cs-unit small{display:block;font-size:.65rem;text-transform:uppercase;letter-spacing:.1em;color:rgba(248,250,252,.5);margin-top:.25rem}
   .wmp-cs-form{display:flex;gap:.5rem;flex-wrap:wrap;justify-content:center}
-  .wmp-cs-form input{flex:1;min-width:200px;padding:.65rem 1rem;border-radius:.5rem;border:1.5px solid #334155;background:#1e293b;color:#f8fafc;font-size:1rem;outline:none}
+  .wmp-cs-form input{flex:1;min-width:220px;padding:.7rem 1.1rem;border-radius:.5rem;border:1.5px solid rgba(255,255,255,.15);background:rgba(255,255,255,.07);color:#f8fafc;font-size:1rem;outline:none;transition:border-color .2s}
+  .wmp-cs-form input::placeholder{color:rgba(248,250,252,.4)}
   .wmp-cs-form input:focus{border-color:' . $accent_color . '}
-  .wmp-cs-form button{padding:.65rem 1.5rem;background:' . $accent_color . ';color:#fff;border:none;border-radius:.5rem;font-size:1rem;font-weight:600;cursor:pointer;transition:filter .2s}
-  .wmp-cs-form button:hover{filter:brightness(1.15)}
+  .wmp-cs-form button{padding:.7rem 1.75rem;background:' . $accent_color . ';color:#fff;border:none;border-radius:.5rem;font-size:1rem;font-weight:600;cursor:pointer;transition:filter .2s,transform .15s}
+  .wmp-cs-form button:hover{filter:brightness(1.12);transform:translateY(-1px)}
+  .wmp-cs-divider{width:3rem;height:3px;background:' . $accent_color . ';border-radius:2px;margin:0 auto 2rem}
 </style>
 </head>
 <body>
   <div class="wmp-cs-inner">
-    <div class="wmp-cs-logo">🚀</div>
+    ' . $logo_html . '
     <h1>' . $title . '</h1>
-    <p>' . $message . '</p>
-    ' . ( $launch_date ? '<div id="wmp-cs-countdown">Loading...</div>' : '' ) . '
+    <div class="wmp-cs-divider"></div>
+    <p class="wmp-cs-sub">' . $message . '</p>
+    ' . ( $launch_date ? '<div id="wmp-cs-countdown"><div class="wmp-cs-unit"><span id="wmp-d">0</span><small>Days</small></div><div class="wmp-cs-unit"><span id="wmp-h">0</span><small>Hours</small></div><div class="wmp-cs-unit"><span id="wmp-m">0</span><small>Mins</small></div><div class="wmp-cs-unit"><span id="wmp-s">0</span><small>Secs</small></div></div>' : '' ) . '
     ' . $email_form . '
   </div>
   ' . ( $countdown_js ? '<script>' . $countdown_js . '</script>' : '' ) . '

@@ -102,6 +102,10 @@ class Admin {
             ] );
         }
 
+        // Enqueue the WordPress media library so Agency Tools → Login Page can
+        // open the native media picker (window.wp.media).
+        wp_enqueue_media();
+
         // Dequeue WordPress's own command palette (WP 6.3+) on our page.
         // Our plugin ships its own palette — having both causes Cmd+K conflicts.
         wp_dequeue_script( 'wp-commands' );

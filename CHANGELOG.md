@@ -7,6 +7,32 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [2.9.1] — 2026-03-17
+
+### Fixed
+- **Login Page CSS not applying** — switched from `echo '<style>...</style>'` inside `login_enqueue_scripts` to `wp_add_inline_style('login', $css)` so custom styles are injected *after* WordPress's own login stylesheet and `!important` overrides reliably win
+- **Media button falling back to `prompt()`** — `wp_enqueue_media()` is now called in `Admin::enqueue_assets()`, making `window.wp.media` available in the React app for logo and background image pickers
+
+### Added
+- **Login Page — Privacy & Legal Links section**
+  - Toggle to show the site's built-in Privacy Policy link (via `get_privacy_policy_url()`) below the login form
+  - Custom links HTML textarea for Terms of Service, Cookie Policy, or any anchor tags; content passed through `wp_kses_post` for safe output
+- **Coming Soon — complete UI redesign**
+  - Side-by-side settings + live preview layout matching the Login Page
+  - Logo image picker with Media Library button and inline thumbnail
+  - Background image picker with Media Library button
+  - Content section: heading, message, launch date (separate cards)
+  - Colour swatches with native colour picker overlay (matching Login Page style)
+  - Email capture section moved into its own card
+- **Coming Soon — rendered page redesign**
+  - Modern countdown with individual Day / Hours / Min / Sec tiles (backdrop-blur glass cards)
+  - Accent-colour divider bar between heading and message
+  - Background image support on the public-facing page
+  - Logo image support replaces the default 🚀 emoji when set
+  - Improved typography: clamp() fluid font sizes, better contrast
+
+---
+
 ## [2.9.0] — 2026-03-17
 
 ### Added

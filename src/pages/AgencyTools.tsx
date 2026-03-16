@@ -66,6 +66,7 @@ interface MailEntry {
 interface LoginSettings {
   enabled: boolean; logo_url: string; bg_color: string
   bg_image: string; heading: string; footer: string; btn_color: string
+  show_privacy: boolean; custom_links_html: string
 }
 interface AdminCustomiser {
   hidden_menus: string[]; hidden_widgets: string[]
@@ -83,6 +84,7 @@ interface ReportData {
 interface ComingSoonSettings {
   active: boolean; title: string; message: string; launch_date: string
   email_capture: boolean; emails: string[]; bg_color: string; accent_color: string
+  bg_image: string; logo_url: string
 }
 
 // ── Component ──────────────────────────────────────────────────────────────────
@@ -489,10 +491,10 @@ export function AgencyTools() {
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                    <Layout className="w-4 h-4 text-slate-500" /> Page Text
+                    <Layout className="w-4 h-4 text-slate-500" /> Page Text & Links
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3">
+                <CardContent className="space-y-4">
                   <div className="space-y-1.5">
                     <Label className="text-xs font-medium text-slate-600 dark:text-slate-400">Footer text</Label>
                     <Input
@@ -501,6 +503,31 @@ export function AgencyTools() {
                       onChange={e => updateLogin('footer', e.target.value)}
                     />
                     <p className="text-xs text-slate-400">Small text shown below the login form</p>
+                  </div>
+
+                  <div className="border-t border-slate-100 dark:border-slate-800 pt-4 space-y-3">
+                    <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Privacy & Legal Links</p>
+                    <div className="flex items-center justify-between py-2 px-3 rounded-md bg-slate-50 dark:bg-slate-800">
+                      <div>
+                        <p className="text-sm font-medium">Privacy Policy link</p>
+                        <p className="text-xs text-slate-400 mt-0.5">Show the site's Privacy Policy page link below the form</p>
+                      </div>
+                      <Switch
+                        checked={merged.show_privacy ?? false}
+                        onCheckedChange={v => updateLogin('show_privacy', v)}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-medium text-slate-600 dark:text-slate-400">Custom links HTML</Label>
+                      <Textarea
+                        rows={3}
+                        placeholder={'<a href="/terms">Terms of Service</a> · <a href="/cookies">Cookie Policy</a>'}
+                        value={merged.custom_links_html ?? ''}
+                        onChange={e => updateLogin('custom_links_html', e.target.value)}
+                        className="font-mono text-xs"
+                      />
+                      <p className="text-xs text-slate-400">HTML shown below the login form — supports anchor tags with href/target/rel</p>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -752,99 +779,271 @@ export function AgencyTools() {
 
         {/* ── Coming Soon ──────────────────────────────────────────────────── */}
         <TabsContent value="coming-soon" className="space-y-4">
+          {/* Header: active toggle */}
           <Card>
-            <CardHeader>
+            <CardContent className="py-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>Coming Soon Mode</CardTitle>
-                  <CardDescription>Show a pre-launch page to visitors. Admins see the live site normally.</CardDescription>
+                  <p className="font-semibold text-slate-800 dark:text-slate-100">Coming Soon Mode</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Show a pre-launch page to visitors. Admins see the live site normally.</p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className={`text-sm font-medium ${mergedCs.active ? 'text-green-600 dark:text-green-400' : 'text-slate-500'}`}>
+                  <span className={`text-sm font-medium ${mergedCs.active ? 'text-green-600 dark:text-green-400' : 'text-slate-400'}`}>
                     {mergedCs.active ? 'Active' : 'Inactive'}
                   </span>
                   <Switch checked={mergedCs.active ?? false} onCheckedChange={v => updateCs('active', v)} />
                 </div>
               </div>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <div className="space-y-1.5">
-                  <Label>Page Title</Label>
-                  <Input value={mergedCs.title ?? ''} onChange={e => updateCs('title', e.target.value)} placeholder="Coming Soon" />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Launch Date & Time</Label>
-                  <Input type="datetime-local" value={mergedCs.launch_date ?? ''} onChange={e => updateCs('launch_date', e.target.value)} />
-                  <p className="text-xs text-slate-400">Leave empty to hide the countdown</p>
-                </div>
-                <div className="space-y-1.5 md:col-span-2">
-                  <Label>Message</Label>
-                  <Textarea
-                    rows={3}
-                    value={mergedCs.message ?? ''}
-                    onChange={e => updateCs('message', e.target.value)}
-                    placeholder="We're working on something great. Stay tuned!"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Background Colour</Label>
-                  <div className="flex gap-2">
-                    <input type="color" value={mergedCs.bg_color ?? '#0f172a'} onChange={e => updateCs('bg_color', e.target.value)} className="h-9 w-14 rounded border border-slate-200 p-0.5 cursor-pointer" />
-                    <Input value={mergedCs.bg_color ?? '#0f172a'} onChange={e => updateCs('bg_color', e.target.value)} className="font-mono" />
-                  </div>
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Accent Colour</Label>
-                  <div className="flex gap-2">
-                    <input type="color" value={mergedCs.accent_color ?? '#6366f1'} onChange={e => updateCs('accent_color', e.target.value)} className="h-9 w-14 rounded border border-slate-200 p-0.5 cursor-pointer" />
-                    <Input value={mergedCs.accent_color ?? '#6366f1'} onChange={e => updateCs('accent_color', e.target.value)} className="font-mono" />
-                  </div>
-                </div>
-              </div>
+            </CardContent>
+          </Card>
 
-              {/* Email capture */}
-              <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
-                <div>
-                  <p className="font-medium text-sm">Email Capture Form</p>
-                  <p className="text-xs text-slate-400 mt-0.5">Show "Notify Me" form on the coming soon page</p>
-                </div>
-                <Switch checked={mergedCs.email_capture ?? false} onCheckedChange={v => updateCs('email_capture', v)} />
-              </div>
+          {/* Side-by-side: settings + live preview */}
+          <div className="grid grid-cols-1 xl:grid-cols-5 gap-4 items-start">
 
-              {mergedCs.email_capture && csData?.emails && csData.emails.length > 0 && (
-                <div className="border border-slate-200 dark:border-slate-700 rounded-lg">
-                  <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-slate-700">
-                    <p className="text-sm font-medium">{csData.emails.length} captured email{csData.emails.length !== 1 ? 's' : ''}</p>
+            {/* ── Left: Settings ── */}
+            <div className="xl:col-span-3 space-y-4">
+
+              {/* Logo & Background */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                    <Image className="w-4 h-4 text-slate-500" /> Logo & Background
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-medium text-slate-600 dark:text-slate-400">Logo image <span className="text-slate-400 font-normal">(optional)</span></Label>
                     <div className="flex gap-2">
-                      <Button variant="outline" size="sm" onClick={() => {
-                        const csv = csData.emails.join('\n')
-                        navigator.clipboard.writeText(csv)
-                        toast.success('Emails copied')
-                      }}>
-                        <Copy className="w-3.5 h-3.5 mr-1.5" /> Copy All
+                      <Input
+                        placeholder="https://example.com/logo.png"
+                        value={mergedCs.logo_url ?? ''}
+                        onChange={e => updateCs('logo_url', e.target.value)}
+                        className="flex-1"
+                      />
+                      <Button variant="outline" size="sm" type="button"
+                        onClick={() => openMediaPicker('Choose Logo', url => updateCs('logo_url', url))}
+                        className="shrink-0 gap-1.5">
+                        <ImageIcon className="w-3.5 h-3.5" /> Media
                       </Button>
-                      <Button variant="outline" size="sm" onClick={() => clearCsEmails.mutate()}>
-                        <Trash2 className="w-3.5 h-3.5 mr-1.5" /> Clear
-                      </Button>
+                      {mergedCs.logo_url && (
+                        <Button variant="ghost" size="sm" type="button"
+                          onClick={() => updateCs('logo_url', '')}
+                          className="shrink-0 text-slate-400 hover:text-red-500">
+                          <X className="w-4 h-4" />
+                        </Button>
+                      )}
                     </div>
                   </div>
-                  <div className="max-h-40 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
-                    {csData.emails.map((email, i) => (
-                      <p key={i} className="px-4 py-2 text-sm font-mono">{email}</p>
-                    ))}
+                  <div className="space-y-2">
+                    <Label className="text-xs font-medium text-slate-600 dark:text-slate-400">Background image <span className="text-slate-400 font-normal">(optional — overrides bg colour)</span></Label>
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="https://example.com/bg.jpg"
+                        value={mergedCs.bg_image ?? ''}
+                        onChange={e => updateCs('bg_image', e.target.value)}
+                        className="flex-1"
+                      />
+                      <Button variant="outline" size="sm" type="button"
+                        onClick={() => openMediaPicker('Choose Background', url => updateCs('bg_image', url))}
+                        className="shrink-0 gap-1.5">
+                        <ImageIcon className="w-3.5 h-3.5" /> Media
+                      </Button>
+                      {mergedCs.bg_image && (
+                        <Button variant="ghost" size="sm" type="button"
+                          onClick={() => updateCs('bg_image', '')}
+                          className="shrink-0 text-slate-400 hover:text-red-500">
+                          <X className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
+                </CardContent>
+              </Card>
 
-              <div className="flex justify-end">
+              {/* Content */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                    <Type className="w-4 h-4 text-slate-500" /> Page Content
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium text-slate-600 dark:text-slate-400">Heading</Label>
+                    <Input value={mergedCs.title ?? ''} onChange={e => updateCs('title', e.target.value)} placeholder="Coming Soon" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium text-slate-600 dark:text-slate-400">Message</Label>
+                    <Textarea
+                      rows={3}
+                      value={mergedCs.message ?? ''}
+                      onChange={e => updateCs('message', e.target.value)}
+                      placeholder="We're working on something great. Stay tuned!"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium text-slate-600 dark:text-slate-400">Launch Date & Time</Label>
+                    <Input type="datetime-local" value={mergedCs.launch_date ?? ''} onChange={e => updateCs('launch_date', e.target.value)} />
+                    <p className="text-xs text-slate-400">Leave empty to hide the countdown timer</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Colours */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                    <Palette className="w-4 h-4 text-slate-500" /> Colours
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium text-slate-600 dark:text-slate-400">Background colour</Label>
+                    <div className="flex gap-2 items-center">
+                      <label className="relative cursor-pointer shrink-0">
+                        <input type="color" value={mergedCs.bg_color ?? '#0f172a'} onChange={e => updateCs('bg_color', e.target.value)}
+                          className="absolute inset-0 opacity-0 w-full h-full cursor-pointer" />
+                        <span className="block w-9 h-9 rounded-md border-2 border-white dark:border-slate-700 shadow-sm"
+                          style={{ background: mergedCs.bg_color ?? '#0f172a' }} />
+                      </label>
+                      <Input value={mergedCs.bg_color ?? '#0f172a'} onChange={e => updateCs('bg_color', e.target.value)}
+                        className="font-mono text-sm" maxLength={7} />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium text-slate-600 dark:text-slate-400">Accent colour</Label>
+                    <div className="flex gap-2 items-center">
+                      <label className="relative cursor-pointer shrink-0">
+                        <input type="color" value={mergedCs.accent_color ?? '#6366f1'} onChange={e => updateCs('accent_color', e.target.value)}
+                          className="absolute inset-0 opacity-0 w-full h-full cursor-pointer" />
+                        <span className="block w-9 h-9 rounded-md border-2 border-white dark:border-slate-700 shadow-sm"
+                          style={{ background: mergedCs.accent_color ?? '#6366f1' }} />
+                      </label>
+                      <Input value={mergedCs.accent_color ?? '#6366f1'} onChange={e => updateCs('accent_color', e.target.value)}
+                        className="font-mono text-sm" maxLength={7} />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Email capture */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                    <Mail className="w-4 h-4 text-slate-500" /> Email Capture
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex items-center justify-between py-2 px-3 rounded-md bg-slate-50 dark:bg-slate-800">
+                    <div>
+                      <p className="text-sm font-medium">Enable email capture form</p>
+                      <p className="text-xs text-slate-400 mt-0.5">Show a "Notify Me" subscription form on the coming soon page</p>
+                    </div>
+                    <Switch checked={mergedCs.email_capture ?? false} onCheckedChange={v => updateCs('email_capture', v)} />
+                  </div>
+                  {mergedCs.email_capture && csData?.emails && csData.emails.length > 0 && (
+                    <div className="border border-slate-200 dark:border-slate-700 rounded-lg">
+                      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-slate-700">
+                        <p className="text-sm font-medium">{csData.emails.length} captured email{csData.emails.length !== 1 ? 's' : ''}</p>
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="sm" onClick={() => {
+                            navigator.clipboard.writeText(csData.emails.join('\n'))
+                            toast.success('Emails copied')
+                          }}>
+                            <Copy className="w-3.5 h-3.5 mr-1.5" /> Copy All
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={() => clearCsEmails.mutate()}>
+                            <Trash2 className="w-3.5 h-3.5 mr-1.5" /> Clear
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="max-h-40 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
+                        {csData.emails.map((email, i) => (
+                          <p key={i} className="px-4 py-2 text-sm font-mono">{email}</p>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <div className="flex justify-end pt-1">
                 <Button onClick={() => saveCs.mutate()} disabled={saveCs.isPending}>
-                  {saveCs.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                  {saveCs.isPending && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
                   Save Coming Soon Settings
                 </Button>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+
+            {/* ── Right: Live preview ── */}
+            <div className="xl:col-span-2 sticky top-6">
+              <Card className="overflow-hidden">
+                <CardHeader className="py-3 px-4 border-b border-slate-100 dark:border-slate-800">
+                  <CardTitle className="text-xs font-semibold flex items-center gap-1.5 text-slate-500 uppercase tracking-wide">
+                    <Eye className="w-3.5 h-3.5" /> Live Preview
+                  </CardTitle>
+                </CardHeader>
+                <div
+                  className="min-h-[460px] flex flex-col items-center justify-center gap-3 p-8 transition-all duration-300 text-center"
+                  style={{
+                    background: mergedCs.bg_image
+                      ? `url(${mergedCs.bg_image}) center/cover no-repeat`
+                      : (mergedCs.bg_color ?? '#0f172a'),
+                  }}
+                >
+                  {/* Logo or emoji */}
+                  {mergedCs.logo_url ? (
+                    <img
+                      src={mergedCs.logo_url} alt="Logo"
+                      className="max-h-14 max-w-[200px] object-contain drop-shadow mb-1"
+                      onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
+                    />
+                  ) : (
+                    <div className="text-3xl mb-1">🚀</div>
+                  )}
+
+                  {/* Title */}
+                  <h2 className="text-2xl font-extrabold tracking-tight text-white drop-shadow">
+                    {mergedCs.title || 'Coming Soon'}
+                  </h2>
+
+                  {/* Accent divider */}
+                  <div className="w-10 h-1 rounded-full my-1" style={{ background: mergedCs.accent_color ?? '#6366f1' }} />
+
+                  {/* Message */}
+                  <p className="text-sm max-w-[260px] leading-relaxed" style={{ color: 'rgba(248,250,252,0.7)' }}>
+                    {mergedCs.message || "We're working on something great. Stay tuned!"}
+                  </p>
+
+                  {/* Countdown tiles */}
+                  {mergedCs.launch_date && (
+                    <div className="flex gap-2 mt-1 flex-wrap justify-center">
+                      {['00', '00', '00', '00'].map((v, i) => (
+                        <div key={i}
+                          className="rounded-lg px-3 py-2 min-w-[48px] text-center border"
+                          style={{ background: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.12)' }}>
+                          <span className="block text-lg font-bold" style={{ color: mergedCs.accent_color ?? '#6366f1' }}>{v}</span>
+                          <span className="block text-[9px] uppercase tracking-widest text-white/50">{['Days','Hrs','Min','Sec'][i]}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Email form mock */}
+                  {mergedCs.email_capture && (
+                    <div className="flex gap-2 mt-2 w-full max-w-[280px]">
+                      <div className="flex-1 h-9 rounded-md border"
+                        style={{ background: 'rgba(255,255,255,0.07)', borderColor: 'rgba(255,255,255,0.15)' }} />
+                      <div className="h-9 px-4 rounded-md flex items-center text-xs font-semibold text-white"
+                        style={{ background: mergedCs.accent_color ?? '#6366f1' }}>
+                        Notify me
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </Card>
+            </div>
+          </div>
         </TabsContent>
       </Tabs>
 
