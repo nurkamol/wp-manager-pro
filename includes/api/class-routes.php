@@ -27,6 +27,7 @@ use WP_Manager_Pro\API\Controllers\Cron_Controller;
 use WP_Manager_Pro\API\Controllers\Media_Controller;
 use WP_Manager_Pro\API\Controllers\Content_Controller;
 use WP_Manager_Pro\API\Controllers\Dev_Tools_Controller;
+use WP_Manager_Pro\API\Controllers\Update_Manager_Controller;
 
 class Routes {
 
@@ -894,6 +895,53 @@ class Routes {
         register_rest_route( $namespace, '/settings/export-wp-xml', [
             'methods'             => 'POST',
             'callback'            => [ Settings_Controller::class, 'export_wordpress_xml' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+
+        // ── Update Manager ────────────────────────────────────────────────────
+        register_rest_route( $namespace, '/updates/available', [
+            'methods'             => 'GET',
+            'callback'            => [ Update_Manager_Controller::class, 'get_available' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/updates/changelog', [
+            'methods'             => 'GET',
+            'callback'            => [ Update_Manager_Controller::class, 'get_changelog' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/updates/run', [
+            'methods'             => 'POST',
+            'callback'            => [ Update_Manager_Controller::class, 'run_update' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/updates/rollback', [
+            'methods'             => 'POST',
+            'callback'            => [ Update_Manager_Controller::class, 'rollback' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/updates/history', [
+            'methods'             => 'GET',
+            'callback'            => [ Update_Manager_Controller::class, 'get_history' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/updates/history/clear', [
+            'methods'             => 'DELETE',
+            'callback'            => [ Update_Manager_Controller::class, 'clear_history' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/updates/scheduled', [
+            'methods'             => 'GET',
+            'callback'            => [ Update_Manager_Controller::class, 'get_scheduled' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/updates/schedule', [
+            'methods'             => 'POST',
+            'callback'            => [ Update_Manager_Controller::class, 'add_schedule' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/updates/schedule/cancel', [
+            'methods'             => 'DELETE',
+            'callback'            => [ Update_Manager_Controller::class, 'cancel_schedule' ],
             'permission_callback' => [ self::class, 'admin_permission' ],
         ] );
     }

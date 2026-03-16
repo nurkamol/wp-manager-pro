@@ -2,7 +2,7 @@
 
 This document outlines the planned feature development for WP Manager Pro. Releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Minor versions (`1.x.0`) add new features; patch versions (`1.x.y`) deliver bug fixes and polish.
 
-> **Current version:** 2.5.0 — last updated 2026-03-16
+> **Current version:** 2.6.0 — last updated 2026-03-16
 
 ---
 
@@ -26,22 +26,12 @@ This document outlines the planned feature development for WP Manager Pro. Relea
 | [2.3.0] | Content Tools: Bulk Post Editor, Post Duplicator, Scheduled Post Manager, Options Table Editor — 10 new REST endpoints |
 | [2.3.1] | Bundled Redis drop-in (no external plugin needed), Redis admin bar node with flush cache, maintenance toggle visibility setting, custom bypass URL slug, asset cache-busting fix |
 | [2.4.0] | Dev Tools: wp-config.php visual editor, .htaccess editor with auto-backup, PHP Info viewer, Query Monitor (lite), Environment badge in sidebar |
-| [2.5.0] | Command Palette (Cmd+K), Settings Export/Import (signed JSON bundle), WordPress XML Content Export |
+| [2.5.0] | Command Palette (Cmd+Shift+P), Settings Export/Import (signed JSON bundle), WordPress XML Content Export |
+| [2.6.0] | Update Manager: changelog preview, pre-update backup, rollback, scheduled updates via WP Cron — 9 new REST endpoints |
 
 ---
 
 ## 🔜 Upcoming
-
-### v2.6.0 — Update Manager
-*Focus: safe, informed updates on production sites*
-
-- **Changelog Preview** — show each plugin/theme's changelog before updating; fetches from WordPress.org API
-- **Smart Update Scheduler** — schedule plugin/theme updates for off-peak hours via WP Cron; queue multiple updates
-- **Auto-Rollback** — snapshot plugin files before update; one-click rollback if site breaks afterward
-- **Update History Log** — log of every update (what changed, when, by whom) with rollback link per entry
-- **Bulk Update Queue** — select updates, review all changelogs, then apply in one controlled batch
-
----
 
 ### v2.7.0 — Security Scanner
 *Focus: proactive threat detection*
@@ -138,3 +128,4 @@ Have a feature request or want to vote on a backlog item? [Open an issue](https:
 [2.3.1]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v2.3.1
 [2.4.0]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v2.4.0
 [2.5.0]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v2.5.0
+[2.6.0]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v2.6.0

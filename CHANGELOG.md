@@ -7,6 +7,30 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [2.6.0] — 2026-03-16
+
+### Added
+- **Update Manager page** (`/updates`) — 3-tab developer-friendly update control centre
+- **Available Updates tab** — lists all pending plugin, theme, and WordPress core updates; per-item "View Changelog" button fetches live changelog from WordPress.org; "Update Now" per item with animated status badge (updating / done / failed); checkbox multi-select with "Update Selected" batch action that runs sequentially to avoid file-system conflicts; "Check for Updates" force-refresh button
+- **Pre-update backup** — each update automatically zips the plugin/theme directory to `wp-content/wmp-backups/updates/` before upgrading (core skipped — too large)
+- **History tab** — log of every update run through WP Manager Pro (up to 100 entries); columns: name, type, version arrow, date, status, rollback button; "Rollback" button visible only when backup ZIP exists and not already rolled back; "Clear History" deletes log and all backup files
+- **Scheduled tab** — form to queue any plugin or theme update at a specific future datetime; uses `wp_schedule_single_event` + WP Cron; lists pending jobs with "Cancel" button; backup + update runs automatically at scheduled time
+
+### API
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/updates/available` | All pending plugin/theme/core updates (reads transients; `?force=1` triggers fresh WP check) |
+| GET | `/updates/changelog` | Fetch plugin/theme changelog from WordPress.org API (`?type=plugin&slug=xyz`) |
+| POST | `/updates/run` | Back up + upgrade a single plugin, theme, or core; logs to history |
+| POST | `/updates/rollback` | Restore plugin/theme from pre-update ZIP backup |
+| GET | `/updates/history` | Update history log (max 100 entries, `has_backup` flag per entry) |
+| DELETE | `/updates/history/clear` | Clear history and delete all backup ZIPs |
+| GET | `/updates/scheduled` | List scheduled update jobs with WP Cron next-run info |
+| POST | `/updates/schedule` | Queue a plugin/theme update via `wp_schedule_single_event` |
+| DELETE | `/updates/schedule/cancel` | Cancel and unschedule a queued update |
+
+---
+
 ## [2.5.0] — 2026-03-16
 
 ### Added
@@ -657,6 +681,7 @@ First public release of WP Manager Pro — a comprehensive, agency-ready WordPre
 [1.1.0]: https://github.com/nurkamol/wp-manager-pro/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v1.0.0
 
+[2.6.0]: https://github.com/nurkamol/wp-manager-pro/compare/v2.5.0...v2.6.0
 [2.5.0]: https://github.com/nurkamol/wp-manager-pro/compare/v2.4.0...v2.5.0
 [2.4.0]: https://github.com/nurkamol/wp-manager-pro/compare/v2.3.1...v2.4.0
 [2.3.1]: https://github.com/nurkamol/wp-manager-pro/compare/v2.3.0...v2.3.1

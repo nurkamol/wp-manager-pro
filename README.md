@@ -2,7 +2,7 @@
 
 > A comprehensive, agency-ready WordPress management suite — built with React 19, TypeScript, and the WordPress REST API.
 
-![Version](https://img.shields.io/badge/version-2.5.0-blue)
+![Version](https://img.shields.io/badge/version-2.6.0-blue)
 ![WordPress](https://img.shields.io/badge/WordPress-5.9%2B-21759b)
 ![PHP](https://img.shields.io/badge/PHP-7.4%2B-8892be)
 ![License](https://img.shields.io/badge/license-GPL--2.0%2B-green)
@@ -57,15 +57,15 @@ All operations happen through a secured REST API (`wp-manager-pro/v1`) that requ
 
 ---
 
-## What's New in v2.5.0 — Command Palette & Export
+## What's New in v2.6.0 — Update Manager
 
 | Feature | Description |
 |---------|-------------|
-| ⌨️ Command Palette | `Cmd+Shift+P` global overlay — fuzzy search across all 25 pages + 5 quick actions; keyboard navigation; recent pages history; configurable shortcut in Settings |
-| 📦 Settings Export | Export all WP Manager Pro config (Branding, Maintenance, SMTP, Snippets, Redirects, Notes) as a signed JSON bundle with HMAC integrity |
-| 📥 Settings Import | Drag-and-drop import with client-side preview, cross-site warning, per-section overwrite control, and result summary |
-| 🗂️ WordPress XML Export | Trigger WordPress's native content export (All / Posts / Pages / Media / Custom CPT) without leaving the plugin |
-| 🛠️ CI/CD fix | GitHub Actions release workflow now detects existing releases and only uploads the asset — no more "already_exists" errors |
+| 📋 Changelog Preview | View each plugin/theme's full changelog from WordPress.org before updating — no guessing what changed |
+| 🛡️ Pre-update Backup | Automatically zips the plugin/theme directory before every update; stored in `wp-content/wmp-backups/updates/` |
+| ↩️ One-click Rollback | Restore any plugin or theme to its previous version from the History tab — as long as the backup ZIP exists |
+| ⏰ Scheduled Updates | Queue any plugin or theme update for a specific future date/time via WP Cron; cancel anytime |
+| 📦 Batch Update Queue | Checkbox-select multiple updates, review changelogs, then apply all in one sequential controlled batch |
 
 ---
 
