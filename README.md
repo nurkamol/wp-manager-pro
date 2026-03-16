@@ -2,7 +2,7 @@
 
 > A comprehensive, agency-ready WordPress management suite — built with React 19, TypeScript, and the WordPress REST API.
 
-![Version](https://img.shields.io/badge/version-2.8.0-blue)
+![Version](https://img.shields.io/badge/version-2.9.2-blue)
 ![WordPress](https://img.shields.io/badge/WordPress-5.9%2B-21759b)
 ![PHP](https://img.shields.io/badge/PHP-7.4%2B-8892be)
 ![License](https://img.shields.io/badge/license-GPL--2.0%2B-green)
@@ -57,15 +57,24 @@ All operations happen through a secured REST API (`wp-manager-pro/v1`) that requ
 
 ---
 
-## What's New in v2.8.0 — Agency Tools
+## What's New in v2.9.2 — Media Picker Fix & Logo Select Button
+
+| Fix | Description |
+|-----|-------------|
+| 🖼️ Media Library picker | All "Select image" buttons now reliably open the native WP Media Library modal. Root cause was `wp.media` not being callable at bundle-evaluation time — fixed via a `window.wmpOpenMedia` bridge injected via `wp_add_inline_script('after')` |
+| 🎨 Branding logo Select button | Settings → Branding → Custom Logo URL now has a dedicated "Select" button that opens the Media Library picker, consistent with Agency Tools |
+
+## What's New in v2.9.0 — Developer Utilities
 
 | Feature | Description |
 |---------|-------------|
-| 📧 Mail Interceptor | Log every outgoing `wp_mail()` call — to, subject, body, date; Dev Mode prevents real delivery; preview HTML/plain emails in-plugin; one-click Resend |
-| 🎨 White-label Login Page | Custom logo, background colour/image, button colour, heading, and footer text injected into `wp-login.php` — with a live preview pane |
-| 🧩 Admin UI Customiser | Hide any WP admin menu item or dashboard widget for non-admin roles — clients only see what they need |
-| 📊 Client Report Generator | One-click standalone HTML report: health score, WP/PHP/DB versions, SSL, WP_DEBUG, pending updates, last backup, active plugins — download or copy |
-| 🚀 Coming Soon Mode | Pre-launch page (200 OK) with custom title, message, countdown timer, and accent colours; optional email-capture form with exported list |
+| 🔗 Hook Explorer | Browse all registered `add_action`/`add_filter` calls with hook name, priority, callback name and source file; searchable |
+| 🔌 REST API Tester | Built-in Postman-style tester with pre-authenticated credentials; browse routes by namespace; request/response panel with timing |
+| 🧪 Dummy Data Generator | Create up to 50 test posts, pages, users, or WooCommerce products; tagged for safe bulk cleanup |
+| 🔄 Rewrite Rules Tester | Input any URL, see matching rule, redirect query string, and resolved `$query_vars`; full rules table |
+| 💾 Object Cache Browser | List Redis keys (SCAN) or WP cache entries by prefix; inspect and delete individual keys |
+| 🗄️ Database Prefix Changer | Safely rename DB prefix with dry-run preview, `RENAME TABLE`, option/meta row updates, and wp-config.php rewrite |
+| 🎨 Login Page redesign | Side-by-side settings + live preview; Media Library pickers for logo and background image; colour swatches with native picker overlay |
 
 ---
 
@@ -172,8 +181,27 @@ All operations happen through a secured REST API (`wp-manager-pro/v1`) that requ
 - **v1.6.0** Delete all converted sidecars per format with a single button
 - **v1.8.0** Server Config Generator — copy-ready Nginx & Apache snippets for WebP serving, security headers, and browser cache rules
 
+### Agency Tools *(New in v2.8.0)*
+- **Mail Interceptor** — log every outgoing `wp_mail()` call (to, subject, body, date); Dev Mode prevents real delivery; preview HTML/plain emails in-plugin; one-click Resend
+- **White-label Login Page** — custom logo (Media Library picker), background colour/image, button colour, heading text, and footer text injected into `wp-login.php`; side-by-side live preview pane; Privacy & Terms links
+- **Admin UI Customiser** — hide any WP admin menu item or dashboard widget for non-admin roles; clients only see what they need
+- **Client Report Generator** — one-click standalone HTML report: health score, WP/PHP/DB versions, SSL, WP_DEBUG, pending updates, last backup, active plugins — download or copy to clipboard
+- **Coming Soon Mode** — pre-launch page (200 OK) with custom logo/background (Media Library pickers), heading, message, countdown timer with glass-card tiles, accent colour; optional email-capture form with exportable list
+
+### Developer Utilities *(New in v2.9.0)*
+
+Six-tab page for advanced WordPress introspection and testing:
+
+- **Hook Explorer** — browse all registered `add_action` / `add_filter` hooks from `$wp_filter`; shows hook name, priority, callback with source file + line (Reflection); full-text search
+- **REST API Tester** — built-in Postman-style client pre-authenticated with WP nonce; browse routes by namespace; set method, path, JSON body, headers; response panel with status, duration, headers, and formatted body
+- **Dummy Data Generator** — create up to 50 test posts, pages, users, or WooCommerce products (when active); items tagged with `_wmp_dummy_data` meta for safe bulk one-click cleanup
+- **Rewrite Rules Tester** — input any URL path; shows the matched rule, redirect query string, resolved `$query_vars`; expandable full rules table
+- **Object Cache Browser** — list Redis keys via SCAN (or WP internal cache groups); inspect value per key (string/list/set/hash/zset); delete individual keys
+- **Database Prefix Changer** — dry-run preview of all affected tables; `RENAME TABLE` for every table; updates `option_name` and `meta_key` rows; rewrites `$table_prefix` in `wp-config.php`; confirmation dialog requires checkbox + typed new prefix
+
 ### Settings / Branding *(New in v1.8.0)*
 - White-label the plugin: set a custom Plugin Name, Admin Menu Label, and Sidebar Logo URL
+- **v2.9.2** Logo URL field has a dedicated "Select" button that opens the WordPress Media Library picker
 - Changes take effect immediately after saving and reloading the page
 - Inline **Changelog** tab — collapsible version history accordion with the current version highlighted
 - **FAQ** tab with 9 common questions and a direct link to open a GitHub issue
@@ -325,14 +353,14 @@ Five-tab page for media library cleanup and maintenance:
 ## Installation
 
 ### From ZIP
-1. Download `wp-manager-pro-v2.7.0.zip` from the [Releases](https://github.com/nurkamol/wp-manager-pro/releases) page.
+1. Download `wp-manager-pro-v2.9.2.zip` from the [Releases](https://github.com/nurkamol/wp-manager-pro/releases) page.
 2. In WP Admin → **Plugins → Add New → Upload Plugin**.
 3. Upload the ZIP and click **Install Now**, then **Activate**.
 4. Navigate to **WP Manager** in the admin sidebar (or click **Open** in the Plugins list).
 
 ### Manual
 ```bash
-unzip wp-manager-pro-v2.7.0.zip -d /path/to/wp-content/plugins/
+unzip wp-manager-pro-v2.9.2.zip -d /path/to/wp-content/plugins/
 ```
 
 Then activate via WP Admin → **Plugins**.
@@ -370,7 +398,7 @@ npm run build
 ### Package Plugin ZIP
 ```bash
 cd ..
-zip -r wp-manager-pro-v2.1.0.zip \
+zip -r wp-manager-pro-v2.9.2.zip \
   wp-manager-pro/wp-manager-pro.php \
   wp-manager-pro/includes/ \
   wp-manager-pro/assets/build/
@@ -539,6 +567,18 @@ All endpoints require a valid WordPress nonce in the `X-WP-Nonce` header.
 | POST | `/audit/export` | **v1.4.0** Export audit log as CSV |
 | GET | `/audit/download` | **v1.4.0** Download CSV export |
 | GET | `/audit/action-types` | **v1.4.0** Available action type filters |
+| GET | `/developer/hooks` | **v2.9.0** Browse all WordPress hooks |
+| GET | `/developer/rest-routes` | **v2.9.0** List all registered REST routes |
+| POST | `/developer/rest-request` | **v2.9.0** Proxy an authenticated REST request |
+| POST | `/developer/generate` | **v2.9.0** Generate dummy posts/pages/users/products |
+| GET | `/developer/dummy-stats` | **v2.9.0** Count dummy-tagged items |
+| DELETE | `/developer/dummy` | **v2.9.0** Delete all dummy-tagged items |
+| GET | `/developer/rewrite-test` | **v2.9.0** Test URL against rewrite rules |
+| GET | `/developer/cache-keys` | **v2.9.0** Browse object cache keys by prefix |
+| GET | `/developer/cache-value` | **v2.9.0** Get a specific cache key value |
+| DELETE | `/developer/cache-key` | **v2.9.0** Delete a specific cache key |
+| GET | `/developer/prefix-info` | **v2.9.0** Get current DB prefix + table list |
+| POST | `/developer/change-prefix` | **v2.9.0** Rename database table prefix |
 
 ---
 
@@ -572,8 +612,15 @@ wp-manager-pro/
 │           ├── class-backup-controller.php     # v1.4.0
 │           ├── class-audit-controller.php      # v1.4.0
 │           ├── class-settings-controller.php   # v1.8.0
+│           ├── class-performance-controller.php # v1.9.0
 │           ├── class-cron-controller.php       # v2.1.0
-│           └── class-media-controller.php      # v2.2.0
+│           ├── class-media-controller.php      # v2.2.0
+│           ├── class-content-controller.php    # v2.3.0
+│           ├── class-dev-tools-controller.php  # v2.4.0
+│           ├── class-update-manager-controller.php # v2.6.0
+│           ├── class-security-scanner-controller.php # v2.7.0
+│           ├── class-agency-controller.php     # v2.8.0
+│           └── class-developer-controller.php  # v2.9.0
 ├── assets/
 │   └── build/
 │       ├── index.js                # Compiled React app (~793 kB, ~220 kB gzip)
@@ -614,7 +661,14 @@ wp-manager-pro/
 │       ├── Email.tsx               # v1.4.0
 │       ├── Backup.tsx              # v1.4.0
 │       ├── AuditLog.tsx            # v1.4.0
-│       └── Settings.tsx            # v1.8.0
+│       ├── Settings.tsx            # v1.8.0
+│       ├── Performance.tsx         # v1.9.0
+│       ├── ContentTools.tsx        # v2.3.0
+│       ├── DevTools.tsx            # v2.4.0
+│       ├── UpdateManager.tsx       # v2.6.0
+│       ├── SecurityScanner.tsx     # v2.7.0
+│       ├── AgencyTools.tsx         # v2.8.0
+│       └── Developer.tsx           # v2.9.0
 ├── releases/
 │   ├── v1.0.0.md
 │   ├── v1.1.0.md
@@ -626,7 +680,10 @@ wp-manager-pro/
 │   ├── v1.8.0.md
 │   ├── v1.9.0.md
 │   ├── v2.0.0.md
-│   └── v2.1.0.md
+│   ├── v2.1.0.md
+│   ├── v2.8.0.md
+│   ├── v2.9.0.md
+│   └── v2.9.2.md
 ├── vite.config.ts
 ├── tailwind.config.js
 ├── tsconfig.json

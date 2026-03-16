@@ -2,7 +2,7 @@
 
 This document outlines the planned feature development for WP Manager Pro. Releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Minor versions (`1.x.0`) add new features; patch versions (`1.x.y`) deliver bug fixes and polish.
 
-> **Current version:** 2.9.0 — last updated 2026-03-17
+> **Current version:** 2.9.2 — last updated 2026-03-17
 
 ---
 
@@ -33,6 +33,8 @@ This document outlines the planned feature development for WP Manager Pro. Relea
 | [2.8.0] | Agency Tools: Mail Interceptor (log + dev mode + preview + resend), White-label Login Page, Admin UI Customiser, Client Report Generator, Coming Soon Mode — 9 new REST endpoints |
 | [2.8.1] | Bug fixes: self-update badge stuck after update (missing version bump), Changelog dialog showing "No changelog available", read-path transient hook, Check WMP Update button |
 | [2.9.0] | Developer Utilities: Hook Explorer, REST API Tester, Dummy Data Generator, Rewrite Rules Tester, Object Cache Browser, Database Prefix Changer — 12 new REST endpoints; Login Page UI redesign with Media Library picker and side-by-side live preview |
+| [2.9.1] | Bug fixes: Login Page CSS not applying, Media Library button falling back to prompt(); Added Privacy & Terms links on login page, Coming Soon complete UI redesign with side-by-side preview |
+| [2.9.2] | Bug fix: `window.wmpOpenMedia` bridge injected via `wp_add_inline_script('after')` resolves Media Library modal not opening; Settings → Branding logo Select button added |
 
 ---
 
@@ -99,3 +101,9 @@ Have a feature request or want to vote on a backlog item? [Open an issue](https:
 [2.5.0]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v2.5.0
 [2.6.0]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v2.6.0
 [2.7.0]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v2.7.0
+[2.7.1]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v2.7.1
+[2.8.0]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v2.8.0
+[2.8.1]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v2.8.1
+[2.9.0]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v2.9.0
+[2.9.1]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v2.9.1
+[2.9.2]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v2.9.2
