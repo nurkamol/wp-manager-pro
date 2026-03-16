@@ -24,6 +24,19 @@ interface BrandingSettings {
 // ── Changelog data ─────────────────────────────────────────────────────────────
 const changelog: { version: string; date: string; features: string[] }[] = [
   {
+    version: '2.6.0',
+    date: '2026-03-16',
+    features: [
+      'Update Manager — 3-tab page in the Management group for safe, informed plugin/theme/core updates',
+      'Available Updates tab — lists all pending updates; "View Changelog" fetches live WordPress.org changelog before you commit; per-item Update button with animated status (updating / done / failed)',
+      'Pre-update Backup — every update automatically zips the plugin/theme directory to wp-content/wmp-backups/updates/ before upgrading',
+      'Batch Update — checkbox multi-select + "Update Selected" runs updates sequentially to avoid file-system conflicts',
+      'History tab — persistent log of every update (name, version arrow, date, status); "Rollback" button restores from backup ZIP; "Clear History" deletes log and all backup files',
+      'Scheduled Updates — queue any plugin/theme update for a specific future datetime via WP Cron; cancel anytime; backup runs automatically at scheduled time',
+      '9 new REST endpoints under /updates/* (available, changelog, run, rollback, history, history/clear, scheduled, schedule, schedule/cancel)',
+    ],
+  },
+  {
     version: '2.5.0',
     date: '2026-03-16',
     features: [
@@ -247,6 +260,14 @@ const faq: { q: string; a: string }[] = [
   {
     q: 'Why does the admin menu label not update immediately after saving?',
     a: 'The WordPress admin menu is rendered server-side on every page load. After saving a new menu label in Settings → Branding, simply reload the browser tab and the new label will appear in the WordPress left-hand menu.',
+  },
+  {
+    q: 'How does the Update Manager differ from the standard WordPress update screen?',
+    a: 'The Update Manager adds three things the native WordPress updater lacks: (1) Changelog Preview — click "View Changelog" to read the full WordPress.org changelog for any pending update before applying it; (2) Pre-update Backup — the plugin automatically zips the plugin or theme directory to wp-content/wmp-backups/updates/ before every update, so you can restore the exact previous version with one click from the History tab; (3) Scheduled Updates — queue updates to run automatically at an off-peak time via WP Cron instead of updating immediately. Core (WordPress itself) updates are supported but without a file-level backup due to size.',
+  },
+  {
+    q: 'Can I roll back a plugin update if the site breaks?',
+    a: 'Yes — as long as the update was run through the Update Manager (not the standard WP update screen) and the backup ZIP still exists. Go to Update Manager → History, find the entry, and click "Rollback". The plugin will extract the pre-update ZIP back into the plugins directory and mark the entry as rolled-back. Backup ZIPs are stored in wp-content/wmp-backups/updates/ and can be cleared from the History tab.',
   },
   {
     q: 'How do I open the Command Palette and can I change its shortcut?',
