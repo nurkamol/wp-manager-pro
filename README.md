@@ -2,7 +2,7 @@
 
 > A comprehensive, agency-ready WordPress management suite — built with React 19, TypeScript, and the WordPress REST API.
 
-![Version](https://img.shields.io/badge/version-2.6.0-blue)
+![Version](https://img.shields.io/badge/version-2.7.0-blue)
 ![WordPress](https://img.shields.io/badge/WordPress-5.9%2B-21759b)
 ![PHP](https://img.shields.io/badge/PHP-7.4%2B-8892be)
 ![License](https://img.shields.io/badge/license-GPL--2.0%2B-green)
@@ -57,15 +57,15 @@ All operations happen through a secured REST API (`wp-manager-pro/v1`) that requ
 
 ---
 
-## What's New in v2.6.0 — Update Manager
+## What's New in v2.7.0 — Security Scanner
 
 | Feature | Description |
 |---------|-------------|
-| 📋 Changelog Preview | View each plugin/theme's full changelog from WordPress.org before updating — no guessing what changed |
-| 🛡️ Pre-update Backup | Automatically zips the plugin/theme directory before every update; stored in `wp-content/wmp-backups/updates/` |
-| ↩️ One-click Rollback | Restore any plugin or theme to its previous version from the History tab — as long as the backup ZIP exists |
-| ⏰ Scheduled Updates | Queue any plugin or theme update for a specific future date/time via WP Cron; cancel anytime |
-| 📦 Batch Update Queue | Checkbox-select multiple updates, review changelogs, then apply all in one sequential controlled batch |
+| 🔍 Malware Scanner | Scans up to 8,000 PHP/JS/HTML files in plugins and themes against 13 detection patterns — eval+base64, webshells, preg_replace /e, assert/exec with user input, and more |
+| 🛡️ Vulnerability Database | Checks all installed plugins and themes against the WPScan CVE API; shows CVSS severity, fix version, and CVE reference links |
+| 🔒 SSL Monitor | Connects to your site domain on port 443 and parses the certificate — subject, issuer, SAN, days remaining, colour-coded expiry alerts |
+| ⚙️ Core & PHP Alerts | Compares installed WordPress version against latest from api.wordpress.org; flags EOL and near-EOL PHP versions (built-in table for PHP 5.6–8.4) |
+| 📊 Security Score | Animated 0–100 scorecard with letter grade (A+→F) combining all scan results — click any summary card to run individual checks |
 
 ---
 
@@ -238,6 +238,31 @@ Five-tab Security Suite covering every major attack surface:
 - 8 one-time backup codes generated on first verification (shown once, stored as MD5 hashes)
 - Per-user enable/disable; 100% native PHP — no Composer dependencies
 
+### Security Scanner *(New in v2.7.0)*
+
+Dedicated threat-detection page (ScanLine icon in System group) with four tabs and a unified security score:
+
+**Overview Tab**
+- Animated security score ring (0–100, letter grade A+→F) computed from all scan results
+- Four summary cards for Malware, Vulnerabilities, SSL, and Core — each clickable to run that individual check
+- "Run All Scans" button triggers every check simultaneously
+
+**Malware Scanner Tab**
+- Scans up to 8,000 PHP/JS/HTML files in plugins and themes directories
+- 13 detection patterns: `eval(base64_decode(…))`, `eval(gzinflate/gzuncompress/gzdecode(…))`, `eval(str_rot13(…))`, `preg_replace` with `/e` modifier, `assert()` / `system()` / `exec()` / `passthru()` / `shell_exec()` with `$_POST`/`$_GET` input, long base64-encoded strings, dynamic variable function calls, known webshell markers (FilesMan, r57, c99), `document.write(unescape(…))` JS injection
+- Files > 512 KB skipped automatically; scope selector: all / plugins / themes
+- Each finding shows file path, severity badge (critical / warning), line number, and code snippet
+
+**Vulnerabilities Tab**
+- Checks installed plugins and themes against the [WPScan CVE API](https://wpscan.com) (free tier: 25 requests/day)
+- Configurable API key — stored securely, only last 4 characters displayed in UI
+- Expandable rows per item: CVE title, CVSS severity + score, fix version, CVE/URL reference links
+
+**SSL & Core Tab**
+- SSL Monitor: PHP `stream_socket_client` + `openssl_x509_parse` to read certificate; shows subject, issuer, SAN entries, valid-from/to, days remaining with green/amber/red alerts
+- Core check: fetches latest WordPress version from `api.wordpress.org/core/version-check/1.7/`; flags outdated installs
+- PHP EOL check: built-in end-of-life date table for PHP 5.6 through 8.4; highlights EOL and near-EOL (< 90 days) versions
+
 ### Cron Manager *(New in v2.1.0)*
 
 Three-tab page for full WP-Cron control:
@@ -300,14 +325,14 @@ Five-tab page for media library cleanup and maintenance:
 ## Installation
 
 ### From ZIP
-1. Download `wp-manager-pro-v2.1.0.zip` from the [Releases](https://github.com/nurkamol/wp-manager-pro/releases) page.
+1. Download `wp-manager-pro-v2.7.0.zip` from the [Releases](https://github.com/nurkamol/wp-manager-pro/releases) page.
 2. In WP Admin → **Plugins → Add New → Upload Plugin**.
 3. Upload the ZIP and click **Install Now**, then **Activate**.
 4. Navigate to **WP Manager** in the admin sidebar (or click **Open** in the Plugins list).
 
 ### Manual
 ```bash
-unzip wp-manager-pro-v2.1.0.zip -d /path/to/wp-content/plugins/
+unzip wp-manager-pro-v2.7.0.zip -d /path/to/wp-content/plugins/
 ```
 
 Then activate via WP Admin → **Plugins**.

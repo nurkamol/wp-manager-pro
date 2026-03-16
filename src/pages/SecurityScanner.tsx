@@ -387,7 +387,7 @@ export function SecurityScanner() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="fade-in">
       <PageHeader
         title="Security Scanner"
         description="Proactive threat detection — malware, CVEs, SSL, and core version checks"
@@ -399,6 +399,7 @@ export function SecurityScanner() {
         }
       />
 
+      <div className="p-6 space-y-6">
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
           <TabsTrigger value="overview">
@@ -909,6 +910,7 @@ export function SecurityScanner() {
           </div>
         </TabsContent>
       </Tabs>
+      </div>
     </div>
   )
 }
