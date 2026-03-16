@@ -142,6 +142,17 @@ class Update_Manager_Controller {
             ], 200 );
         }
 
+        // WP Manager Pro is hosted on GitHub, not wordpress.org — pull changelog from the latest release.
+        if ( 'wp-manager-pro' === $slug || WP_MANAGER_PRO_BASENAME === $slug ) {
+            $release = \WP_Manager_Pro\Self_Updater::get_latest_release_public();
+            if ( $release && ! empty( $release['body'] ) ) {
+                $html = \WP_Manager_Pro\Self_Updater::parse_changelog_public( $release['body'] );
+            } else {
+                $html = '<p>See <a href="https://github.com/nurkamol/wp-manager-pro/releases" target="_blank" rel="noreferrer">GitHub Releases</a> for the full changelog.</p>';
+            }
+            return new WP_REST_Response( [ 'changelog' => $html ], 200 );
+        }
+
         $api_url = 'https://api.wordpress.org/' . $type . 's/info/1.2/?' . http_build_query( [
             'action'           => ( 'plugin' === $type ) ? 'plugin_information' : 'theme_information',
             'slug'             => $slug,

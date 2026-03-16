@@ -146,6 +146,16 @@ class Self_Updater {
 
     // ── GitHub API helpers ────────────────────────────────────────────────────
 
+    /** Public wrapper used by Update_Manager_Controller::get_changelog(). */
+    public static function get_latest_release_public(): ?array {
+        return self::get_latest_release();
+    }
+
+    /** Public wrapper used by Update_Manager_Controller::get_changelog(). */
+    public static function parse_changelog_public( string $markdown ): string {
+        return self::parse_changelog( $markdown );
+    }
+
     private static function get_latest_release(): ?array {
         $cached = get_transient( self::TRANSIENT_KEY );
         if ( false !== $cached ) {
