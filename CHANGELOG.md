@@ -7,6 +7,28 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [2.7.0] — 2026-03-16
+
+### Added
+- **Security Scanner page** (`/security-scanner`) — new dedicated page in the System group (ScanLine icon) with 4-tab layout
+- **Overview tab** — animated security score ring (0–100 with letter grade A+ to F) combining results from all scans; four summary cards for quick status of each check area; "Run All Scans" button triggers all checks in parallel
+- **Malware Scanner** — scans up to 8,000 PHP/JS/HTML files in plugins and themes directories against 13 detection patterns: `eval(base64_decode(…))`, `eval(gzinflate/gzuncompress/gzdecode(…))`, `eval(str_rot13(…))`, `preg_replace` with `/e` modifier, `assert()` / `system()` / `exec()` / `passthru()` / `shell_exec()` with user input, long base64-encoded strings, dynamic variable function calls, known webshell markers (FilesMan, r57, c99), and `document.write(unescape(…))`; findings show file path, pattern name, severity (critical / warning), line number, and code snippet; scope selector (all / plugins / themes); skips files >512 KB
+- **Vulnerability Database** — checks all installed plugins and themes against the [WPScan API](https://wpscan.com); shows CVE title, CVSS severity and score, fix version, and reference links; configurable API key (stored securely, only last 4 chars shown in UI); WPScan free tier allows 25 requests/day
+- **SSL Monitor** — connects to site domain on port 443 via PHP `stream_socket_client`; parses certificate with `openssl_x509_parse`; displays subject, issuer, SAN entries, valid-from/to dates, days remaining with colour-coded alerts (green / 14-day warning / expired red)
+- **Core & PHP tab** — fetches latest WordPress version from `api.wordpress.org/core/version-check/1.7/`; flags outdated WP installations; checks PHP version against built-in EOL date table (PHP 5.6 through 8.4); flags EOL and near-EOL PHP versions; shows MySQL/MariaDB version
+
+### API
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/scanner/malware` | Scan PHP/JS/HTML files; `?scope=plugins\|themes\|all` |
+| GET | `/scanner/vulns` | Check plugins/themes against WPScan CVE API |
+| GET | `/scanner/ssl` | Verify SSL certificate for site domain |
+| GET | `/scanner/core` | Compare WP version + PHP EOL status |
+| GET | `/scanner/api-key` | Return whether WPScan API key is configured (masked) |
+| POST | `/scanner/api-key` | Save or clear WPScan API key |
+
+---
+
 ## [2.6.0] — 2026-03-16
 
 ### Added
@@ -681,6 +703,7 @@ First public release of WP Manager Pro — a comprehensive, agency-ready WordPre
 [1.1.0]: https://github.com/nurkamol/wp-manager-pro/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v1.0.0
 
+[2.7.0]: https://github.com/nurkamol/wp-manager-pro/compare/v2.6.0...v2.7.0
 [2.6.0]: https://github.com/nurkamol/wp-manager-pro/compare/v2.5.0...v2.6.0
 [2.5.0]: https://github.com/nurkamol/wp-manager-pro/compare/v2.4.0...v2.5.0
 [2.4.0]: https://github.com/nurkamol/wp-manager-pro/compare/v2.3.1...v2.4.0

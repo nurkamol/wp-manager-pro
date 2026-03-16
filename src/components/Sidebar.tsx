@@ -5,7 +5,7 @@ import {
   Server, Construction, Users, Bug, Image, StickyNote,
   ChevronLeft, ChevronRight, ExternalLink, Settings, RotateCcw,
   Sun, Moon, Shield, Activity, Code2, ArrowLeftRight, Mail, HardDrive,
-  PanelLeftClose, PanelLeftOpen, Gauge, Clock, Images, FileEdit, Terminal, Keyboard, RefreshCw,
+  PanelLeftClose, PanelLeftOpen, Gauge, Clock, Images, FileEdit, Terminal, Keyboard, RefreshCw, ScanLine,
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { getConfig, getBranding, api } from '@/lib/api'
@@ -78,6 +78,7 @@ const navGroups: NavGroup[] = [
     items: [
       { to: '/system', icon: Server, label: 'System Info' },
       { to: '/security', icon: Shield, label: 'Security' },
+      { to: '/security-scanner', icon: ScanLine, label: 'Security Scanner' },
       { to: '/reset', icon: RotateCcw, label: 'Reset Tools' },
       { to: '/settings', icon: Settings, label: 'Settings' },
     ],

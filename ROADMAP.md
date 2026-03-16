@@ -2,7 +2,7 @@
 
 This document outlines the planned feature development for WP Manager Pro. Releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Minor versions (`1.x.0`) add new features; patch versions (`1.x.y`) deliver bug fixes and polish.
 
-> **Current version:** 2.6.0 — last updated 2026-03-16
+> **Current version:** 2.7.0 — last updated 2026-03-16
 
 ---
 
@@ -28,21 +28,11 @@ This document outlines the planned feature development for WP Manager Pro. Relea
 | [2.4.0] | Dev Tools: wp-config.php visual editor, .htaccess editor with auto-backup, PHP Info viewer, Query Monitor (lite), Environment badge in sidebar |
 | [2.5.0] | Command Palette (Cmd+Shift+P), Settings Export/Import (signed JSON bundle), WordPress XML Content Export |
 | [2.6.0] | Update Manager: changelog preview, pre-update backup, rollback, scheduled updates via WP Cron — 9 new REST endpoints |
+| [2.7.0] | Security Scanner: Malware Scanner (13 patterns, 8k files), Vulnerability Database (WPScan CVE API), SSL Monitor, Outdated Core/PHP Alert, Security Score ring — 6 new REST endpoints |
 
 ---
 
 ## 🔜 Upcoming
-
-### v2.7.0 — Security Scanner
-*Focus: proactive threat detection*
-
-- **Malware Scanner** — scan all plugin/theme/core files for known malicious patterns (base64-encoded eval, obfuscated code, webshells)
-- **Vulnerability Database** — check installed plugins and themes against the Patchstack / WPScan CVE feed; show severity and fix status
-- **SSL Monitor** — verify SSL certificate validity and expiry for the site domain; alert N days before expiry
-- **Outdated Core Alert** — compare installed WP version against latest release; flag EOL PHP versions
-- **Security Score** — overall score card combining all checks with prioritised fix list
-
----
 
 ### v2.8.0 — Agency Tools
 *Focus: client delivery and white-labelling*
@@ -129,3 +119,4 @@ Have a feature request or want to vote on a backlog item? [Open an issue](https:
 [2.4.0]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v2.4.0
 [2.5.0]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v2.5.0
 [2.6.0]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v2.6.0
+[2.7.0]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v2.7.0

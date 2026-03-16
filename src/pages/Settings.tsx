@@ -24,6 +24,19 @@ interface BrandingSettings {
 // ── Changelog data ─────────────────────────────────────────────────────────────
 const changelog: { version: string; date: string; features: string[] }[] = [
   {
+    version: '2.7.0',
+    date: '2026-03-16',
+    features: [
+      'Security Scanner — new dedicated page (ScanLine icon in System group) with 4-tab layout: Overview, Malware Scanner, Vulnerabilities, SSL & Core',
+      'Security Score — animated ring scorecard (0–100) combining all scan results with letter grade (A+ → F)',
+      'Malware Scanner — scans up to 8,000 PHP/JS/HTML files in plugins and themes directories for 13 malicious code patterns (eval+base64, webshells, preg_replace /e, assert with user input, and more)',
+      'Vulnerability Database — checks all installed plugins and themes against the WPScan CVE API; shows severity (CVSS score), affected version, fix version, and CVE references',
+      'SSL Monitor — connects to site domain on port 443; shows certificate subject, issuer, SAN, valid-from/to dates, and days remaining with colour-coded status',
+      'Outdated Core Alert — fetches latest WordPress version from api.wordpress.org; flags EOL PHP versions with known end-of-life dates built in',
+      '6 new REST endpoints under /scanner/* (malware, vulns, ssl, core, api-key GET/POST)',
+    ],
+  },
+  {
     version: '2.6.0',
     date: '2026-03-16',
     features: [
@@ -284,6 +297,14 @@ const faq: { q: string; a: string }[] = [
   {
     q: 'What does Settings Export/Import include and is it safe to import on a different site?',
     a: 'The export bundle includes: Branding, Maintenance settings, SMTP/Email config, Image settings, Code Snippets, Redirects, and Notes. It is signed with an HMAC using the source site\'s WordPress auth salt. When importing on a different site, the plugin shows a cross-site warning (the signature will not match) but still allows the import — you choose which sections to overwrite. Sensitive values like SMTP passwords are included in plain text, so treat the bundle as a secret file.',
+  },
+  {
+    q: 'What does the Malware Scanner actually check for?',
+    a: 'The scanner reads up to 8,000 PHP, JS, and HTML files in your plugins and themes directories and tests each against 13 regex patterns for common attack signatures: eval(base64_decode(…)), eval(gzinflate(…)), preg_replace with the dangerous /e modifier, assert() or system/exec/passthru/shell_exec with user-supplied input ($_POST/$_GET), long base64-encoded strings, dynamic variable function calls, known webshell markers (FilesMan, r57, c99), and JavaScript document.write(unescape(…)) injection. Files larger than 512 KB are skipped to prevent memory issues. Each finding shows the file path, the matched pattern name, severity level (critical or warning), and the relevant line of code.',
+  },
+  {
+    q: 'Do I need a WPScan API key and what are the limits?',
+    a: 'Yes — the Vulnerability Database tab requires a free API key from wpscan.com. The free tier allows 25 API requests per day, which is enough to check a typical site (1 request per plugin/theme). Enter your token in Security Scanner → Vulnerabilities → WPScan API Key and click Save. The raw key is never exposed in the UI — only the last 4 characters are shown after saving. Enterprise plans with higher limits are available from WPScan directly.',
   },
 ]
 

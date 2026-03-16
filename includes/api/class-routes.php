@@ -28,6 +28,7 @@ use WP_Manager_Pro\API\Controllers\Media_Controller;
 use WP_Manager_Pro\API\Controllers\Content_Controller;
 use WP_Manager_Pro\API\Controllers\Dev_Tools_Controller;
 use WP_Manager_Pro\API\Controllers\Update_Manager_Controller;
+use WP_Manager_Pro\API\Controllers\Security_Scanner_Controller;
 
 class Routes {
 
@@ -942,6 +943,38 @@ class Routes {
         register_rest_route( $namespace, '/updates/schedule/cancel', [
             'methods'             => 'DELETE',
             'callback'            => [ Update_Manager_Controller::class, 'cancel_schedule' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+
+        // ── Security Scanner (v2.7.0) ──────────────────────────────────────────
+        register_rest_route( $namespace, '/scanner/malware', [
+            'methods'             => 'GET',
+            'callback'            => [ Security_Scanner_Controller::class, 'scan_malware' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/scanner/vulns', [
+            'methods'             => 'GET',
+            'callback'            => [ Security_Scanner_Controller::class, 'get_vulnerabilities' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/scanner/ssl', [
+            'methods'             => 'GET',
+            'callback'            => [ Security_Scanner_Controller::class, 'get_ssl' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/scanner/core', [
+            'methods'             => 'GET',
+            'callback'            => [ Security_Scanner_Controller::class, 'get_core_status' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/scanner/api-key', [
+            'methods'             => 'GET',
+            'callback'            => [ Security_Scanner_Controller::class, 'get_api_key_status' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/scanner/api-key', [
+            'methods'             => 'POST',
+            'callback'            => [ Security_Scanner_Controller::class, 'save_api_key' ],
             'permission_callback' => [ self::class, 'admin_permission' ],
         ] );
     }

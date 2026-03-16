@@ -53,6 +53,7 @@ class Plugin {
             'class-content-controller',
             'class-dev-tools-controller',
             'class-update-manager-controller',
+            'class-security-scanner-controller',
         ];
 
         foreach ( $controllers as $controller ) {

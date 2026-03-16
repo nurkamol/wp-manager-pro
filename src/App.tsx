@@ -26,6 +26,7 @@ import { MediaManager } from './pages/MediaManager'
 import { ContentTools } from './pages/ContentTools'
 import { DevTools } from './pages/DevTools'
 import { UpdateManager } from './pages/UpdateManager'
+import { SecurityScanner } from './pages/SecurityScanner'
 import { CommandPaletteProvider, CommandPalette } from './components/CommandPalette'
 
 const queryClient = new QueryClient({
@@ -71,6 +72,7 @@ export function App() {
               <Route path="content-tools" element={<ContentTools />} />
               <Route path="dev-tools" element={<DevTools />} />
               <Route path="updates" element={<UpdateManager />} />
+              <Route path="security-scanner" element={<SecurityScanner />} />
             </Route>
           </Routes>
         </CommandPaletteProvider>
