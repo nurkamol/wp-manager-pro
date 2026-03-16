@@ -21,7 +21,10 @@ class Self_Updater {
     const CACHE_LIFETIME = 43200; // 12 hours
 
     public static function init(): void {
+        // Fires when WordPress WRITES the update transient (forced/scheduled checks).
         add_filter( 'pre_set_site_transient_update_plugins', [ self::class, 'check_for_update' ] );
+        // Fires when WordPress READS the update transient (every Plugins-page load).
+        add_filter( 'site_transient_update_plugins', [ self::class, 'check_for_update' ] );
         add_filter( 'plugins_api',  [ self::class, 'plugin_info' ], 10, 3 );
         add_action( 'in_plugin_update_message-' . WP_MANAGER_PRO_BASENAME, [ self::class, 'update_message' ], 10, 2 );
         add_action( 'upgrader_process_complete', [ self::class, 'after_update' ], 10, 2 );
@@ -30,8 +33,14 @@ class Self_Updater {
     // ── Inject update data into WP's transient ────────────────────────────────
 
     public static function check_for_update( $transient ) {
-        if ( empty( $transient->checked ) ) {
+        if ( ! is_object( $transient ) ) {
             return $transient;
+        }
+
+        // On the read-path (`site_transient_update_plugins`), `checked` may be absent;
+        // still proceed so the update badge appears without waiting for WP's 12-hour cycle.
+        if ( empty( $transient->checked ) ) {
+            $transient->checked = [];
         }
 
         $release = self::get_latest_release();

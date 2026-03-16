@@ -425,6 +425,33 @@ class Update_Manager_Controller {
         return new WP_REST_Response( [ 'success' => true, 'message' => 'Scheduled update cancelled.' ], 200 );
     }
 
+    // ── POST /updates/check-self ──────────────────────────────────────────────
+
+    /**
+     * Clear the cached GitHub release transient and force a fresh WP update check.
+     * Returns whether an update is available and the latest version.
+     */
+    public static function check_self_update( WP_REST_Request $request ): WP_REST_Response {
+        // Clear our GitHub response cache so the next call hits the API fresh.
+        delete_transient( \WP_Manager_Pro\Self_Updater::TRANSIENT_KEY );
+
+        // Force WordPress to re-fetch available updates (this triggers the write-path filter).
+        self::load_upgrade_functions();
+        wp_update_plugins();
+
+        // Now read the freshly-populated transient.
+        $update_plugins = get_site_transient( 'update_plugins' );
+        $has_update     = isset( $update_plugins->response[ WP_MANAGER_PRO_BASENAME ] );
+        $new_version    = $has_update ? ( $update_plugins->response[ WP_MANAGER_PRO_BASENAME ]->new_version ?? null ) : null;
+
+        return new WP_REST_Response( [
+            'success'      => true,
+            'has_update'   => $has_update,
+            'new_version'  => $new_version,
+            'current'      => WP_MANAGER_PRO_VERSION,
+        ], 200 );
+    }
+
     // ── WP Cron callback ──────────────────────────────────────────────────────
 
     public static function run_scheduled_update( string $job_id ): void {

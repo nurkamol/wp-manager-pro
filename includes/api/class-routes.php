@@ -946,6 +946,11 @@ class Routes {
             'callback'            => [ Update_Manager_Controller::class, 'cancel_schedule' ],
             'permission_callback' => [ self::class, 'admin_permission' ],
         ] );
+        register_rest_route( $namespace, '/updates/check-self', [
+            'methods'             => 'POST',
+            'callback'            => [ Update_Manager_Controller::class, 'check_self_update' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
 
         // ── Security Scanner (v2.7.0) ──────────────────────────────────────────
         register_rest_route( $namespace, '/scanner/malware', [

@@ -132,6 +132,19 @@ export function UpdateManager() {
     onError: () => toast.error('Update check failed'),
   })
 
+  const checkSelfMutation = useMutation({
+    mutationFn: () => api.post<{ has_update: boolean; new_version: string | null; current: string }>('/updates/check-self', {}),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['updates-available'] })
+      if (data.has_update && data.new_version) {
+        toast.success(`WP Manager Pro ${data.new_version} is available! Check the Plugins page to update.`)
+      } else {
+        toast.success(`WP Manager Pro ${data.current} is already the latest version.`)
+      }
+    },
+    onError: () => toast.error('Self-update check failed'),
+  })
+
   const runUpdateMutation = useMutation({
     mutationFn: ({ type, slug }: { type: string; slug: string }) =>
       api.post('/updates/run', { type, slug }),
@@ -310,10 +323,19 @@ export function UpdateManager() {
               <Button
                 variant="outline" size="sm"
                 onClick={() => forceCheckMutation.mutate()}
-                disabled={forceCheckMutation.isPending}
+                disabled={forceCheckMutation.isPending || checkSelfMutation.isPending}
               >
                 {forceCheckMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-2" />}
                 Check for Updates
+              </Button>
+              <Button
+                variant="outline" size="sm"
+                onClick={() => checkSelfMutation.mutate()}
+                disabled={checkSelfMutation.isPending || forceCheckMutation.isPending}
+                title="Clear cached GitHub response and check if a new version of WP Manager Pro is available"
+              >
+                {checkSelfMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-2 text-purple-500" />}
+                Check WMP Update
               </Button>
               {selectedIds.size > 0 && (
                 <Button
