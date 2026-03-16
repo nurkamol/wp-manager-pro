@@ -17,7 +17,7 @@ import {
   Server, Construction, Users, Bug, Image, StickyNote,
   Settings, RotateCcw, Shield, Activity, Code2, ArrowLeftRight, Mail, HardDrive,
   Gauge, Clock, Images, FileEdit, Terminal, Search, Zap, Trash2,
-  WifiOff, RefreshCw, Archive,
+  WifiOff, Archive, Briefcase, RefreshCw, Webhook, ScanLine,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -65,9 +65,13 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'email',         label: 'Email / SMTP',    icon: Mail,            route: '/email',          group: 'Navigation' },
   { id: 'audit-log',     label: 'Audit Log',       icon: Activity,        route: '/audit-log',      group: 'Navigation' },
   { id: 'system',        label: 'System Info',     icon: Server,          route: '/system',         group: 'Navigation' },
-  { id: 'security',      label: 'Security',        icon: Shield,          route: '/security',       group: 'Navigation' },
-  { id: 'reset',         label: 'Reset Tools',     icon: RotateCcw,       route: '/reset',          group: 'Navigation' },
-  { id: 'settings',      label: 'Settings',        icon: Settings,        route: '/settings',       group: 'Navigation' },
+  { id: 'security',         label: 'Security',          icon: Shield,        route: '/security',          group: 'Navigation' },
+  { id: 'security-scanner', label: 'Security Scanner',   icon: ScanLine,      route: '/security-scanner',  group: 'Navigation' },
+  { id: 'update-manager',   label: 'Update Manager',     icon: RefreshCw,     route: '/updates',           group: 'Navigation' },
+  { id: 'agency',           label: 'Agency Tools',       icon: Briefcase,     route: '/agency',            group: 'Navigation' },
+  { id: 'developer',        label: 'Developer Utilities',icon: Webhook,       route: '/developer',         group: 'Navigation' },
+  { id: 'reset',            label: 'Reset Tools',        icon: RotateCcw,     route: '/reset',             group: 'Navigation' },
+  { id: 'settings',         label: 'Settings',           icon: Settings,      route: '/settings',          group: 'Navigation' },
 ]
 
 // ── Recent pages helpers ──────────────────────────────────────────────────────

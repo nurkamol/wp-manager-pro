@@ -210,7 +210,13 @@ class Agency_Controller {
         return new WP_REST_Response( [ 'success' => true ], 200 );
     }
 
-    /** Hooked to login_enqueue_scripts — inject custom login page CSS. */
+    /**
+     * Hooked to login_head — inject custom login page CSS.
+     *
+     * login_head fires AFTER wp_print_styles('login'), so our <style> block
+     * is output AFTER the core login stylesheet link element. Combined with
+     * !important, this guarantees our overrides actually win every time.
+     */
     public static function apply_login_styles(): void {
         if ( ! get_option( self::OPT_LOGIN_ENABLED, false ) ) return;
 
@@ -222,20 +228,19 @@ class Agency_Controller {
         $css  = "body.login { background-color: {$bg_color} !important; }";
 
         if ( $bg_image ) {
-            $css .= "body.login { background-image: url('{$bg_image}') !important; background-size: cover !important; background-position: center !important; }";
+            $css .= "body.login { background-image: url('{$bg_image}') !important; background-size: cover !important; background-position: center center !important; background-repeat: no-repeat !important; }";
         }
 
         if ( $logo ) {
-            $css .= "#login h1 a, .login h1 a { background-image: url('{$logo}') !important; background-size: contain !important; background-repeat: no-repeat !important; background-position: center center !important; width: 220px !important; height: 80px !important; display: block !important; }";
+            $css .= "#login h1 a, .login h1 a { background-image: url('{$logo}') !important; background-size: contain !important; background-repeat: no-repeat !important; background-position: center center !important; width: 220px !important; height: 80px !important; display: block !important; text-indent: -9999px !important; }";
         }
 
         $css .= ".wp-core-ui .button-primary { background: {$btn_color} !important; border-color: {$btn_color} !important; box-shadow: none !important; }";
         $css .= ".wp-core-ui .button-primary:hover { filter: brightness(1.1) !important; }";
         $css .= "#login_error, .login .message, .login .success { border-left-color: {$btn_color} !important; }";
 
-        // Use wp_add_inline_style so our rules load AFTER WordPress's own login
-        // stylesheet — this guarantees our !important overrides actually win.
-        wp_add_inline_style( 'login', $css );
+        // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- CSS values are already escaped above
+        echo "\n<style id=\"wmp-login-custom\">\n{$css}\n</style>\n";
     }
 
     /** Hooked to login_headerurl */

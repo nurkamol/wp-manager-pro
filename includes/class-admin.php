@@ -71,11 +71,14 @@ class Admin {
         }
 
         // Enqueue main JS.
+        // 'media-editor' dependency ensures WordPress media scripts (wp.media)
+        // are printed BEFORE our bundle, so window.wp.media is defined when
+        // any Agency Tools media picker button is clicked.
         if ( file_exists( $build_dir . 'index.js' ) ) {
             wp_enqueue_script(
                 'wp-manager-pro',
                 $build_url . 'index.js',
-                [],
+                [ 'media-editor' ],
                 filemtime( $build_dir . 'index.js' ),
                 true
             );

@@ -135,7 +135,9 @@ class Plugin {
         add_filter( 'wp_mail', [ Agency_Controller::class, 'intercept_mail' ], 1 );
 
         // Agency — white-label login page
-        add_action( 'login_enqueue_scripts', [ Agency_Controller::class, 'apply_login_styles' ] );
+        // login_head fires AFTER wp_print_styles('login'), guaranteeing our CSS
+        // loads after the core login stylesheet — so overrides always win.
+        add_action( 'login_head', [ Agency_Controller::class, 'apply_login_styles' ] );
         add_filter( 'login_headerurl',       [ Agency_Controller::class, 'login_header_url'   ] );
         add_filter( 'login_headertext',      [ Agency_Controller::class, 'login_header_text'  ] );
         add_action( 'login_footer',          [ Agency_Controller::class, 'apply_login_footer' ] );
