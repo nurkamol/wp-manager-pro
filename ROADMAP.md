@@ -2,7 +2,7 @@
 
 This document outlines the planned feature development for WP Manager Pro. Releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Minor versions (`1.x.0`) add new features; patch versions (`1.x.y`) deliver bug fixes and polish.
 
-> **Current version:** 2.8.0 — last updated 2026-03-16
+> **Current version:** 2.8.1 — last updated 2026-03-16
 
 ---
 
@@ -31,6 +31,7 @@ This document outlines the planned feature development for WP Manager Pro. Relea
 | [2.7.0] | Security Scanner: Malware Scanner (13 patterns, 8k files), Vulnerability Database (WPScan CVE API), SSL Monitor, Outdated Core/PHP Alert, Security Score ring — 6 new REST endpoints |
 | [2.7.1] | Bug fixes: self-update system (GitHub Releases), premium plugin false "Done", 2FA QR code, custom login logout, plain permalink warning |
 | [2.8.0] | Agency Tools: Mail Interceptor (log + dev mode + preview + resend), White-label Login Page, Admin UI Customiser, Client Report Generator, Coming Soon Mode — 9 new REST endpoints |
+| [2.8.1] | Bug fixes: self-update badge stuck after update (missing version bump), Changelog dialog showing "No changelog available", read-path transient hook, Check WMP Update button |
 
 ---
 

@@ -7,6 +7,16 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [2.8.1] — 2026-03-16
+
+### Fixed
+- **Self-update badge stuck** — version constant `WP_MANAGER_PRO_VERSION` was never bumped to `2.8.1` in the plugin file header, causing the update badge to reappear after every successful update
+- **`site_transient_update_plugins` read-path hook** — added so the GitHub release comparison runs on every Plugins-page load, not just WP's 12-hour write cycle
+- **Changelog dialog "No changelog available"** — `get_changelog` was querying wordpress.org for a GitHub-hosted plugin; now fetches the GitHub release body via `Self_Updater` instead
+- **New `POST /updates/check-self` endpoint** — clears the cached GitHub transient and forces an immediate fresh check; accessible via "Check WMP Update" button in Update Manager
+
+---
+
 ## [2.8.0] — 2026-03-16
 
 ### Added
