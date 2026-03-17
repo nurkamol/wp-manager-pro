@@ -984,6 +984,36 @@ class Routes {
             'callback'            => [ Security_Scanner_Controller::class, 'save_api_key' ],
             'permission_callback' => [ self::class, 'admin_permission' ],
         ] );
+        register_rest_route( $namespace, '/scanner/file', [
+            'methods'             => 'GET',
+            'callback'            => [ Security_Scanner_Controller::class, 'get_file_content' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/scanner/file', [
+            'methods'             => 'DELETE',
+            'callback'            => [ Security_Scanner_Controller::class, 'delete_file' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/scanner/quarantine', [
+            'methods'             => 'POST',
+            'callback'            => [ Security_Scanner_Controller::class, 'quarantine_file' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/scanner/ignore', [
+            'methods'             => 'POST',
+            'callback'            => [ Security_Scanner_Controller::class, 'ignore_file' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/scanner/ignored', [
+            'methods'             => 'GET',
+            'callback'            => [ Security_Scanner_Controller::class, 'get_ignored_files' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/scanner/ignored', [
+            'methods'             => 'DELETE',
+            'callback'            => [ Security_Scanner_Controller::class, 'remove_ignored_file' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
 
         // ── Agency Tools ─────────────────────────────────────────────────────
 

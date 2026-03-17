@@ -30,6 +30,20 @@ interface BrandingSettings {
 // ── Changelog data ─────────────────────────────────────────────────────────────
 const changelog: { version: string; date: string; features: string[] }[] = [
   {
+    version: '2.9.3',
+    date: '2026-03-17',
+    features: [
+      'Image Tools — fixed GD Library / ImageMagick / WebP / AVIF all showing "Not available": Imagick::queryFormats("AVIF") was throwing an ImagickException on servers without the AVIF codec, corrupting the entire REST response. All support checks now use wp_image_editor_supports() — same mechanism as WordPress core and third-party image plugins',
+      'Malware Scanner — fixed scanner flagging its own plugin files as critical threats (pattern label strings matched the scan regexes). WP Manager Pro directory is now excluded from all scans',
+      'Malware Scanner — Inspect button: opens a modal showing ±40 lines of file context with the flagged line highlighted in red',
+      'Malware Scanner — Quarantine action: moves suspicious file to wp-content/wmp-quarantine/ with .quarantined extension; auto-creates .htaccess to block HTTP access; requires confirmation',
+      'Malware Scanner — Delete action: permanently removes the file from disk; requires confirmation dialog',
+      'Malware Scanner — Ignore action: adds file to a persistent ignore list (wmp_scanner_ignored option); ignored files are skipped in all future scans',
+      'Sidebar — environment badge redesigned: semi-transparent pill with ring border and colored dot indicator (red=production, amber=staging, green=development, blue=local)',
+      'Cron Manager — spacing normalised to match other multi-tab pages (fade-in wrapper, space-y-6 tab content)',
+    ],
+  },
+  {
     version: '2.9.2',
     date: '2026-03-17',
     features: [

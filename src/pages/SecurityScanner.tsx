@@ -4,6 +4,7 @@ import {
   ScanLine, ShieldCheck, ShieldAlert, ShieldOff, RefreshCw, AlertTriangle,
   CheckCircle2, XCircle, Lock, Globe, Code2, Cpu, ExternalLink, Key,
   Eye, EyeOff, Loader2, ChevronDown, ChevronRight,
+  Search, Trash2, Archive, EyeOff as IgnoreIcon, AlertCircle,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { api } from '@/lib/api'
@@ -16,6 +17,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { PageHeader } from '@/components/PageHeader'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -211,6 +214,10 @@ export function SecurityScanner() {
   const [sslEnabled, setSslEnabled]         = useState(false)
   const [coreEnabled, setCoreEnabled]       = useState(false)
 
+  // File inspection modal state.
+  const [inspecting, setInspecting]         = useState<MalwareFinding | null>(null)
+  const [confirmAction, setConfirmAction]   = useState<{ finding: MalwareFinding; action: 'delete' | 'quarantine' } | null>(null)
+
   // ── Queries ──────────────────────────────────────────────────────────────
 
   const { data: malwareData, isFetching: malwareFetching, refetch: refetchMalware } = useQuery<MalwareResult>({
@@ -257,6 +264,47 @@ export function SecurityScanner() {
       refetchApiKey()
     },
     onError: () => toast.error('Failed to save API key'),
+  })
+
+  const deleteFileMutation = useMutation({
+    mutationFn: (path: string) => api.delete('/scanner/file', { path, confirm: true }),
+    onSuccess: () => {
+      toast.success('File deleted')
+      setConfirmAction(null)
+      queryClient.invalidateQueries({ queryKey: ['scanner-malware'] })
+    },
+    onError: (e: any) => toast.error(e?.message || 'Failed to delete file'),
+  })
+
+  const quarantineMutation = useMutation({
+    mutationFn: (path: string) => api.post('/scanner/quarantine', { path, confirm: true }),
+    onSuccess: () => {
+      toast.success('File moved to quarantine')
+      setConfirmAction(null)
+      queryClient.invalidateQueries({ queryKey: ['scanner-malware'] })
+    },
+    onError: (e: any) => toast.error(e?.message || 'Failed to quarantine file'),
+  })
+
+  const ignoreFileMutation = useMutation({
+    mutationFn: (path: string) => api.post('/scanner/ignore', { path }),
+    onSuccess: () => {
+      toast.success('File added to ignore list — it will be skipped on future scans')
+      queryClient.invalidateQueries({ queryKey: ['scanner-malware'] })
+    },
+    onError: () => toast.error('Failed to ignore file'),
+  })
+
+  // ── Inspect file query (on-demand) ───────────────────────────────────────
+
+  const { data: fileContent, isFetching: fileLoading } = useQuery<{
+    path: string; total_lines: number; flag_line: number
+    lines: { n: number; text: string }[]
+  }>({
+    queryKey: ['scanner-file', inspecting?.file, inspecting?.line],
+    queryFn: () => api.get(`/scanner/file?path=${encodeURIComponent(inspecting!.file)}&line=${inspecting!.line}`),
+    enabled: !!inspecting,
+    staleTime: 0,
   })
 
   // ── Run All ──────────────────────────────────────────────────────────────
@@ -387,6 +435,7 @@ export function SecurityScanner() {
   }
 
   return (
+    <>
     <div className="fade-in">
       <PageHeader
         title="Security Scanner"
@@ -529,20 +578,39 @@ export function SecurityScanner() {
                   {malwareData.findings.length > 0 && (
                     <div className="border rounded-lg divide-y">
                       {malwareData.findings.map((f, i) => (
-                        <div key={i} className="p-3 space-y-1">
-                          <div className="flex items-start gap-2">
+                        <div key={i} className="p-3 space-y-1.5">
+                          <div className="flex items-start gap-2 flex-wrap">
                             {severityBadge(f.severity, true)}
-                            <span className="text-xs font-mono text-foreground break-all">{f.file}</span>
+                            <span className="text-xs font-mono text-foreground break-all flex-1">{f.file}</span>
                             {f.line > 0 && (
-                              <span className="text-[10px] text-muted-foreground shrink-0 ml-auto">line {f.line}</span>
+                              <span className="text-[10px] text-muted-foreground shrink-0">line {f.line}</span>
                             )}
                           </div>
                           <p className="text-xs text-muted-foreground pl-1">{f.pattern}</p>
                           {f.snippet && (
-                            <pre className="text-[11px] bg-muted/60 rounded px-2 py-1 overflow-x-auto text-red-700 dark:text-red-400 mt-1">
+                            <pre className="text-[11px] bg-muted/60 rounded px-2 py-1 overflow-x-auto text-red-700 dark:text-red-400">
                               {f.snippet}
                             </pre>
                           )}
+                          <div className="flex items-center gap-1.5 pt-0.5">
+                            <Button size="sm" variant="outline" className="h-6 text-[11px] px-2 gap-1"
+                              onClick={() => setInspecting(f)}>
+                              <Search className="w-3 h-3" /> Inspect
+                            </Button>
+                            <Button size="sm" variant="outline" className="h-6 text-[11px] px-2 gap-1 text-orange-600 hover:text-orange-700 hover:border-orange-300"
+                              onClick={() => setConfirmAction({ finding: f, action: 'quarantine' })}>
+                              <Archive className="w-3 h-3" /> Quarantine
+                            </Button>
+                            <Button size="sm" variant="outline" className="h-6 text-[11px] px-2 gap-1 text-red-600 hover:text-red-700 hover:border-red-300"
+                              onClick={() => setConfirmAction({ finding: f, action: 'delete' })}>
+                              <Trash2 className="w-3 h-3" /> Delete
+                            </Button>
+                            <Button size="sm" variant="ghost" className="h-6 text-[11px] px-2 gap-1 text-muted-foreground ml-auto"
+                              onClick={() => ignoreFileMutation.mutate(f.file)}
+                              disabled={ignoreFileMutation.isPending}>
+                              <IgnoreIcon className="w-3 h-3" /> Ignore
+                            </Button>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -912,5 +980,126 @@ export function SecurityScanner() {
       </Tabs>
       </div>
     </div>
+
+    {/* ── File Inspect Dialog ───────────────────────────────────────────── */}
+
+    <Dialog open={!!inspecting} onOpenChange={open => { if (!open) setInspecting(null) }}>
+      <DialogContent className="max-w-3xl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-base">
+            <Search className="w-4 h-4 text-muted-foreground" />
+            File Inspection
+          </DialogTitle>
+          {inspecting && (
+            <DialogDescription className="font-mono text-[11px] break-all">
+              {inspecting.file}
+              {inspecting.line > 0 && <span className="text-muted-foreground ml-2">· line {inspecting.line}</span>}
+            </DialogDescription>
+          )}
+        </DialogHeader>
+
+        {inspecting && (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              {severityBadge(inspecting.severity, true)}
+              <span className="text-xs text-muted-foreground">{inspecting.pattern}</span>
+            </div>
+
+            {fileLoading ? (
+              <div className="flex items-center justify-center h-48 text-muted-foreground text-sm gap-2">
+                <Loader2 className="w-4 h-4 animate-spin" /> Loading file…
+              </div>
+            ) : fileContent ? (
+              <ScrollArea className="h-80 rounded-md border bg-muted/30">
+                <div className="p-3 font-mono text-[11px] leading-5">
+                  {fileContent.lines.map(l => (
+                    <div key={l.n}
+                      className={cn(
+                        'flex gap-3 px-1 rounded',
+                        l.n === fileContent.flag_line
+                          ? 'bg-red-500/20 text-red-700 dark:text-red-300 font-semibold'
+                          : 'text-muted-foreground hover:bg-muted/50'
+                      )}
+                    >
+                      <span className="w-10 shrink-0 text-right select-none opacity-50">{l.n}</span>
+                      <span className="whitespace-pre-wrap break-all">{l.text}</span>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            ) : (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground p-4">
+                <AlertCircle className="w-4 h-4" /> Could not load file content.
+              </div>
+            )}
+
+            <div className="flex items-center gap-2 pt-1">
+              <Button variant="outline" size="sm" className="gap-1.5 text-orange-600 hover:text-orange-700"
+                onClick={() => { setInspecting(null); setConfirmAction({ finding: inspecting, action: 'quarantine' }) }}>
+                <Archive className="w-3.5 h-3.5" /> Quarantine
+              </Button>
+              <Button variant="outline" size="sm" className="gap-1.5 text-red-600 hover:text-red-700"
+                onClick={() => { setInspecting(null); setConfirmAction({ finding: inspecting, action: 'delete' }) }}>
+                <Trash2 className="w-3.5 h-3.5" /> Delete File
+              </Button>
+              <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground ml-auto"
+                onClick={() => { ignoreFileMutation.mutate(inspecting.file); setInspecting(null) }}>
+                <IgnoreIcon className="w-3.5 h-3.5" /> Ignore File
+              </Button>
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+
+    {/* ── Confirm Action Dialog ─────────────────────────────────────────── */}
+    <Dialog open={!!confirmAction} onOpenChange={open => { if (!open) setConfirmAction(null) }}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-destructive" />
+            {confirmAction?.action === 'delete' ? 'Delete File' : 'Quarantine File'}
+          </DialogTitle>
+          <DialogDescription>
+            {confirmAction?.action === 'delete'
+              ? 'This will permanently delete the file from disk. This action cannot be undone.'
+              : 'This will move the file to wp-content/wmp-quarantine/ and append .quarantined to prevent execution. The file can be restored manually.'
+            }
+          </DialogDescription>
+        </DialogHeader>
+
+        {confirmAction && (
+          <div className="py-2">
+            <p className="text-xs font-mono bg-muted rounded px-2 py-1.5 break-all text-foreground">
+              {confirmAction.finding.file}
+            </p>
+          </div>
+        )}
+
+        <DialogFooter className="gap-2">
+          <Button variant="outline" size="sm" onClick={() => setConfirmAction(null)}>Cancel</Button>
+          <Button
+            size="sm"
+            variant={confirmAction?.action === 'delete' ? 'destructive' : 'default'}
+            className={confirmAction?.action === 'quarantine' ? 'bg-orange-600 hover:bg-orange-700 text-white' : ''}
+            disabled={deleteFileMutation.isPending || quarantineMutation.isPending}
+            onClick={() => {
+              if (!confirmAction) return
+              if (confirmAction.action === 'delete') {
+                deleteFileMutation.mutate(confirmAction.finding.file)
+              } else {
+                quarantineMutation.mutate(confirmAction.finding.file)
+              }
+            }}
+          >
+            {(deleteFileMutation.isPending || quarantineMutation.isPending)
+              ? <><Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />Processing…</>
+              : confirmAction?.action === 'delete' ? 'Delete File' : 'Move to Quarantine'
+            }
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   )
 }

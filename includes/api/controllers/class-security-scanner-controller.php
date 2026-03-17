@@ -136,6 +136,7 @@ class Security_Scanner_Controller {
         $findings      = [];
         $scanned_count = 0;
         $max_files     = 8000;
+        $ignored_paths = get_option( 'wmp_scanner_ignored', [] );
 
         foreach ( $scan_dirs as $area => $root ) {
             if ( ! is_dir( $root ) ) continue;
@@ -154,6 +155,14 @@ class Security_Scanner_Controller {
 
                 $scanned_count++;
                 $path = $file->getRealPath();
+
+                // Skip WP Manager Pro's own files — pattern label strings stored
+                // in the source code match the same regexes, causing false positives.
+                if ( strpos( $path, WP_PLUGIN_DIR . DIRECTORY_SEPARATOR . 'wp-manager-pro' . DIRECTORY_SEPARATOR ) === 0 ) continue;
+
+                // Skip user-ignored files.
+                $rel = str_replace( WP_CONTENT_DIR . DIRECTORY_SEPARATOR, '', $path );
+                if ( in_array( $rel, $ignored_paths, true ) ) continue;
 
                 // Skip very large files (>512 KB) to avoid memory issues.
                 if ( $file->getSize() > 512 * 1024 ) continue;
@@ -504,5 +513,167 @@ class Security_Scanner_Controller {
             'configured' => ! empty( $key ),
             'masked'     => $key ? str_repeat( '*', max( 0, strlen( $key ) - 4 ) ) . substr( $key, -4 ) : '',
         ] );
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // File Inspection & Actions
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Resolve a wp-content-relative path to an absolute path, validating it
+     * stays inside wp-content. Returns false on invalid/traversal attempts.
+     */
+    private static function resolve_content_path( string $rel_path ) {
+        $abs = realpath( WP_CONTENT_DIR . DIRECTORY_SEPARATOR . ltrim( $rel_path, '/\\' ) );
+        if ( ! $abs ) return false;
+        if ( strpos( $abs, realpath( WP_CONTENT_DIR ) . DIRECTORY_SEPARATOR ) !== 0 ) return false;
+        return $abs;
+    }
+
+    /**
+     * GET /scanner/file?path=...&line=...
+     * Returns the file content (split into lines) centred around the flagged line.
+     * Sends ±40 lines of context so the React modal can highlight the match.
+     */
+    public static function get_file_content( \WP_REST_Request $request ) {
+        $rel_path = sanitize_text_field( $request->get_param( 'path' ) ?? '' );
+        $flag_line = absint( $request->get_param( 'line' ) ?? 0 );
+
+        if ( ! $rel_path ) {
+            return new \WP_Error( 'missing_path', 'path is required.', [ 'status' => 400 ] );
+        }
+
+        $abs = self::resolve_content_path( $rel_path );
+        if ( ! $abs || ! is_file( $abs ) ) {
+            return new \WP_Error( 'not_found', 'File not found or path is invalid.', [ 'status' => 404 ] );
+        }
+
+        if ( filesize( $abs ) > 1024 * 1024 ) {
+            return new \WP_Error( 'too_large', 'File exceeds 1 MB — open via File Manager.', [ 'status' => 413 ] );
+        }
+
+        $lines = file( $abs, FILE_IGNORE_NEW_LINES );
+        if ( false === $lines ) {
+            return new \WP_Error( 'read_error', 'Could not read file.', [ 'status' => 500 ] );
+        }
+
+        $total = count( $lines );
+        $ctx   = 40;
+        $start = $flag_line > 0 ? max( 0, $flag_line - $ctx - 1 ) : 0;
+        $end   = $flag_line > 0 ? min( $total - 1, $flag_line + $ctx - 1 ) : $total - 1;
+
+        $slice = [];
+        for ( $i = $start; $i <= $end; $i++ ) {
+            $slice[] = [ 'n' => $i + 1, 'text' => $lines[ $i ] ];
+        }
+
+        return rest_ensure_response( [
+            'path'      => $rel_path,
+            'total_lines' => $total,
+            'flag_line' => $flag_line,
+            'lines'     => $slice,
+        ] );
+    }
+
+    /**
+     * DELETE /scanner/file
+     * Permanently deletes the file. Requires { path, confirm: true }.
+     */
+    public static function delete_file( \WP_REST_Request $request ) {
+        $rel_path = sanitize_text_field( $request->get_param( 'path' ) ?? '' );
+        $confirm  = (bool) $request->get_param( 'confirm' );
+
+        if ( ! $rel_path ) return new \WP_Error( 'missing_path', 'path is required.', [ 'status' => 400 ] );
+        if ( ! $confirm )  return new \WP_Error( 'not_confirmed', 'confirm must be true.', [ 'status' => 400 ] );
+
+        $abs = self::resolve_content_path( $rel_path );
+        if ( ! $abs || ! is_file( $abs ) ) {
+            return new \WP_Error( 'not_found', 'File not found.', [ 'status' => 404 ] );
+        }
+
+        if ( ! @unlink( $abs ) ) {
+            return new \WP_Error( 'delete_failed', 'Could not delete file — check permissions.', [ 'status' => 500 ] );
+        }
+
+        return rest_ensure_response( [ 'deleted' => true, 'path' => $rel_path ] );
+    }
+
+    /**
+     * POST /scanner/quarantine
+     * Moves the file to wp-content/wmp-quarantine/{relative_path}.
+     */
+    public static function quarantine_file( \WP_REST_Request $request ) {
+        $rel_path = sanitize_text_field( $request->get_param( 'path' ) ?? '' );
+        $confirm  = (bool) $request->get_param( 'confirm' );
+
+        if ( ! $rel_path ) return new \WP_Error( 'missing_path', 'path is required.', [ 'status' => 400 ] );
+        if ( ! $confirm )  return new \WP_Error( 'not_confirmed', 'confirm must be true.', [ 'status' => 400 ] );
+
+        $abs = self::resolve_content_path( $rel_path );
+        if ( ! $abs || ! is_file( $abs ) ) {
+            return new \WP_Error( 'not_found', 'File not found.', [ 'status' => 404 ] );
+        }
+
+        $quarantine_base = WP_CONTENT_DIR . '/wmp-quarantine';
+        $dest            = $quarantine_base . '/' . ltrim( $rel_path, '/\\' );
+        $dest_dir        = dirname( $dest );
+
+        if ( ! wp_mkdir_p( $dest_dir ) ) {
+            return new \WP_Error( 'mkdir_failed', 'Could not create quarantine directory.', [ 'status' => 500 ] );
+        }
+
+        // Add .quarantined extension so the file won't execute if the dir becomes web-accessible.
+        $dest .= '.quarantined';
+
+        if ( ! @rename( $abs, $dest ) ) {
+            return new \WP_Error( 'move_failed', 'Could not move file to quarantine.', [ 'status' => 500 ] );
+        }
+
+        // Drop a .htaccess in the quarantine root to block direct HTTP access.
+        $htaccess = $quarantine_base . '/.htaccess';
+        if ( ! file_exists( $htaccess ) ) {
+            @file_put_contents( $htaccess, "Options -Indexes\nDeny from all\n" );
+        }
+
+        return rest_ensure_response( [ 'quarantined' => true, 'dest' => 'wmp-quarantine/' . ltrim( $rel_path, '/\\' ) . '.quarantined' ] );
+    }
+
+    /**
+     * POST /scanner/ignore
+     * Adds a file path to the scanner ignore list (stored in wp_options).
+     */
+    public static function ignore_file( \WP_REST_Request $request ) {
+        $rel_path = sanitize_text_field( $request->get_param( 'path' ) ?? '' );
+        if ( ! $rel_path ) return new \WP_Error( 'missing_path', 'path is required.', [ 'status' => 400 ] );
+
+        $ignored = get_option( 'wmp_scanner_ignored', [] );
+        if ( ! in_array( $rel_path, $ignored, true ) ) {
+            $ignored[] = $rel_path;
+            update_option( 'wmp_scanner_ignored', $ignored );
+        }
+
+        return rest_ensure_response( [ 'ignored' => true, 'path' => $rel_path ] );
+    }
+
+    /**
+     * GET /scanner/ignored
+     */
+    public static function get_ignored_files( \WP_REST_Request $request ) {
+        return rest_ensure_response( get_option( 'wmp_scanner_ignored', [] ) );
+    }
+
+    /**
+     * DELETE /scanner/ignored
+     * Removes a path from the ignore list.
+     */
+    public static function remove_ignored_file( \WP_REST_Request $request ) {
+        $rel_path = sanitize_text_field( $request->get_param( 'path' ) ?? '' );
+        if ( ! $rel_path ) return new \WP_Error( 'missing_path', 'path is required.', [ 'status' => 400 ] );
+
+        $ignored = get_option( 'wmp_scanner_ignored', [] );
+        $ignored = array_values( array_filter( $ignored, fn( $p ) => $p !== $rel_path ) );
+        update_option( 'wmp_scanner_ignored', $ignored );
+
+        return rest_ensure_response( [ 'removed' => true ] );
     }
 }

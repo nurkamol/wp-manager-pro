@@ -7,6 +7,25 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [2.9.3] — 2026-03-17
+
+### Fixed
+- **Image Tools — GD / ImageMagick / WebP / AVIF all showing "Not available"** — Root cause: `Imagick::queryFormats('AVIF')` throws an `ImagickException` on servers where the imagick extension lacks an AVIF codec, corrupting the entire REST response JSON and making all four status cards appear broken. Fixed by replacing all direct `Imagick::queryFormats()` calls with `wp_image_editor_supports(['mime_type' => '...'])` — the same mechanism used by WordPress core and third-party image plugins (e.g. "Converter for Media"). GD and ImageMagick base checks now use `extension_loaded() && function_exists()/class_exists()` for reliability across all PHP SAPIs.
+- **Malware Scanner flagging its own files** — The scanner's pattern-label strings (e.g. `'eval(base64_decode(…))'`) matched the same regexes, causing WP Manager Pro's own controller to appear as a "Critical" finding. Fixed by excluding the `wp-manager-pro` plugin directory from all scans.
+- **Malware Scanner ignores user-whitelisted files** — Files added to the ignore list are now skipped during scans.
+
+### Improved
+- **Malware Scanner — File Inspection & Actions** — Each finding row now has three action buttons:
+  - **Inspect** — opens a modal showing up to ±40 lines of file context around the flagged line, with the suspicious line highlighted in red
+  - **Quarantine** — moves the file to `wp-content/wmp-quarantine/` with a `.quarantined` extension (an `.htaccess` is auto-created to block HTTP access); requires confirmation
+  - **Delete** — permanently removes the file from disk; requires confirmation
+  - **Ignore** — adds the file to a persistent ignore list (`wmp_scanner_ignored` option); ignored files are skipped in all future scans
+  - New REST endpoints: `GET /scanner/file`, `DELETE /scanner/file`, `POST /scanner/quarantine`, `POST /scanner/ignore`, `GET /scanner/ignored`, `DELETE /scanner/ignored`
+- **Sidebar — Environment badge** — Redesigned from a flat red pill to a semi-transparent badge with ring border and a colored dot indicator (🔴 Production · 🟡 Staging · 🟢 Development · 🔵 Local), consistent with the dark sidebar palette
+- **Cron Manager — UI spacing** — Standardised wrapper to `fade-in`, `TabsList` bottom margin, and `TabsContent` spacing to `space-y-6 mt-2` — consistent with Security and other multi-tab pages
+
+---
+
 ## [2.9.2] — 2026-03-17
 
 ### Fixed

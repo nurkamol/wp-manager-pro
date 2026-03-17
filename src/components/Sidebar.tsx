@@ -100,11 +100,19 @@ interface SidebarProps {
 }
 
 function getEnvBadgeClass(type: string): string {
-  if (type === 'production') return 'bg-red-500/80 text-white'
-  if (type === 'staging') return 'bg-orange-500/80 text-white'
-  if (type === 'development') return 'bg-green-500/80 text-white'
-  if (type === 'local') return 'bg-blue-500/80 text-white'
-  return 'bg-purple-500/80 text-white'
+  if (type === 'production') return 'bg-red-500/20 text-red-300 ring-1 ring-red-500/40'
+  if (type === 'staging') return 'bg-orange-500/20 text-orange-300 ring-1 ring-orange-500/40'
+  if (type === 'development') return 'bg-green-500/20 text-green-300 ring-1 ring-green-500/40'
+  if (type === 'local') return 'bg-blue-500/20 text-blue-300 ring-1 ring-blue-500/40'
+  return 'bg-purple-500/20 text-purple-300 ring-1 ring-purple-500/40'
+}
+
+function getEnvDotClass(type: string): string {
+  if (type === 'production') return 'bg-red-400'
+  if (type === 'staging') return 'bg-orange-400'
+  if (type === 'development') return 'bg-green-400'
+  if (type === 'local') return 'bg-blue-400'
+  return 'bg-purple-400'
 }
 
 export function Sidebar({ collapsed, onToggle, theme, onToggleTheme }: SidebarProps) {
@@ -149,7 +157,8 @@ export function Sidebar({ collapsed, onToggle, theme, onToggleTheme }: SidebarPr
               <p className="text-sm font-bold text-white leading-tight">{nameMain}</p>
               {nameSub && <p className="text-[10px] text-slate-400">{nameSub}</p>}
               {envData?.type && (
-                <span className={cn('inline-block mt-0.5 px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wide leading-none', getEnvBadgeClass(envData.type))}>
+                <span className={cn('inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded-full text-[9px] font-semibold uppercase tracking-wider leading-none', getEnvBadgeClass(envData.type))}>
+                  <span className={cn('w-1.5 h-1.5 rounded-full shrink-0', getEnvDotClass(envData.type))} />
                   {envData.type}
                 </span>
               )}

@@ -12,17 +12,27 @@ class Images_Controller {
     public static function get_settings( WP_REST_Request $request ) {
         $thumbnail_sizes = self::get_all_image_sizes();
 
+        // Use WordPress's own image editor support checks — the same mechanism
+        // used by core and third-party plugins like "Converter for Media".
+        // This avoids calling Imagick::queryFormats() directly, which throws an
+        // ImagickException on servers where the AVIF codec is absent, corrupting
+        // the JSON response and making all four status cards show "Not available".
+        $gd_support      = extension_loaded( 'gd' ) && function_exists( 'gd_info' );
+        $imagick_support = extension_loaded( 'imagick' ) && class_exists( 'Imagick' );
+        $webp_support    = wp_image_editor_supports( [ 'mime_type' => 'image/webp' ] );
+        $avif_support    = wp_image_editor_supports( [ 'mime_type' => 'image/avif' ] );
+
         return new WP_REST_Response( [
             'webp_enabled'          => (bool) get_option( 'wmp_webp_enabled', false ),
             'max_width'             => (int) get_option( 'wmp_max_width', 0 ),
             'max_height'            => (int) get_option( 'wmp_max_height', 0 ),
             'jpeg_quality'          => (int) get_option( 'wmp_jpeg_quality', 82 ),
             'thumbnail_sizes'       => $thumbnail_sizes,
-            'gd_support'            => extension_loaded( 'gd' ),
-            'imagick_support'       => extension_loaded( 'imagick' ),
-            'webp_support'          => function_exists( 'imagewebp' ) || extension_loaded( 'imagick' ),
+            'gd_support'            => $gd_support,
+            'imagick_support'       => $imagick_support,
+            'webp_support'          => $webp_support,
             'avif_enabled'          => (bool) get_option( 'wmp_avif_enabled', false ),
-            'avif_support'          => function_exists( 'imageavif' ) || ( extension_loaded( 'imagick' ) && count( Imagick::queryFormats( 'AVIF' ) ) > 0 ),
+            'avif_support'          => $avif_support,
             'svg_enabled'           => (bool) get_option( 'wmp_svg_enabled', false ),
             'svg_allowed_roles'     => get_option( 'wmp_svg_allowed_roles', [ 'administrator' ] ),
             'webp_serve_webp'       => (bool) get_option( 'wmp_webp_serve_webp', false ),
@@ -101,7 +111,7 @@ class Images_Controller {
 
         // Convert to WebP if enabled and supported.
         if ( get_option( 'wmp_webp_enabled', false ) ) {
-            $webp_ok = function_exists( 'imagewebp' ) || extension_loaded( 'imagick' );
+            $webp_ok = wp_image_editor_supports( [ 'mime_type' => 'image/webp' ] );
             if ( $webp_ok ) {
                 $webp_path = self::save_as_format( $file, 'image/webp' );
                 // If replace-original is on: swap the upload to point at the .webp file.
@@ -117,8 +127,7 @@ class Images_Controller {
 
         // Convert to AVIF if enabled and supported (sidecar only; AVIF replace-original not supported).
         if ( get_option( 'wmp_avif_enabled', false ) ) {
-            $avif_ok = function_exists( 'imageavif' )
-                || ( extension_loaded( 'imagick' ) && count( Imagick::queryFormats( 'AVIF' ) ) > 0 );
+            $avif_ok = wp_image_editor_supports( [ 'mime_type' => 'image/avif' ] );
             if ( $avif_ok ) {
                 self::save_as_format( $file, 'image/avif' );
             }
@@ -180,15 +189,12 @@ class Images_Controller {
         $mime = 'image/' . $format;
 
         // Server-side support check.
-        if ( 'webp' === $format && ! ( function_exists( 'imagewebp' ) || extension_loaded( 'imagick' ) ) ) {
-            return new WP_Error( 'not_supported', 'WebP conversion is not supported on this server.', [ 'status' => 500 ] );
-        }
-        if ( 'avif' === $format ) {
-            $avif_ok = function_exists( 'imageavif' )
-                || ( extension_loaded( 'imagick' ) && count( Imagick::queryFormats( 'AVIF' ) ) > 0 );
-            if ( ! $avif_ok ) {
-                return new WP_Error( 'not_supported', 'AVIF conversion is not supported on this server.', [ 'status' => 500 ] );
-            }
+        if ( ! wp_image_editor_supports( [ 'mime_type' => 'image/' . $format ] ) ) {
+            return new WP_Error(
+                'not_supported',
+                ucfirst( $format ) . ' conversion is not supported on this server.',
+                [ 'status' => 500 ]
+            );
         }
 
         if ( ! function_exists( 'wp_update_attachment_metadata' ) ) {

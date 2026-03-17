@@ -156,14 +156,14 @@ export function Cron() {
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="space-y-6">
+    <div className="fade-in space-y-6">
       <PageHeader
         title="Cron Manager"
         description="Inspect, trigger, and manage WordPress scheduled events"
       />
 
       <Tabs defaultValue="events">
-        <TabsList>
+        <TabsList className="mb-2">
           <TabsTrigger value="events" className="flex items-center gap-1.5">
             <Clock className="w-3.5 h-3.5" />
             Events
@@ -189,7 +189,7 @@ export function Cron() {
         </TabsList>
 
         {/* ── Events Tab ── */}
-        <TabsContent value="events" className="space-y-4 mt-4">
+        <TabsContent value="events" className="space-y-6 mt-2">
           <div className="flex items-center gap-3">
             <Input
               placeholder="Search hooks…"
@@ -310,7 +310,7 @@ export function Cron() {
         </TabsContent>
 
         {/* ── Schedules Tab ── */}
-        <TabsContent value="schedules" className="space-y-4 mt-4">
+        <TabsContent value="schedules" className="space-y-6 mt-2">
           {/* Add custom schedule */}
           <Card>
             <CardHeader>
@@ -419,7 +419,7 @@ export function Cron() {
         </TabsContent>
 
         {/* ── Health Tab ── */}
-        <TabsContent value="health" className="space-y-4 mt-4">
+        <TabsContent value="health" className="space-y-6 mt-2">
           {healthLoading ? (
             <div className="flex items-center justify-center h-32 text-muted-foreground text-sm">
               <RefreshCw className="w-4 h-4 animate-spin mr-2" /> Loading…
