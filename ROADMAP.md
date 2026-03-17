@@ -2,7 +2,7 @@
 
 This document outlines the planned feature development for WP Manager Pro. Releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Minor versions (`1.x.0`) add new features; patch versions (`1.x.y`) deliver bug fixes and polish.
 
-> **Current version:** 2.9.3 — last updated 2026-03-17
+> **Current version:** 2.9.4 — last updated 2026-03-18
 
 ---
 
@@ -36,6 +36,7 @@ This document outlines the planned feature development for WP Manager Pro. Relea
 | [2.9.1] | Bug fixes: Login Page CSS not applying, Media Library button falling back to prompt(); Added Privacy & Terms links on login page, Coming Soon complete UI redesign with side-by-side preview |
 | [2.9.2] | Bug fix: `window.wmpOpenMedia` bridge injected via `wp_add_inline_script('after')` resolves Media Library modal not opening; Settings → Branding logo Select button added |
 | [2.9.3] | Bug fixes: Image Tools status cards (GD/ImageMagick/WebP/AVIF) all showing "Not available" due to `Imagick::queryFormats()` exception; Malware Scanner self-flagging own files (false positive); Malware Scanner file Inspect modal + Quarantine/Delete/Ignore actions; Sidebar environment badge redesign; Cron Manager spacing normalised |
+| [2.9.4] | Deep root-cause fix for Media Library modal never opening: Rollup minifier named Lucide icon `const wp`, shadowing `window.wp` globally; fixed by switching to IIFE build format; `wmpOpenMedia` bridge hardened to use `window.wp` explicitly |
 
 ---
 
@@ -109,3 +110,4 @@ Have a feature request or want to vote on a backlog item? [Open an issue](https:
 [2.9.1]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v2.9.1
 [2.9.2]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v2.9.2
 [2.9.3]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v2.9.3
+[2.9.4]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v2.9.4

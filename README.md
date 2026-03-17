@@ -2,7 +2,7 @@
 
 > A comprehensive, agency-ready WordPress management suite — built with React 19, TypeScript, and the WordPress REST API.
 
-![Version](https://img.shields.io/badge/version-2.9.3-blue)
+![Version](https://img.shields.io/badge/version-2.9.4-blue)
 ![WordPress](https://img.shields.io/badge/WordPress-5.9%2B-21759b)
 ![PHP](https://img.shields.io/badge/PHP-7.4%2B-8892be)
 ![License](https://img.shields.io/badge/license-GPL--2.0%2B-green)
@@ -56,6 +56,14 @@
 All operations happen through a secured REST API (`wp-manager-pro/v1`) that requires the `manage_options` capability on every route.
 
 ---
+
+## What's New in v2.9.4 — Media Library Root Cause Fix
+
+| Change | Description |
+|--------|-------------|
+| 🎯 Media Library — deep root cause fixed | Rollup's minifier named a Lucide icon `const wp` at the bundle top-level, shadowing `window.wp` globally without replacing it. All media pickers (Agency Tools: Login Page logo/bg, Coming Soon logo/bg; Settings: sidebar logo) now reliably open the native WordPress Media Library modal on every button click |
+| 🔧 Build format → IIFE | Vite output switched to `format: 'iife'` — bundle variables are now function-scoped and cannot shadow WordPress or any other global |
+| 🛡️ Bridge hardened | `window.wmpOpenMedia` now explicitly uses `window.wp` to bypass any scope-level variable shadowing |
 
 ## What's New in v2.9.3 — Bug Fixes & Malware Scanner Actions
 

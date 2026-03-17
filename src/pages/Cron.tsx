@@ -156,14 +156,15 @@ export function Cron() {
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="fade-in space-y-6">
+    <div className="fade-in">
       <PageHeader
         title="Cron Manager"
         description="Inspect, trigger, and manage WordPress scheduled events"
       />
 
+      <div className="p-6 space-y-4">
       <Tabs defaultValue="events">
-        <TabsList className="mb-2">
+        <TabsList>
           <TabsTrigger value="events" className="flex items-center gap-1.5">
             <Clock className="w-3.5 h-3.5" />
             Events
@@ -556,6 +557,7 @@ export function Cron() {
           ) : null}
         </TabsContent>
       </Tabs>
+      </div>
     </div>
   )
 }

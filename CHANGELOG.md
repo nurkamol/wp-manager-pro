@@ -7,6 +7,14 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [2.9.4] — 2026-03-18
+
+### Fixed
+- **Media Library modal never opened (deep root cause)** — Rollup's minifier was assigning a Lucide `StickyNote` icon to a top-level `const wp` inside the bundle. Because `const` at the top level of a non-module script does **not** become a `window.*` property but **does** shadow `window.wp` in the global scope, any code that ran after the bundle loaded (e.g. the `wp.Backbone.View` constructor call inside `media-views.min.js`) resolved `wp` to the Lucide component instead of WordPress's media object, throwing `TypeError: Cannot read properties of undefined (reading 'View')` and silently aborting the modal. Fixed by switching the Vite build to `format: 'iife'`; the entire bundle is now wrapped in an immediately-invoked function, keeping every bundle-level declaration function-scoped and invisible to the global scope.
+- **`wmpOpenMedia` bridge hardened** — the bridge function now explicitly captures `var _wp = window.wp` instead of relying on unqualified `wp`, guaranteeing it always accesses the WordPress media object even in environments where a global `wp` might be shadowed by other scripts.
+
+---
+
 ## [2.9.3] — 2026-03-17
 
 ### Fixed

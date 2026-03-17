@@ -30,6 +30,14 @@ interface BrandingSettings {
 // ── Changelog data ─────────────────────────────────────────────────────────────
 const changelog: { version: string; date: string; features: string[] }[] = [
   {
+    version: '2.9.4',
+    date: '2026-03-18',
+    features: [
+      'Media Library modal — deep root-cause fix: Rollup\'s minifier assigned a Lucide StickyNote icon to a top-level "const wp" inside the bundle. Because const at the top level of a non-module script does not become a window.* property but does shadow window.wp globally, code that ran after the bundle (e.g. wp.Backbone.View constructor in media-views.js) resolved wp to the Lucide component instead of WordPress\'s media object, silently aborting the modal. Fixed by switching to IIFE build format — all bundle variables are now function-scoped and invisible to the global scope',
+      'wmpOpenMedia bridge hardened — the bridge now captures var _wp = window.wp explicitly instead of relying on unqualified wp, guaranteeing it always resolves to the WordPress media object regardless of any scope-level variable shadowing',
+    ],
+  },
+  {
     version: '2.9.3',
     date: '2026-03-17',
     features: [

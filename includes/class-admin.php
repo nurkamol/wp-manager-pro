@@ -116,12 +116,18 @@ class Admin {
         // this replaces the old window.wp?.media check that fell back to prompt().
         $bridge_js = '
 window.wmpOpenMedia = function(title, cb) {
-    if (typeof wp === "undefined" || typeof wp.media !== "function") {
+    // Always use window.wp explicitly — the Vite bundle minifies a Lucide icon
+    // component into a top-level variable also named "wp", which overwrites the
+    // WordPress global when the script runs outside a module context. Accessing
+    // window.wp directly bypasses the polluted local scope and reliably resolves
+    // to the WordPress media object regardless of bundle variable naming.
+    var _wp = window.wp;
+    if (typeof _wp === "undefined" || typeof _wp.media !== "function") {
         var u = window.prompt(title + " \u2014 Enter image URL:");
         if (u && u.trim()) cb(u.trim());
         return;
     }
-    var frame = wp.media({
+    var frame = _wp.media({
         title: title,
         multiple: false,
         library: { type: "image" },
