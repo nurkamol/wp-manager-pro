@@ -2,7 +2,7 @@
 
 > A comprehensive, agency-ready WordPress management suite — built with React 19, TypeScript, and the WordPress REST API.
 
-![Version](https://img.shields.io/badge/version-2.9.2-blue)
+![Version](https://img.shields.io/badge/version-2.9.3-blue)
 ![WordPress](https://img.shields.io/badge/WordPress-5.9%2B-21759b)
 ![PHP](https://img.shields.io/badge/PHP-7.4%2B-8892be)
 ![License](https://img.shields.io/badge/license-GPL--2.0%2B-green)
@@ -57,12 +57,17 @@ All operations happen through a secured REST API (`wp-manager-pro/v1`) that requ
 
 ---
 
-## What's New in v2.9.2 — Media Picker Fix & Logo Select Button
+## What's New in v2.9.3 — Bug Fixes & Malware Scanner Actions
 
-| Fix | Description |
-|-----|-------------|
-| 🖼️ Media Library picker | All "Select image" buttons now reliably open the native WP Media Library modal. Root cause was `wp.media` not being callable at bundle-evaluation time — fixed via a `window.wmpOpenMedia` bridge injected via `wp_add_inline_script('after')` |
-| 🎨 Branding logo Select button | Settings → Branding → Custom Logo URL now has a dedicated "Select" button that opens the Media Library picker, consistent with Agency Tools |
+| Change | Description |
+|--------|-------------|
+| 🛠️ Image Tools status cards fixed | GD / ImageMagick / WebP / AVIF all showed "Not available" due to `Imagick::queryFormats('AVIF')` throwing an exception that corrupted the REST response. All checks now use `wp_image_editor_supports()` |
+| 🔍 Malware Scanner — self-exclusion | Scanner was flagging its own source files as critical threats. WP Manager Pro directory is now excluded from all scans |
+| 🔬 Malware Scanner — Inspect modal | Each finding has an Inspect button that opens a file viewer showing ±40 lines of context with the suspicious line highlighted |
+| 🗄️ Malware Scanner — Quarantine | Move suspicious files to `wp-content/wmp-quarantine/` with HTTP access blocked via `.htaccess` |
+| 🗑️ Malware Scanner — Delete & Ignore | Permanently delete a flagged file or add it to a persistent ignore list that survives future scans |
+| 🏷️ Sidebar environment badge | Redesigned to semi-transparent pill with ring border and coloured dot indicator (🔴 Production · 🟡 Staging · 🟢 Development · 🔵 Local) |
+| 📐 Cron Manager spacing | Normalised to `fade-in` wrapper and `space-y-6` tab content, consistent with all other multi-tab pages |
 
 ## What's New in v2.9.0 — Developer Utilities
 
@@ -201,7 +206,7 @@ Six-tab page for advanced WordPress introspection and testing:
 
 ### Settings / Branding *(New in v1.8.0)*
 - White-label the plugin: set a custom Plugin Name, Admin Menu Label, and Sidebar Logo URL
-- **v2.9.2** Logo URL field has a dedicated "Select" button that opens the WordPress Media Library picker
+- **v2.9.3** Logo URL field has a dedicated "Select" button that opens the WordPress Media Library picker
 - Changes take effect immediately after saving and reloading the page
 - Inline **Changelog** tab — collapsible version history accordion with the current version highlighted
 - **FAQ** tab with 9 common questions and a direct link to open a GitHub issue
@@ -353,14 +358,14 @@ Five-tab page for media library cleanup and maintenance:
 ## Installation
 
 ### From ZIP
-1. Download `wp-manager-pro-v2.9.2.zip` from the [Releases](https://github.com/nurkamol/wp-manager-pro/releases) page.
+1. Download `wp-manager-pro-v2.9.3.zip` from the [Releases](https://github.com/nurkamol/wp-manager-pro/releases) page.
 2. In WP Admin → **Plugins → Add New → Upload Plugin**.
 3. Upload the ZIP and click **Install Now**, then **Activate**.
 4. Navigate to **WP Manager** in the admin sidebar (or click **Open** in the Plugins list).
 
 ### Manual
 ```bash
-unzip wp-manager-pro-v2.9.2.zip -d /path/to/wp-content/plugins/
+unzip wp-manager-pro-v2.9.3.zip -d /path/to/wp-content/plugins/
 ```
 
 Then activate via WP Admin → **Plugins**.
@@ -398,7 +403,7 @@ npm run build
 ### Package Plugin ZIP
 ```bash
 cd ..
-zip -r wp-manager-pro-v2.9.2.zip \
+zip -r wp-manager-pro-v2.9.3.zip \
   wp-manager-pro/wp-manager-pro.php \
   wp-manager-pro/includes/ \
   wp-manager-pro/assets/build/
@@ -579,6 +584,12 @@ All endpoints require a valid WordPress nonce in the `X-WP-Nonce` header.
 | DELETE | `/developer/cache-key` | **v2.9.0** Delete a specific cache key |
 | GET | `/developer/prefix-info` | **v2.9.0** Get current DB prefix + table list |
 | POST | `/developer/change-prefix` | **v2.9.0** Rename database table prefix |
+| GET | `/scanner/file` | **v2.9.3** Read file content around a flagged line |
+| DELETE | `/scanner/file` | **v2.9.3** Delete a flagged file |
+| POST | `/scanner/quarantine` | **v2.9.3** Move file to `wmp-quarantine/` directory |
+| POST | `/scanner/ignore` | **v2.9.3** Add file to scanner ignore list |
+| GET | `/scanner/ignored` | **v2.9.3** List ignored files |
+| DELETE | `/scanner/ignored` | **v2.9.3** Remove file from ignore list |
 
 ---
 
