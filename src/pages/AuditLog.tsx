@@ -33,21 +33,21 @@ interface LogsResponse {
 }
 
 const ACTION_COLORS: Record<string, string> = {
-  'plugin.activated':   'bg-green-100 text-green-700',
-  'plugin.deactivated': 'bg-yellow-100 text-yellow-700',
-  'plugin.deleted':     'bg-red-100 text-red-700',
-  'theme.activated':    'bg-blue-100 text-blue-700',
-  'user.login':         'bg-slate-100 text-slate-700',
-  'user.logout':        'bg-slate-100 text-slate-600',
-  'user.login_failed':  'bg-red-100 text-red-700',
-  'user.registered':    'bg-purple-100 text-purple-700',
-  'content.published':  'bg-green-100 text-green-700',
-  'backup.created':     'bg-blue-100 text-blue-700',
-  'backup.deleted':     'bg-red-100 text-red-700',
+  'plugin.activated':   'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
+  'plugin.deactivated': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300',
+  'plugin.deleted':     'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
+  'theme.activated':    'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
+  'user.login':         'bg-slate-100 text-slate-700 dark:bg-slate-700/50 dark:text-slate-300',
+  'user.logout':        'bg-slate-100 text-slate-600 dark:bg-slate-700/50 dark:text-slate-400',
+  'user.login_failed':  'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
+  'user.registered':    'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300',
+  'content.published':  'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
+  'backup.created':     'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
+  'backup.deleted':     'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
 }
 
 function actionBadgeClass(action: string) {
-  return ACTION_COLORS[action] || 'bg-slate-100 text-slate-700'
+  return ACTION_COLORS[action] || 'bg-slate-100 text-slate-700 dark:bg-slate-700/50 dark:text-slate-300'
 }
 
 function actionLabel(action: string) {

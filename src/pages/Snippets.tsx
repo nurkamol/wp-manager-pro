@@ -27,9 +27,9 @@ interface Snippet {
 }
 
 const TYPE_COLORS: Record<string, string> = {
-  php: 'bg-purple-100 text-purple-700 border-purple-200',
-  css: 'bg-blue-100 text-blue-700 border-blue-200',
-  js:  'bg-yellow-100 text-yellow-700 border-yellow-200',
+  php: 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300 border-purple-200',
+  css: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 border-blue-200',
+  js:  'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300 border-yellow-200',
 }
 
 function getSnippetLang(type: string): string {
@@ -164,7 +164,7 @@ export function Snippets() {
                       {snippet.type.toUpperCase()}
                     </span>
                     {!!snippet.enabled && (
-                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 dark:bg-green-900/30 dark:text-green-400">
                         Active
                       </span>
                     )}

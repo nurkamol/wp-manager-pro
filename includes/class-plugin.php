@@ -59,6 +59,9 @@ class Plugin {
             'class-security-scanner-controller',
             'class-agency-controller',
             'class-developer-controller',
+            'class-notifications-controller',
+            'class-search-controller',
+            'class-cpt-controller',
         ];
 
         foreach ( $controllers as $controller ) {
@@ -74,6 +77,10 @@ class Plugin {
         add_filter( 'plugin_action_links_' . WP_MANAGER_PRO_BASENAME, [ Admin::class, 'add_plugin_links' ] );
         add_filter( 'plugin_row_meta', [ Admin::class, 'add_plugin_meta' ], 10, 2 );
         add_action( 'rest_api_init', [ API\Routes::class, 'register_routes' ] );
+
+        // Admin bar shortcut button + global keyboard listener.
+        add_action( 'admin_bar_menu', [ $this, 'add_admin_bar_node' ], 999 );
+        add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_global_shortcut' ] );
 
         // Self-updater — GitHub Releases integration.
         Self_Updater::init();
@@ -170,6 +177,9 @@ class Plugin {
 
         // Cron Manager — inject custom schedules created via the UI (v2.1.0).
         add_filter( 'cron_schedules', [ API\Controllers\Cron_Controller::class, 'inject_custom_schedules' ] );
+
+        // Custom Post Types — register saved CPTs & taxonomies at init.
+        add_action( 'init', [ API\Controllers\CPT_Controller::class, 'register_all' ], 5 );
     }
 
     /**
@@ -241,5 +251,52 @@ class Plugin {
 
         wp_safe_redirect( admin_url() );
         exit;
+    }
+
+    /**
+     * Add "WP Manager" button to the WP admin bar on every admin page.
+     */
+    public function add_admin_bar_node( \WP_Admin_Bar $bar ) {
+        if ( ! current_user_can( 'manage_options' ) ) return;
+
+        $plugin_url = admin_url( 'admin.php?page=wp-manager-pro' );
+        $branding   = get_option( 'wmp_branding', [] );
+        $label      = ! empty( $branding['menu_label'] ) ? $branding['menu_label'] : 'WP Manager';
+
+        $bar->add_node( [
+            'id'    => 'wmp-launch',
+            'title' => '<span class="ab-icon dashicons dashicons-search" style="font-size:16px;line-height:32px;vertical-align:middle;"></span><span style="vertical-align:middle;">WPMGR</span>',
+            'href'  => $plugin_url,
+            'meta'  => [ 'title' => 'Open Command Palette (Ctrl+Shift+P)' ],
+        ] );
+    }
+
+    /**
+     * Enqueue the standalone command-palette overlay on every WP admin page.
+     * The palette opens as an in-page overlay (not a navigation) when the
+     * configured keyboard shortcut or the admin-bar button is triggered.
+     */
+    public function enqueue_global_shortcut() {
+        if ( ! current_user_can( 'manage_options' ) ) return;
+
+        $plugin_url = admin_url( 'admin.php?page=wp-manager-pro' );
+        $shortcut   = get_option( 'wmp_palette_shortcut', 'shift+p' );
+
+        wp_enqueue_script(
+            'wmp-global-palette',
+            WP_MANAGER_PRO_URL . 'assets/global-palette.js',
+            [],
+            WP_MANAGER_PRO_VERSION,
+            true
+        );
+
+        wp_add_inline_script(
+            'wmp-global-palette',
+            'window._wmpGlobal = ' . wp_json_encode( [
+                'pluginUrl' => $plugin_url,
+                'shortcut'  => $shortcut,
+            ] ) . ';',
+            'before'
+        );
     }
 }

@@ -29,6 +29,7 @@ import { UpdateManager } from './pages/UpdateManager'
 import { SecurityScanner } from './pages/SecurityScanner'
 import { AgencyTools } from './pages/AgencyTools'
 import { DeveloperUtils } from './pages/DeveloperUtils'
+import CustomPostTypes from './pages/CustomPostTypes'
 import { CommandPaletteProvider, CommandPalette } from './components/CommandPalette'
 
 const queryClient = new QueryClient({
@@ -77,6 +78,7 @@ export function App() {
               <Route path="security-scanner" element={<SecurityScanner />} />
               <Route path="agency" element={<AgencyTools />} />
               <Route path="developer" element={<DeveloperUtils />} />
+              <Route path="post-types" element={<CustomPostTypes />} />
             </Route>
           </Routes>
         </CommandPaletteProvider>

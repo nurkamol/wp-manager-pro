@@ -31,6 +31,9 @@ use WP_Manager_Pro\API\Controllers\Update_Manager_Controller;
 use WP_Manager_Pro\API\Controllers\Security_Scanner_Controller;
 use WP_Manager_Pro\API\Controllers\Agency_Controller;
 use WP_Manager_Pro\API\Controllers\Developer_Controller;
+use WP_Manager_Pro\API\Controllers\Notifications_Controller;
+use WP_Manager_Pro\API\Controllers\Search_Controller;
+use WP_Manager_Pro\API\Controllers\CPT_Controller;
 
 class Routes {
 
@@ -43,6 +46,25 @@ class Routes {
         register_rest_route( $namespace, '/dashboard', [
             'methods'             => 'GET',
             'callback'            => [ Dashboard_Controller::class, 'get_stats' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+
+        // Dashboard widgets.
+        // Global search.
+        register_rest_route( $namespace, '/search', [
+            'methods'             => 'GET',
+            'callback'            => [ Search_Controller::class, 'search' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+
+        register_rest_route( $namespace, '/dashboard/uptime', [
+            'methods'             => 'GET',
+            'callback'            => [ Dashboard_Controller::class, 'get_uptime' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/dashboard/widgets', [
+            'methods'             => 'GET',
+            'callback'            => [ Dashboard_Controller::class, 'get_widgets' ],
             'permission_callback' => [ self::class, 'admin_permission' ],
         ] );
 
@@ -1127,6 +1149,60 @@ class Routes {
         register_rest_route( $namespace, '/developer/change-prefix', [
             'methods'             => 'POST',
             'callback'            => [ Developer_Controller::class, 'change_prefix' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+
+        // Notifications.
+        register_rest_route( $namespace, '/notifications', [
+            'methods'             => 'GET',
+            'callback'            => [ Notifications_Controller::class, 'get_notifications' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/notifications/read', [
+            'methods'             => 'POST',
+            'callback'            => [ Notifications_Controller::class, 'mark_read' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/notifications/(?P<id>[a-zA-Z0-9_-]+)', [
+            'methods'             => 'DELETE',
+            'callback'            => [ Notifications_Controller::class, 'dismiss' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+
+        // Custom Post Types.
+        register_rest_route( $namespace, '/cpt', [
+            'methods'             => 'GET',
+            'callback'            => [ CPT_Controller::class, 'get_cpts' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/cpt', [
+            'methods'             => 'POST',
+            'callback'            => [ CPT_Controller::class, 'save_cpt' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/cpt/(?P<slug>[a-z0-9_-]+)', [
+            'methods'             => 'DELETE',
+            'callback'            => [ CPT_Controller::class, 'delete_cpt' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/cpt/taxonomies', [
+            'methods'             => 'GET',
+            'callback'            => [ CPT_Controller::class, 'get_taxonomies' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/cpt/taxonomies', [
+            'methods'             => 'POST',
+            'callback'            => [ CPT_Controller::class, 'save_taxonomy' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/cpt/taxonomies/(?P<slug>[a-z0-9_-]+)', [
+            'methods'             => 'DELETE',
+            'callback'            => [ CPT_Controller::class, 'delete_taxonomy' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/cpt/post-types', [
+            'methods'             => 'GET',
+            'callback'            => [ CPT_Controller::class, 'get_all_post_types' ],
             'permission_callback' => [ self::class, 'admin_permission' ],
         ] );
     }

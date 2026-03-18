@@ -5,8 +5,19 @@ import { cn } from "@/lib/utils"
 
 const Dialog = DialogPrimitive.Root
 const DialogTrigger = DialogPrimitive.Trigger
-const DialogPortal = DialogPrimitive.Portal
 const DialogClose = DialogPrimitive.Close
+
+// Portal into #wp-manager-pro-root so it inherits the `dark` class
+const DialogPortal = ({ children, ...props }: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Portal>) => {
+  const container = typeof document !== 'undefined'
+    ? (document.getElementById('wp-manager-pro-root') ?? undefined)
+    : undefined
+  return (
+    <DialogPrimitive.Portal container={container} {...props}>
+      {children}
+    </DialogPrimitive.Portal>
+  )
+}
 
 const DialogOverlay = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Overlay>,

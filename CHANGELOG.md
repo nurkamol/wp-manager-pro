@@ -7,6 +7,24 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [3.0.0] — 2026-03-19
+
+### Added
+- **Dark Mode Auto-Sync** — three-state Light / Dark / Auto toggle; Auto follows OS `prefers-color-scheme` with no flash on load
+- **Dashboard Widgets** — configurable widget grid (8 widgets); show/hide via Customize panel; widget visibility persisted in `localStorage`; new uptime ping and audit/cache snapshot REST endpoints
+- **Notification Centre** — persistent bell icon with unread count; slide-out panel (Sheet) for alerts with type icons, timestamps, mark-all-read and dismiss; 3 new REST endpoints
+- **Mobile / Tablet Layout** — bottom nav bar on mobile with "More" full-page drawer; sidebar auto-collapse on tablet; `useBreakpoint` hook; responsive Toaster placement
+- **Global Search** — live search in Command Palette across plugins, users, notes, audit log, wp_options; 300 ms debounce; `GET /search` endpoint
+- **System-wide Command Palette** — standalone vanilla-JS overlay injected into all WP admin pages via `assets/global-palette.js`; admin bar **WPMGR** button opens it from anywhere
+- **Custom Post Type Manager** — register/edit/delete CPTs and taxonomies from the UI; supports picker, dashicons picker, Public/REST/Archive toggles; taxonomies tab with post-type multi-select; 7 new REST endpoints
+
+### Fixed
+- Dark mode badge/pill visibility across Audit Log, Content Tools, Snippets, Dev Tools, Developer Utilities
+- Sheet and Dialog dark mode — Radix UI portals now render inside `#wp-manager-pro-root` to inherit the `dark` class
+- Tabs overflow scrolling on narrow screens
+
+---
+
 ## [2.9.4] — 2026-03-18
 
 ### Fixed

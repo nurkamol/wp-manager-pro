@@ -746,10 +746,10 @@ function QueryMonitorTab() {
 // ── Environment Tab ───────────────────────────────────────────────────────────
 
 const ENV_OPTIONS = [
-  { value: 'production', label: 'Production', desc: 'Live site, real users', color: 'border-red-300 bg-red-50 text-red-800 hover:bg-red-100', activeColor: 'border-red-500 bg-red-100 ring-2 ring-red-400' },
+  { value: 'production', label: 'Production', desc: 'Live site, real users', color: 'border-red-300 bg-red-50 text-red-800 dark:bg-red-900/30 dark:text-red-300 hover:bg-red-100', activeColor: 'border-red-500 bg-red-100 ring-2 ring-red-400' },
   { value: 'staging', label: 'Staging', desc: 'Pre-production testing', color: 'border-orange-300 bg-orange-50 text-orange-800 hover:bg-orange-100', activeColor: 'border-orange-500 bg-orange-100 ring-2 ring-orange-400' },
-  { value: 'development', label: 'Development', desc: 'Local or dev server', color: 'border-green-300 bg-green-50 text-green-800 hover:bg-green-100', activeColor: 'border-green-500 bg-green-100 ring-2 ring-green-400' },
-  { value: 'local', label: 'Local', desc: 'Your local machine', color: 'border-blue-300 bg-blue-50 text-blue-800 hover:bg-blue-100', activeColor: 'border-blue-500 bg-blue-100 ring-2 ring-blue-400' },
+  { value: 'development', label: 'Development', desc: 'Local or dev server', color: 'border-green-300 bg-green-50 text-green-800 dark:bg-green-900/30 dark:text-green-300 hover:bg-green-100', activeColor: 'border-green-500 bg-green-100 ring-2 ring-green-400' },
+  { value: 'local', label: 'Local', desc: 'Your local machine', color: 'border-blue-300 bg-blue-50 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 hover:bg-blue-100', activeColor: 'border-blue-500 bg-blue-100 ring-2 ring-blue-400' },
 ]
 
 function EnvironmentTab() {
@@ -790,11 +790,11 @@ function EnvironmentTab() {
   const isConstant = data?.source === 'constant'
 
   const getBadgeColor = (type: string) => {
-    if (type === 'production') return 'bg-red-100 text-red-700 border-red-200'
+    if (type === 'production') return 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 border-red-200'
     if (type === 'staging') return 'bg-orange-100 text-orange-700 border-orange-200'
-    if (type === 'development') return 'bg-green-100 text-green-700 border-green-200'
-    if (type === 'local') return 'bg-blue-100 text-blue-700 border-blue-200'
-    return 'bg-purple-100 text-purple-700 border-purple-200'
+    if (type === 'development') return 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 border-green-200'
+    if (type === 'local') return 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 border-blue-200'
+    return 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300 border-purple-200'
   }
 
   return (

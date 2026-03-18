@@ -87,8 +87,8 @@ function HooksTab() {
   })
 
   const priorityBadge = (p: number) => {
-    if (p === 1) return 'bg-red-100 text-red-700 border-red-200'
-    if (p === 10) return 'bg-blue-100 text-blue-700 border-blue-200'
+    if (p === 1) return 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 border-red-200'
+    if (p === 10) return 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 border-blue-200'
     return 'bg-slate-100 text-slate-600 border-slate-200'
   }
 
@@ -217,11 +217,11 @@ const HTTP_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] as const
 type HttpMethod = typeof HTTP_METHODS[number]
 
 const methodColor = (m: string) => {
-  if (m === 'GET') return 'bg-green-100 text-green-700 border-green-200'
-  if (m === 'POST') return 'bg-blue-100 text-blue-700 border-blue-200'
+  if (m === 'GET') return 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 border-green-200'
+  if (m === 'POST') return 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 border-blue-200'
   if (m === 'PUT') return 'bg-amber-100 text-amber-700 border-amber-200'
-  if (m === 'PATCH') return 'bg-purple-100 text-purple-700 border-purple-200'
-  if (m === 'DELETE') return 'bg-red-100 text-red-700 border-red-200'
+  if (m === 'PATCH') return 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300 border-purple-200'
+  if (m === 'DELETE') return 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 border-red-200'
   return 'bg-slate-100 text-slate-600 border-slate-200'
 }
 
@@ -270,9 +270,9 @@ function RestTesterTab() {
   const toggleNs = (ns: string) => setOpenNs(prev => ({ ...prev, [ns]: !prev[ns] }))
 
   const statusBadge = (status: number) => {
-    if (status >= 200 && status < 300) return 'bg-green-100 text-green-700 border-green-200'
-    if (status >= 400) return 'bg-red-100 text-red-700 border-red-200'
-    return 'bg-blue-100 text-blue-700 border-blue-200'
+    if (status >= 200 && status < 300) return 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 border-green-200'
+    if (status >= 400) return 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 border-red-200'
+    return 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 border-blue-200'
   }
 
   const response = requestMutation.data as { status: number; headers: Record<string, string>; body: unknown; duration_ms: number } | undefined
@@ -684,11 +684,11 @@ function RewriteTab() {
             <div className="space-y-3">
               <div className="flex items-center gap-2">
                 {result.matched ? (
-                  <Badge className="bg-green-100 text-green-700 border-green-200 border text-xs">
+                  <Badge className="bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 border-green-200 border text-xs">
                     <CheckCircle2 className="w-3 h-3 mr-1" />Matched
                   </Badge>
                 ) : (
-                  <Badge className="bg-red-100 text-red-700 border-red-200 border text-xs">
+                  <Badge className="bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 border-red-200 border text-xs">
                     <X className="w-3 h-3 mr-1" />No Match
                   </Badge>
                 )}
@@ -825,8 +825,8 @@ function CacheTab() {
   })
 
   const backendBadge = (b: string) => {
-    if (b === 'redis') return 'bg-red-100 text-red-700 border-red-200'
-    if (b === 'wp') return 'bg-blue-100 text-blue-700 border-blue-200'
+    if (b === 'redis') return 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 border-red-200'
+    if (b === 'wp') return 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 border-blue-200'
     return 'bg-slate-100 text-slate-500 border-slate-200'
   }
 

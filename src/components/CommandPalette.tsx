@@ -9,6 +9,7 @@ import {
   type KeyboardEvent,
 } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { toast } from 'sonner'
 import { api, getConfig } from '@/lib/api'
@@ -17,11 +18,32 @@ import {
   Server, Construction, Users, Bug, Image, StickyNote,
   Settings, RotateCcw, Shield, Activity, Code2, ArrowLeftRight, Mail, HardDrive,
   Gauge, Clock, Images, FileEdit, Terminal, Search, Zap, Trash2,
-  WifiOff, Archive, Briefcase, RefreshCw, Webhook, ScanLine,
+  WifiOff, Archive, Briefcase, RefreshCw, Webhook, ScanLine, User, FileText, LayoutGrid,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 // ── Types ────────────────────────────────────────────────────────────────────
+
+interface SearchResult {
+  type: 'plugin' | 'user' | 'note' | 'audit' | 'option'
+  label: string
+  subtitle: string
+  route: string
+  icon: string
+  group: 'Search Results'
+  id: string
+}
+
+function searchResultIcon(icon: string) {
+  switch (icon) {
+    case 'puzzle':   return Puzzle
+    case 'user':     return User
+    case 'note':     return StickyNote
+    case 'activity': return Activity
+    case 'settings': return Settings
+    default:         return FileText
+  }
+}
 
 interface NavItem {
   id: string
@@ -39,7 +61,7 @@ interface ActionItem {
   action: () => Promise<void>
 }
 
-type PaletteItem = NavItem | ActionItem
+type PaletteItem = NavItem | ActionItem | SearchResult
 
 // ── Navigation items (mirrors sidebar navGroups) ─────────────────────────────
 
@@ -59,6 +81,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'performance',   label: 'Performance',     icon: Gauge,           route: '/performance',    group: 'Navigation' },
   { id: 'cron',          label: 'Cron Manager',    icon: Clock,           route: '/cron',           group: 'Navigation' },
   { id: 'content-tools', label: 'Content Tools',   icon: FileEdit,        route: '/content-tools',  group: 'Navigation' },
+  { id: 'post-types',    label: 'Post Types',      icon: LayoutGrid,      route: '/post-types',     group: 'Navigation' },
   { id: 'notes',         label: 'Notes',           icon: StickyNote,      route: '/notes',          group: 'Navigation' },
   { id: 'snippets',      label: 'Code Snippets',   icon: Code2,           route: '/snippets',       group: 'Navigation' },
   { id: 'redirects',     label: 'Redirects',       icon: ArrowLeftRight,  route: '/redirects',      group: 'Navigation' },
@@ -156,10 +179,25 @@ export function CommandPalette() {
   const { isOpen, close } = useCommandPalette()
   const navigate = useNavigate()
   const [query, setQuery] = useState('')
+  const [debouncedQuery, setDebouncedQuery] = useState('')
   const [activeIndex, setActiveIndex] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
   const listRef  = useRef<HTMLDivElement>(null)
   const config   = getConfig()
+
+  // Debounce query by 300ms for data search
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQuery(query), 300)
+    return () => clearTimeout(t)
+  }, [query])
+
+  const { data: searchData, isFetching: searchFetching } = useQuery({
+    queryKey: ['global-search', debouncedQuery],
+    queryFn: () => api.get(`/search?q=${encodeURIComponent(debouncedQuery)}`),
+    enabled: debouncedQuery.length >= 2,
+    staleTime: 10_000,
+    retry: false,
+  })
 
   // Build Quick Actions (need navigate + close in scope)
   const quickActions: ActionItem[] = [
@@ -225,10 +263,17 @@ export function CommandPalette() {
   // Build filtered list
   const q = query.toLowerCase().trim()
 
+  // Map API search results to palette items
+  const rawResults = Array.isArray((searchData as any)?.results) ? (searchData as any).results : []
+  const searchItems: SearchResult[] = rawResults.map((r: any, i: number) => ({
+    ...r,
+    group: 'Search Results' as const,
+    id: `search-${r.type}-${i}`,
+  }))
+
   let items: PaletteItem[]
 
   if (!q) {
-    // No query: recent at top, then nav, then actions
     const recentSection = recentItems.length > 0
       ? recentItems.map(n => ({ ...n, group: 'Recent' as const })) as (NavItem & { group: 'Recent' })[]
       : []
@@ -236,7 +281,7 @@ export function CommandPalette() {
   } else {
     const matchedNav     = NAV_ITEMS.filter(n => n.label.toLowerCase().includes(q) || n.route.toLowerCase().includes(q))
     const matchedActions = quickActions.filter(a => a.label.toLowerCase().includes(q))
-    items = [...matchedNav, ...matchedActions]
+    items = [...searchItems, ...matchedNav, ...matchedActions]
   }
 
   // Reset active index when items change
@@ -264,6 +309,9 @@ export function CommandPalette() {
       const navItem = item as NavItem
       addRecentPage(navItem.id)
       navigate(navItem.route)
+      close()
+    } else if (group === 'Search Results') {
+      navigate((item as SearchResult).route)
       close()
     } else {
       const actionItem = item as ActionItem
@@ -311,7 +359,7 @@ export function CommandPalette() {
           <input
             ref={inputRef}
             type="text"
-            placeholder="Search pages or actions..."
+            placeholder="Search pages, plugins, users, notes…"
             value={query}
             onChange={e => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -324,9 +372,14 @@ export function CommandPalette() {
 
         {/* Results */}
         <div ref={listRef} className="max-h-96 overflow-y-auto py-2">
-          {items.length === 0 && (
+          {items.length === 0 && !searchFetching && (
             <div className="px-4 py-8 text-center text-sm text-slate-400">
               No results for "{query}"
+            </div>
+          )}
+          {searchFetching && q.length >= 2 && (
+            <div className="px-4 py-3 flex items-center gap-2 text-xs text-slate-400">
+              <RefreshCw className="w-3 h-3 animate-spin" /> Searching data…
             </div>
           )}
 
@@ -338,7 +391,10 @@ export function CommandPalette() {
                 </span>
               </div>
               {section.items.map(({ item, index }) => {
-                const Icon = item.icon
+                const isSearch = (item.group as string) === 'Search Results'
+                const Icon = isSearch
+                  ? searchResultIcon((item as SearchResult).icon)
+                  : (item as NavItem | ActionItem).icon
                 const isActive = index === activeIndex
                 return (
                   <button
@@ -362,10 +418,25 @@ export function CommandPalette() {
                     )}>
                       <Icon className="w-3.5 h-3.5" />
                     </span>
-                    <span className="flex-1 truncate">{item.label}</span>
+                    <span className="flex-1 min-w-0">
+                      <span className="block truncate">{item.label}</span>
+                      {isSearch && (item as SearchResult).subtitle && (
+                        <span className="block truncate text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
+                          {(item as SearchResult).subtitle}
+                        </span>
+                      )}
+                    </span>
                     {((item.group as string) === 'Navigation' || (item.group as string) === 'Recent') && (
                       <span className="text-[10px] text-slate-400 font-mono shrink-0">
                         {(item as NavItem).route === '/' ? '/' : (item as NavItem).route.replace('/', '')}
+                      </span>
+                    )}
+                    {isSearch && (
+                      <span className={cn(
+                        'text-[9px] font-semibold uppercase tracking-wide shrink-0 px-1.5 py-0.5 rounded',
+                        isActive ? 'bg-blue-200 dark:bg-blue-800 text-blue-700 dark:text-blue-300' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
+                      )}>
+                        {(item as SearchResult).type}
                       </span>
                     )}
                   </button>

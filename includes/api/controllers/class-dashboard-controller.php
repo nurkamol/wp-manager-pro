@@ -129,6 +129,57 @@ class Dashboard_Controller {
         ], 200 );
     }
 
+    public static function get_uptime( WP_REST_Request $request ) {
+        $url   = home_url( '/' );
+        $start = microtime( true );
+
+        $response = wp_remote_get( $url, [
+            'timeout'   => 8,
+            'sslverify' => false,
+            'blocking'  => true,
+        ] );
+
+        $ms   = (int) round( ( microtime( true ) - $start ) * 1000 );
+        $code = is_wp_error( $response ) ? 0 : wp_remote_retrieve_response_code( $response );
+        $ok   = ( $code >= 200 && $code < 400 );
+
+        return new WP_REST_Response( [
+            'ok'     => $ok,
+            'code'   => $code,
+            'ms'     => $ms,
+            'url'    => $url,
+            'error'  => is_wp_error( $response ) ? $response->get_error_message() : null,
+        ], 200 );
+    }
+
+    public static function get_widgets( WP_REST_Request $request ) {
+        // Recent audit events (last 5)
+        global $wpdb;
+        $table  = $wpdb->prefix . 'wmp_audit_log';
+        $exists = $wpdb->get_var( "SHOW TABLES LIKE '{$table}'" ) === $table;
+        $audit  = [];
+        if ( $exists ) {
+            $audit = $wpdb->get_results(
+                "SELECT action, object_type, object_name, user_login, created_at FROM `{$table}` ORDER BY created_at DESC LIMIT 5",
+                ARRAY_A
+            );
+        }
+
+        // Cache status
+        $cache_enabled  = wp_using_ext_object_cache();
+        $transient_count = (int) $wpdb->get_var(
+            "SELECT COUNT(*) FROM {$wpdb->options} WHERE option_name LIKE '_transient_%' AND option_name NOT LIKE '_transient_timeout_%'"
+        );
+
+        return new WP_REST_Response( [
+            'audit'  => $audit,
+            'cache'  => [
+                'enabled'         => $cache_enabled,
+                'transient_count' => $transient_count,
+            ],
+        ], 200 );
+    }
+
     private static function get_dir_size( $path ) {
         $size = 0;
         if ( ! is_dir( $path ) ) return $size;

@@ -5,7 +5,7 @@ import {
   Server, Construction, Users, Bug, Image, StickyNote,
   ChevronLeft, ChevronRight, ExternalLink, Settings, RotateCcw,
   Sun, Moon, Monitor, Shield, Activity, Code2, ArrowLeftRight, Mail, HardDrive,
-  PanelLeftClose, PanelLeftOpen, Gauge, Clock, Images, FileEdit, Terminal, Keyboard, RefreshCw, ScanLine, Briefcase, Webhook,
+  PanelLeftClose, PanelLeftOpen, Gauge, Clock, Images, FileEdit, Terminal, Keyboard, RefreshCw, ScanLine, Briefcase, Webhook, LayoutGrid,
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { getConfig, getBranding, api } from '@/lib/api'
@@ -13,6 +13,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import type { Theme, ThemePreference } from '@/hooks/useTheme'
 import { useWpAdminSidebar } from '@/hooks/useWpAdminSidebar'
 import { useCommandPalette } from '@/components/CommandPalette'
+import { NotificationBell } from '@/components/NotificationPanel'
 
 type NavItem = {
   to: string
@@ -61,6 +62,7 @@ const navGroups: NavGroup[] = [
       { to: '/performance', icon: Gauge, label: 'Performance' },
       { to: '/cron', icon: Clock, label: 'Cron Manager' },
       { to: '/content-tools', icon: FileEdit, label: 'Content Tools' },
+      { to: '/post-types', icon: LayoutGrid, label: 'Post Types' },
       { to: '/notes', icon: StickyNote, label: 'Notes' },
     ],
   },
@@ -318,6 +320,7 @@ export function Sidebar({ collapsed, onToggle, theme, preference, onToggleTheme 
                 Command Palette (⌘K)
               </TooltipContent>
             </Tooltip>
+            <NotificationBell collapsed={false} />
           </div>
           <div className="flex items-center justify-between">
             <a
@@ -390,6 +393,7 @@ export function Sidebar({ collapsed, onToggle, theme, preference, onToggleTheme 
               Command Palette (⌘K)
             </TooltipContent>
           </Tooltip>
+          <NotificationBell collapsed={true} />
         </div>
       )}
     </aside>

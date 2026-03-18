@@ -58,6 +58,18 @@
   }
 }
 
+/* Force common elements to inherit color from their Tailwind parent so WP admin's
+   bare type selectors (specificity 0-0-1) can't bleed through. This selector has
+   specificity 0-1-1 — beats WP admin type rules but LOSES to Tailwind utility
+   classes (0-2-0), so explicit text-* / dark:text-* classes always win. */
+.wmp-app h1, .wmp-app h2, .wmp-app h3,
+.wmp-app h4, .wmp-app h5, .wmp-app h6,
+.wmp-app p, .wmp-app span, .wmp-app label,
+.wmp-app td, .wmp-app th, .wmp-app li,
+.wmp-app code, .wmp-app pre, .wmp-app a {
+  color: inherit;
+}
+
 /* WordPress admin reset overrides */
 #wp-manager-pro-root {
   all: initial;
