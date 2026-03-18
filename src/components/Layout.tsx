@@ -17,7 +17,7 @@ export function Layout() {
 
   return (
     <TooltipProvider>
-      <div className={`wmp-app flex h-screen overflow-hidden ${theme === 'dark' ? 'bg-slate-900' : 'bg-slate-50'}`}>
+      <div className={`wmp-app flex h-screen overflow-hidden ${theme === 'dark' ? 'bg-slate-800' : 'bg-slate-50'}`}>
         <Sidebar collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)} theme={theme} preference={preference} onToggleTheme={toggle} />
         <main className="flex-1 flex flex-col overflow-hidden">
           {showPermalinkWarn && (

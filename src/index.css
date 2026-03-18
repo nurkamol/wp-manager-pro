@@ -27,25 +27,25 @@
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
+    --background: 217 33% 15%;
+    --foreground: 210 40% 96%;
+    --card: 216 30% 20%;
+    --card-foreground: 210 40% 96%;
+    --popover: 216 30% 20%;
+    --popover-foreground: 210 40% 96%;
+    --primary: 217.2 91.2% 62%;
     --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
+    --secondary: 217.2 28% 26%;
+    --secondary-foreground: 210 40% 96%;
+    --muted: 217.2 28% 24%;
+    --muted-foreground: 215 20% 72%;
+    --accent: 217.2 28% 26%;
+    --accent-foreground: 210 40% 96%;
+    --destructive: 0 72% 42%;
     --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 48%;
+    --border: 217 28% 30%;
+    --input: 217 28% 24%;
+    --ring: 224.3 76.3% 55%;
   }
 }
 
@@ -130,71 +130,82 @@
 
 /* Plugin/theme rows that use hardcoded bg-white */
 .dark .bg-white {
-  background-color: hsl(217.2 32.6% 17.5%);
-  border-color: hsl(217.2 32.6% 25%);
+  background-color: hsl(216 30% 22%);
+  border-color: hsl(217 28% 32%);
 }
 
 /* Slate-50 surfaces (search dropdowns, hover states) */
 .dark .hover\:bg-slate-50:hover {
-  background-color: hsl(217.2 32.6% 22%);
+  background-color: hsl(216 28% 26%);
 }
 
 /* Input/textarea backgrounds in dark mode */
 .dark input:not([type="checkbox"]):not([type="radio"]),
 .dark textarea,
 .dark select {
-  background-color: hsl(217.2 32.6% 17.5%);
-  color: hsl(210 40% 98%);
-  border-color: hsl(217.2 32.6% 25%);
+  background-color: hsl(217 28% 22%);
+  color: hsl(210 40% 95%);
+  border-color: hsl(217 28% 32%);
 }
 
 /* Scrollbar in dark mode */
 .dark ::-webkit-scrollbar-thumb {
-  background: hsl(217.2 32.6% 30%);
+  background: hsl(217 28% 36%);
 }
 
 /* Table rows in dark mode */
 .dark tr:hover td {
-  background-color: hsl(217.2 32.6% 20%) !important;
+  background-color: hsl(217 28% 26%) !important;
 }
 
 /* Code editor in dark mode */
 .dark .code-editor {
-  background-color: hsl(222.2 84% 8%);
-  color: hsl(210 40% 90%);
+  background-color: hsl(217 33% 12%);
+  color: hsl(210 40% 92%);
 }
 
 /* Drop zone in dark mode */
 .dark .border-dashed {
-  border-color: hsl(217.2 32.6% 30%);
+  border-color: hsl(217 28% 36%);
 }
 .dark .border-dashed:hover {
-  background-color: hsl(217.2 32.6% 20%);
+  background-color: hsl(217 28% 24%);
 }
 
 /* Blue-50 highlights become dark blue tints */
 .dark .bg-blue-50 {
-  background-color: hsl(217 50% 15%);
+  background-color: hsl(217 40% 20%);
 }
 .dark .border-blue-100 {
-  border-color: hsl(217 50% 25%);
+  border-color: hsl(217 40% 32%);
 }
 
 /* Slate-100 subtle surfaces */
 .dark .bg-slate-100 {
-  background-color: hsl(217.2 32.6% 20%);
+  background-color: hsl(217 28% 24%);
+}
+
+/* Slate-50 backgrounds */
+.dark .bg-slate-50 {
+  background-color: hsl(217 28% 18%);
 }
 
 /* Text color fixes in dark mode */
 .dark .text-slate-900 {
-  color: hsl(210 40% 95%);
+  color: hsl(210 40% 96%);
+}
+.dark .text-slate-800 {
+  color: hsl(210 35% 90%);
 }
 .dark .text-slate-700 {
-  color: hsl(210 40% 85%);
+  color: hsl(210 30% 84%);
 }
 .dark .text-slate-600 {
-  color: hsl(210 40% 75%);
+  color: hsl(210 25% 76%);
 }
 .dark .text-slate-500 {
-  color: hsl(210 40% 60%);
+  color: hsl(210 20% 68%);
+}
+.dark .text-slate-400 {
+  color: hsl(210 18% 60%);
 }
