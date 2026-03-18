@@ -46,8 +46,8 @@
     // Styles
     var style = document.createElement('style');
     style.textContent = [
-      '#wmp-palette-backdrop{position:fixed;inset:0;z-index:999998;background:rgba(0,0,0,.55);backdrop-filter:blur(2px)}',
-      '#wmp-palette{position:fixed;left:50%;top:18%;transform:translateX(-50%);z-index:999999;',
+      '#wmp-palette-backdrop{position:fixed;inset:0;z-index:99999998;background:rgba(0,0,0,.55);backdrop-filter:blur(2px)}',
+      '#wmp-palette{position:fixed;left:50%;top:18%;transform:translateX(-50%);z-index:99999999;',
         'width:min(580px,92vw);background:#1e2535;border:1px solid #334155;border-radius:12px;',
         'box-shadow:0 24px 64px rgba(0,0,0,.6);overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}',
       '#wmp-palette-search{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid #334155}',
@@ -237,15 +237,23 @@
 
   // ── Admin bar button click ─────────────────────────────────────────────────
 
-  document.addEventListener('DOMContentLoaded', function () {
-    var btn = document.getElementById('wp-admin-bar-wmp-launch');
+  function attachAdminBarBtn() {
+    var li  = document.getElementById('wp-admin-bar-wmp-launch');
+    var btn = li ? (li.querySelector('a.ab-item') || li) : null;
     if (btn) {
       btn.addEventListener('click', function (e) {
-        if (window.location.href.indexOf('page=wp-manager-pro') !== -1) return;
         e.preventDefault();
+        e.stopPropagation();
+        if (window.location.href.indexOf('page=wp-manager-pro') !== -1) return;
         open();
-      });
+      }, true); // capture phase — fires before any other handler
     }
-  });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', attachAdminBarBtn);
+  } else {
+    attachAdminBarBtn();
+  }
 
 })();

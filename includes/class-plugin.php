@@ -266,8 +266,8 @@ class Plugin {
         $bar->add_node( [
             'id'    => 'wmp-launch',
             'title' => '<span class="ab-icon dashicons dashicons-search" style="font-size:16px;line-height:32px;vertical-align:middle;"></span><span style="vertical-align:middle;">WPMGR</span>',
-            'href'  => $plugin_url,
-            'meta'  => [ 'title' => 'Open Command Palette (Ctrl+Shift+P)' ],
+            'href'  => '#',
+            'meta'  => [ 'title' => 'Open Command Palette (Ctrl+Shift+P)', 'class' => 'wmp-launcher' ],
         ] );
     }
 
