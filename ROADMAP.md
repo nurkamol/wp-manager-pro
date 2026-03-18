@@ -2,7 +2,7 @@
 
 This document outlines the planned feature development for WP Manager Pro. Releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Minor versions (`1.x.0`) add new features; patch versions (`1.x.y`) deliver bug fixes and polish.
 
-> **Current version:** 3.0.0 — last updated 2026-03-19
+> **Current version:** 3.1.0 — last updated 2026-03-19
 
 ---
 
@@ -38,13 +38,14 @@ This document outlines the planned feature development for WP Manager Pro. Relea
 | [2.9.3] | Bug fixes: Image Tools status cards (GD/ImageMagick/WebP/AVIF) all showing "Not available" due to `Imagick::queryFormats()` exception; Malware Scanner self-flagging own files (false positive); Malware Scanner file Inspect modal + Quarantine/Delete/Ignore actions; Sidebar environment badge redesign; Cron Manager spacing normalised |
 | [2.9.4] | Deep root-cause fix for Media Library modal never opening: Rollup minifier named Lucide icon `const wp`, shadowing `window.wp` globally; fixed by switching to IIFE build format; `wmpOpenMedia` bridge hardened to use `window.wp` explicitly |
 | [3.0.0] | Dark Mode Auto-Sync, Dashboard Widgets (configurable grid), Notification Centre (bell + slide-out panel), Mobile/Tablet Layout (bottom nav, auto-collapse), Global Search (live search in Command Palette), System-wide Command Palette overlay (WPMGR admin bar button), Custom Post Type Manager (CPTs + taxonomies UI) |
+| [3.1.0] | Plugin Health Check (abandoned, compatibility, CVE, quality flags via WP.org + WPScan APIs, 24 h cached), WPMGR admin bar button polished, CPT/taxonomy pages added to Command Palette |
 
 ---
 
-### v3.1.0 — Performance & Monitoring
-*Focus: deeper site health insights*
+### v3.2.0 — Monitoring & Integrations
+*Focus: outgoing integrations and automated reporting*
 
-- **Scheduled Reports** — weekly/monthly HTML email digest of site health, security score, backup status
+- **Scheduled Reports** — weekly/monthly HTML email digest of site health, security score, backup status, top audit events
 - **Webhook Manager** — register outgoing webhooks triggered by WP events (publish post, user register, backup complete, etc.)
 - **REST API Key Manager** — generate and manage application passwords / API keys for external integrations
 - **WooCommerce Tools** — order stats, stock alerts, coupon manager (shown only when WooCommerce is active)
@@ -56,13 +57,9 @@ This document outlines the planned feature development for WP Manager Pro. Relea
 | Idea | Notes |
 |------|-------|
 | **Multisite / Network Support** | Network dashboard, network plugin/theme manager, per-site switching |
-| **Webhook Manager** | Register outgoing webhooks triggered by WP events (publish post, user register, etc.) |
-| **REST API Key Manager** | Generate and manage application passwords / API keys for external integrations |
-| **WooCommerce Tools** | Order stats, stock alerts, coupon manager — shown when WooCommerce is active |
 | **Keyboard Shortcuts** | `S` to save, `Esc` to close dialogs, `?` for help overlay |
 | **WP-CLI Runner** | Execute WP-CLI commands from the browser UI with live output |
 | **Template Hierarchy Viewer** | Show which template file is currently rendering the page |
-| **Plugin Health Check** | Flag plugins known for conflicts, security issues, or poor performance |
 
 ---
 
@@ -110,4 +107,5 @@ Have a feature request or want to vote on a backlog item? [Open an issue](https:
 [2.9.2]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v2.9.2
 [2.9.3]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v2.9.3
 [2.9.4]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v2.9.4
+[3.1.0]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v3.1.0
 [3.0.0]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v3.0.0

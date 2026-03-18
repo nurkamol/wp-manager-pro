@@ -30,6 +30,38 @@ interface BrandingSettings {
 // ── Changelog data ─────────────────────────────────────────────────────────────
 const changelog: { version: string; date: string; features: string[] }[] = [
   {
+    version: '3.1.0',
+    date: '2026-03-19',
+    features: [
+      'Plugin Health Check — new "Health" tab on the Plugins page auditing every installed plugin against WordPress.org and WPScan data',
+      'Abandoned plugin detection — flags plugins with no update in 2+ years using WordPress.org API (last_updated field)',
+      'Version compatibility check — flags plugins not tested with the current WordPress version (tested_up_to < installed WP)',
+      'Low quality flag — highlights plugins rated below 3★ or with fewer than 10 active installs',
+      'CVE / vulnerability overlay — merges WPScan vulnerability data into each plugin row (reuses existing API key)',
+      'Not on WP.org — premium or custom plugins shown as "Unverifiable" with a neutral badge',
+      'Health results cached 24 hours server-side as a transient; manual "Re-scan" button busts the cache',
+      'Admin bar WPMGR button renamed and icon aligned — opens the global Command Palette overlay directly',
+    ],
+  },
+  {
+    version: '3.0.0',
+    date: '2026-03-19',
+    features: [
+      'Dark Mode Auto-Sync — detects OS prefers-color-scheme on load and toggles dark/light automatically; manual override still available in Settings',
+      'Dashboard Widgets — configurable widget grid (8 widgets); toggle visibility per widget via Customize panel; preferences saved in localStorage',
+      'New dashboard widgets: Uptime Ping (checks site reachability), Cache Status (object cache type + transient count), Recent Audit Events (last 5 actions)',
+      'Notification Centre — persistent bell icon in sidebar header; slide-out panel lists unread site alerts (core/plugin updates, security events); mark all read',
+      'Mobile/Tablet Layout — sidebar auto-collapses on tablet (768–1023 px); full bottom navigation bar on mobile (<768 px) with 4 primary items + "More" drawer',
+      'Bottom nav "More" drawer lists all 24 pages in a 3-column grid with animated slide-up sheet',
+      'Global Search — Command Palette now searches plugins, users, notes, and audit log in real time via REST API with 300 ms debounce',
+      'System-wide Command Palette — WPMGR admin bar button and keyboard shortcut open a standalone vanilla-JS overlay on any WP admin page (no navigation to the plugin page required)',
+      'Custom Post Type Manager — register, edit, and delete custom post types and taxonomies from the UI; supports labels, slug, icon, supports flags, public/REST API/archive toggles',
+      'Sheet and Dialog dark mode fixed — Radix UI portals now render inside #wp-manager-pro-root so they inherit the dark class correctly',
+      'Tab bars scroll horizontally on mobile instead of wrapping',
+      'Dark mode badge visibility fixed across Audit Log, Content Tools, Snippets, Dev Tools, and Developer Utilities',
+    ],
+  },
+  {
     version: '2.9.4',
     date: '2026-03-18',
     features: [
@@ -380,7 +412,23 @@ const faq: { q: string; a: string }[] = [
   },
   {
     q: 'How do I open the Command Palette and can I change its shortcut?',
-    a: 'Press Cmd+Shift+P (Mac) or Ctrl+Shift+P (Windows/Linux) from anywhere inside the plugin to open the Command Palette. You can change the shortcut to ⌘ Shift K or ⌘ K in Settings → Branding → Command Palette Shortcut. The shortcut is saved in localStorage so it takes effect immediately without a page reload. Note: ⌘ K conflicts with WordPress\'s own command palette on admin pages — the default ⌘ Shift P avoids this.',
+    a: 'Press Cmd+Shift+P (Mac) or Ctrl+Shift+P (Windows/Linux) from anywhere inside the plugin to open the Command Palette. Since v3.0.0 you can also press the shortcut from any WP admin page — the WPMGR button in the admin bar opens the same overlay without navigating to the plugin. You can change the shortcut to ⌘ Shift K or ⌘ K in Settings → Branding → Command Palette Shortcut. The shortcut is saved in localStorage so it takes effect immediately without a page reload.',
+  },
+  {
+    q: 'What does Plugin Health Check scan for?',
+    a: 'Health Check (added in v3.1.0) queries the WordPress.org Plugins API for every installed plugin and checks four things: (1) Abandoned — no update in more than 2 years; (2) Compatibility — plugin\'s "Tested up to" value is lower than your current WordPress version; (3) Quality — average rating below 3★; (4) Vulnerabilities — known CVEs from the WPScan API (requires your WPScan API key). Premium and custom plugins not listed on WP.org are flagged as "Unverifiable". Results are cached for 24 hours; click "Re-scan" to force a fresh check.',
+  },
+  {
+    q: 'How do I use the Custom Post Type Manager?',
+    a: 'Go to Post Types in the sidebar. Click "+ New Post Type" to open the creation dialog — fill in the singular label, plural label, and slug (max 20 chars, lowercase/underscores). Choose a dashicon from the picker, select which features the CPT supports (Title, Editor, Featured Image, etc.), and toggle Public, REST API, and Archive Page. Click Create. The CPT is registered immediately via a WordPress option and loads on every request via the init hook. Repeat the same steps under the Taxonomies tab to create custom taxonomies and attach them to any registered post type.',
+  },
+  {
+    q: 'How do Dashboard Widgets work and how do I customise them?',
+    a: 'The Dashboard shows up to 8 widgets: Quick Stats, Site Status, System Resources, Recent Posts, Quick Actions, Recent Audit Events, Cache Status, and Uptime Ping. Click the "Customize" button in the top-right of the Dashboard to open the widget panel, then toggle each widget on or off. Your choices are saved in localStorage so they persist across page reloads without hitting the server.',
+  },
+  {
+    q: 'What are Notifications and how does the Notification Centre work?',
+    a: 'The bell icon in the sidebar header shows a badge with the count of unread alerts. Alerts are generated server-side for events such as pending plugin/theme/core updates, failed cron jobs, and security scanner findings. Click the bell to open the slide-out Notification Panel — each alert shows its type, message, and timestamp. Click "Mark all read" to clear the badge. Alerts are stored in a custom database table (wp_wmp_notifications) and fetched via REST API.',
   },
   {
     q: 'Is it safe to edit wp-config.php and .htaccess from inside the plugin?',

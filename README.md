@@ -2,7 +2,7 @@
 
 > A comprehensive, agency-ready WordPress management suite — built with React 19, TypeScript, and the WordPress REST API.
 
-![Version](https://img.shields.io/badge/version-3.0.0-blue)
+![Version](https://img.shields.io/badge/version-3.1.0-blue)
 ![WordPress](https://img.shields.io/badge/WordPress-5.9%2B-21759b)
 ![PHP](https://img.shields.io/badge/PHP-7.4%2B-8892be)
 ![License](https://img.shields.io/badge/license-GPL--2.0%2B-green)
@@ -57,17 +57,27 @@ All operations happen through a secured REST API (`wp-manager-pro/v1`) that requ
 
 ---
 
-## What's New in v3.0.0 — Notification Centre + Major UI Refresh
+## What's New in v3.1.0 — Plugin Health Check
+
+| Feature | Description |
+|---------|-------------|
+| 🩺 Plugin Health Check | New "Health" tab on the Plugins page — audits every plugin for abandonment, WP compatibility, low ratings, and known CVEs |
+| 🕰️ Abandoned Detection | Flags plugins not updated in 2+ years using WordPress.org API |
+| 🔒 CVE Overlay | Merges WPScan vulnerability data into each plugin row (reuses your existing API key) |
+| ♻️ Smart Caching | Results cached 24 h server-side; one-click Re-scan to force a fresh check |
+| ⌨️ WPMGR Admin Bar | Icon aligned, label shortened — one click opens the global Command Palette overlay without navigating to the plugin |
+
+### Also in v3.0.0 — Notification Centre + Major UI Refresh
 
 | Feature | Description |
 |---------|-------------|
 | 🌙 Dark Mode Auto-Sync | Three-state Light / Dark / Auto toggle — Auto follows OS `prefers-color-scheme` with no flash on load |
 | 📊 Dashboard Widgets | Configurable widget grid (8 widgets): Quick Stats, Site Status, System Resources, Recent Posts, Quick Actions, Audit Events, Cache Status, Uptime Ping — show/hide via Customize panel |
-| 🔔 Notification Centre | Persistent bell icon with unread count; slide-out panel for alerts (backup errors, cron failures, lockouts, SSL expiry, vulnerability alerts) with mark-read and dismiss |
+| 🔔 Notification Centre | Persistent bell icon with unread count; slide-out panel for alerts with mark-read and dismiss |
 | 📱 Mobile / Tablet Layout | Bottom nav bar on mobile with full-page "More" drawer; sidebar auto-collapses to icon-rail on tablet |
 | 🔍 Global Search | Live search in Command Palette across plugins, users, notes, audit log, and wp_options as you type |
-| ⌨️ System-wide Command Palette | Standalone overlay injected into all WP admin pages — open from the **WPMGR** admin bar button or keyboard shortcut from anywhere in wp-admin |
-| 📦 Custom Post Type Manager | Register, edit, and delete CPTs and taxonomies from the UI — dashicons picker, supports selector, Public / REST / Archive toggles, taxonomy-to-CPT attachment |
+| ⌨️ System-wide Command Palette | Standalone overlay injected into all WP admin pages — open from the WPMGR admin bar button or keyboard shortcut from anywhere in wp-admin |
+| 📦 Custom Post Type Manager | Register, edit, and delete CPTs and taxonomies from the UI — dashicons picker, supports selector, Public / REST / Archive toggles |
 
 ---
 

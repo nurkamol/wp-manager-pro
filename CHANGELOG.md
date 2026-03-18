@@ -7,6 +7,26 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [3.1.0] — 2026-03-19
+
+### Added
+- **Plugin Health Check** — new "Health" tab on the Plugins page; audits every installed plugin against WordPress.org and WPScan data
+- Abandoned plugin detection — flags plugins with no update in more than 2 years (WordPress.org `last_updated` field)
+- Version compatibility check — flags plugins whose `tested_up_to` value is lower than the installed WordPress version
+- Low quality flag — highlights plugins rated below 3★ or with fewer than 10 active installs
+- CVE / vulnerability overlay — merges WPScan API data into each plugin health row (reuses existing API key from Security Scanner)
+- "Unverifiable" badge for premium or custom plugins not listed on WordPress.org
+- Health results cached 24 hours server-side as a transient; manual **Re-scan** button busts the cache instantly
+- Admin bar **WPMGR** button: icon aligned, label shortened; single click opens the global Command Palette overlay without navigating to the plugin page
+- Post Types and Taxonomies pages added to global Command Palette navigation items
+
+### Fixed
+- Dialog and Sheet `x` close button invisible in dark mode — increased contrast to `text-slate-300`
+- Post Types page left/right section spacing normalised to match all other pages (`px-6 py-6` wrapper)
+- Dashicon icon grid colours corrected for dark mode (white icons on dark tile background)
+
+---
+
 ## [3.0.0] — 2026-03-19
 
 ### Added
@@ -870,3 +890,6 @@ First public release of WP Manager Pro — a comprehensive, agency-ready WordPre
 [2.3.1]: https://github.com/nurkamol/wp-manager-pro/compare/v2.3.0...v2.3.1
 [2.2.0]: https://github.com/nurkamol/wp-manager-pro/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/nurkamol/wp-manager-pro/compare/v2.0.0...v2.1.0
+
+[3.1.0]: https://github.com/nurkamol/wp-manager-pro/compare/v3.0.0...v3.1.0
+[3.0.0]: https://github.com/nurkamol/wp-manager-pro/compare/v2.9.4...v3.0.0
