@@ -13,12 +13,12 @@ const isPlainPermalinks =
 export function Layout() {
   const [collapsed, setCollapsed] = useState(false)
   const [showPermalinkWarn, setShowPermalinkWarn] = useState(isPlainPermalinks)
-  const { theme, toggle } = useTheme()
+  const { theme, preference, toggle } = useTheme()
 
   return (
     <TooltipProvider>
       <div className={`wmp-app flex h-screen overflow-hidden ${theme === 'dark' ? 'bg-slate-900' : 'bg-slate-50'}`}>
-        <Sidebar collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)} theme={theme} onToggleTheme={toggle} />
+        <Sidebar collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)} theme={theme} preference={preference} onToggleTheme={toggle} />
         <main className="flex-1 flex flex-col overflow-hidden">
           {showPermalinkWarn && (
             <div className="flex items-center gap-3 px-4 py-2.5 bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-sm flex-shrink-0">

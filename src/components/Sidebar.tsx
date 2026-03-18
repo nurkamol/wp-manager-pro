@@ -4,13 +4,13 @@ import {
   LayoutDashboard, Puzzle, Palette, FolderOpen, Database,
   Server, Construction, Users, Bug, Image, StickyNote,
   ChevronLeft, ChevronRight, ExternalLink, Settings, RotateCcw,
-  Sun, Moon, Shield, Activity, Code2, ArrowLeftRight, Mail, HardDrive,
+  Sun, Moon, Monitor, Shield, Activity, Code2, ArrowLeftRight, Mail, HardDrive,
   PanelLeftClose, PanelLeftOpen, Gauge, Clock, Images, FileEdit, Terminal, Keyboard, RefreshCw, ScanLine, Briefcase, Webhook,
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { getConfig, getBranding, api } from '@/lib/api'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import type { Theme } from '@/hooks/useTheme'
+import type { Theme, ThemePreference } from '@/hooks/useTheme'
 import { useWpAdminSidebar } from '@/hooks/useWpAdminSidebar'
 import { useCommandPalette } from '@/components/CommandPalette'
 
@@ -96,6 +96,7 @@ interface SidebarProps {
   collapsed: boolean
   onToggle: () => void
   theme: Theme
+  preference: ThemePreference
   onToggleTheme: () => void
 }
 
@@ -115,7 +116,19 @@ function getEnvDotClass(type: string): string {
   return 'bg-purple-400'
 }
 
-export function Sidebar({ collapsed, onToggle, theme, onToggleTheme }: SidebarProps) {
+const themeIcon = (pref: ThemePreference, size: string) => {
+  if (pref === 'dark') return <Sun className={size} />
+  if (pref === 'auto') return <Monitor className={size} />
+  return <Moon className={size} />
+}
+
+const themeLabel = (pref: ThemePreference) => {
+  if (pref === 'light') return 'Dark mode'
+  if (pref === 'dark') return 'Auto (system)'
+  return 'Light mode'
+}
+
+export function Sidebar({ collapsed, onToggle, theme, preference, onToggleTheme }: SidebarProps) {
   const config = getConfig()
   const branding = getBranding()
   const { hidden: wpSidebarHidden, toggle: toggleWpSidebar } = useWpAdminSidebar()
@@ -282,13 +295,13 @@ export function Sidebar({ collapsed, onToggle, theme, onToggleTheme }: SidebarPr
                 <button
                   onClick={onToggleTheme}
                   className="p-1.5 rounded-md text-slate-400 hover:text-white hover:bg-slate-700/50 transition-colors shrink-0"
-                  aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+                  aria-label={themeLabel(preference)}
                 >
-                  {theme === 'dark' ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
+                  {themeIcon(preference, 'w-3.5 h-3.5')}
                 </button>
               </TooltipTrigger>
               <TooltipContent side="top">
-                {theme === 'dark' ? 'Light mode' : 'Dark mode'}
+                {themeLabel(preference)}
               </TooltipContent>
             </Tooltip>
             <Tooltip>
@@ -354,13 +367,13 @@ export function Sidebar({ collapsed, onToggle, theme, onToggleTheme }: SidebarPr
               <button
                 onClick={onToggleTheme}
                 className="p-1.5 rounded-md text-slate-400 hover:text-white hover:bg-slate-700/50 transition-colors"
-                aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+                aria-label={themeLabel(preference)}
               >
-                {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                {themeIcon(preference, 'w-4 h-4')}
               </button>
             </TooltipTrigger>
             <TooltipContent side="right">
-              {theme === 'dark' ? 'Light mode' : 'Dark mode'}
+              {themeLabel(preference)}
             </TooltipContent>
           </Tooltip>
           <Tooltip>
