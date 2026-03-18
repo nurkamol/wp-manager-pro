@@ -149,6 +149,11 @@ class Routes {
             'callback'            => [ Plugins_Controller::class, 'download_export' ],
             'permission_callback' => [ self::class, 'admin_permission' ],
         ] );
+        register_rest_route( $namespace, '/plugins/health', [
+            'methods'             => 'GET',
+            'callback'            => [ Plugins_Controller::class, 'get_health' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
 
         // Themes.
         register_rest_route( $namespace, '/themes', [

@@ -15,6 +15,7 @@ import {
   Search, Power, Trash2, Download, RefreshCw, AlertTriangle,
   Star, Upload, Package, ArrowUpCircle, CheckCircle2, History,
   X, CheckSquare, Square, Minus, FileArchive, ChevronDown,
+  ShieldCheck, ShieldAlert, ShieldX, ShieldQuestion, Info,
 } from 'lucide-react'
 import { stripHtml, truncate } from '@/lib/utils'
 
@@ -44,6 +45,226 @@ interface QueueItem {
   file: File
   status: 'pending' | 'uploading' | 'done' | 'error'
   message?: string
+}
+
+// ── Health Check types ────────────────────────────────────────────────────────
+
+type HealthStatus = 'healthy' | 'warning' | 'critical' | 'unknown'
+
+interface HealthIssue {
+  type: string
+  level: 'info' | 'warning' | 'critical'
+  message: string
+  cvss?: number | null
+  cve?: string | null
+}
+
+interface PluginHealth {
+  file: string
+  slug: string
+  name: string
+  version: string
+  active: boolean
+  status: HealthStatus
+  issues: HealthIssue[]
+  wporg: {
+    rating: number | null
+    num_ratings: number | null
+    active_installs: number | null
+    last_updated: string | null
+    tested: string | null
+  } | null
+}
+
+interface HealthData {
+  summary: { total: number; critical: number; warning: number; unknown: number; healthy: number; cached_at: string }
+  plugins: PluginHealth[]
+}
+
+const STATUS_CONFIG: Record<HealthStatus, { icon: React.ElementType; color: string; bg: string; label: string }> = {
+  critical: { icon: ShieldX,        color: 'text-red-500',    bg: 'bg-red-50 dark:bg-red-900/20',    label: 'Critical' },
+  warning:  { icon: ShieldAlert,    color: 'text-amber-500',  bg: 'bg-amber-50 dark:bg-amber-900/20', label: 'Warning'  },
+  unknown:  { icon: ShieldQuestion, color: 'text-slate-400',  bg: 'bg-slate-50 dark:bg-slate-800',   label: 'Unknown'  },
+  healthy:  { icon: ShieldCheck,    color: 'text-green-500',  bg: 'bg-green-50 dark:bg-green-900/20', label: 'Healthy'  },
+}
+
+const ISSUE_LEVEL_COLOR: Record<string, string> = {
+  critical: 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800',
+  warning:  'text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800',
+  info:     'text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700',
+}
+
+function HealthCheck() {
+  const [filter, setFilter] = useState<HealthStatus | 'all'>('all')
+  const [search, setSearch] = useState('')
+
+  const { data, isLoading, isFetching, refetch } = useQuery<HealthData>({
+    queryKey: ['plugins-health'],
+    queryFn: () => api.get('/plugins/health'),
+    staleTime: Infinity, // only refetch on manual trigger
+    retry: false,
+  })
+
+  function handleRescan() {
+    refetch()
+    // bust the server cache
+    api.get('/plugins/health?bust=1').then(() => refetch())
+  }
+
+  const filtered = (data?.plugins ?? []).filter(p => {
+    if (filter !== 'all' && p.status !== filter) return false
+    if (search && !p.name.toLowerCase().includes(search.toLowerCase())) return false
+    return true
+  })
+
+  return (
+    <div className="space-y-5">
+      {/* Summary bar */}
+      {data && (
+        <div className="grid grid-cols-4 gap-3">
+          {(['critical', 'warning', 'unknown', 'healthy'] as HealthStatus[]).map(s => {
+            const cfg = STATUS_CONFIG[s]
+            const Icon = cfg.icon
+            const count = data.summary[s]
+            return (
+              <button
+                key={s}
+                onClick={() => setFilter(filter === s ? 'all' : s)}
+                className={`flex items-center gap-3 p-3 rounded-lg border transition-all text-left
+                  ${filter === s ? 'ring-2 ring-blue-500' : ''}
+                  ${cfg.bg} border-transparent dark:border-slate-700`}
+              >
+                <Icon className={`h-6 w-6 flex-shrink-0 ${cfg.color}`} />
+                <div>
+                  <p className="text-xl font-bold text-slate-900 dark:text-white leading-none">{count}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{cfg.label}</p>
+                </div>
+              </button>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Toolbar */}
+      <div className="flex items-center gap-3">
+        <div className="relative flex-1 max-w-xs">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Filter plugins…"
+            className="w-full pl-9 pr-3 py-2 text-sm border rounded-md bg-white dark:bg-slate-800 dark:border-slate-600 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        <Button size="sm" variant="outline" onClick={handleRescan} disabled={isFetching}
+          className="dark:border-slate-600 dark:text-slate-300 ml-auto">
+          <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${isFetching ? 'animate-spin' : ''}`} />
+          {isLoading ? 'Scanning…' : isFetching ? 'Rescanning…' : 'Re-scan'}
+        </Button>
+        {data && (
+          <p className="text-xs text-slate-400 dark:text-slate-500">
+            Cached {new Date(data.summary.cached_at).toLocaleTimeString()}
+          </p>
+        )}
+      </div>
+
+      {/* Not yet loaded */}
+      {!data && !isLoading && (
+        <Card className="dark:bg-slate-900 dark:border-slate-700">
+          <CardContent className="py-14 text-center">
+            <ShieldCheck className="h-10 w-10 mx-auto mb-3 text-slate-300 dark:text-slate-600" />
+            <p className="font-medium text-slate-600 dark:text-slate-400">Run a health check</p>
+            <p className="text-sm text-slate-400 dark:text-slate-500 mt-1 mb-4">
+              Checks each plugin against WordPress.org for abandonment, compatibility, low ratings, and known CVEs.
+            </p>
+            <Button size="sm" onClick={() => refetch()} disabled={isFetching}>
+              <ShieldCheck className="h-4 w-4 mr-1.5" />
+              Start Scan
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Loading */}
+      {isLoading && (
+        <div className="flex flex-col items-center justify-center py-16 gap-3 text-slate-400">
+          <RefreshCw className="h-6 w-6 animate-spin" />
+          <p className="text-sm">Checking plugins against WordPress.org…</p>
+          <p className="text-xs text-slate-500">This may take a moment for large installs</p>
+        </div>
+      )}
+
+      {/* Results */}
+      {!isLoading && filtered.length === 0 && data && (
+        <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-8">No plugins match the current filter.</p>
+      )}
+
+      <div className="space-y-2">
+        {filtered.map(plugin => {
+          const cfg = STATUS_CONFIG[plugin.status]
+          const Icon = cfg.icon
+          return (
+            <Card key={plugin.file} className="dark:bg-slate-900 dark:border-slate-700">
+              <CardContent className="py-3 px-4">
+                <div className="flex items-start gap-3">
+                  <Icon className={`h-5 w-5 flex-shrink-0 mt-0.5 ${cfg.color}`} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-medium text-slate-900 dark:text-white text-sm">{plugin.name}</span>
+                      <code className="text-xs text-slate-400 dark:text-slate-500">v{plugin.version}</code>
+                      {!plugin.active && (
+                        <Badge variant="secondary" className="text-xs dark:bg-slate-700 dark:text-slate-400">Inactive</Badge>
+                      )}
+                      {plugin.wporg && (
+                        <span className="text-xs text-slate-400 dark:text-slate-500 flex items-center gap-1">
+                          <Star className="h-3 w-3" />
+                          {plugin.wporg.rating?.toFixed(1) ?? '—'}
+                          {plugin.wporg.active_installs != null && (
+                            <span className="ml-1">{formatInstalls(plugin.wporg.active_installs)} installs</span>
+                          )}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Issues */}
+                    {plugin.issues.length > 0 && (
+                      <div className="mt-2 space-y-1">
+                        {plugin.issues.map((issue, i) => (
+                          <div key={i} className={`flex items-start gap-2 text-xs px-2 py-1.5 rounded border ${ISSUE_LEVEL_COLOR[issue.level]}`}>
+                            {issue.level === 'critical' ? <ShieldX className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" /> :
+                             issue.level === 'warning'  ? <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" /> :
+                             <Info className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />}
+                            <span>{issue.message}
+                              {issue.cve && <span className="ml-1 font-mono font-semibold">[{issue.cve}]</span>}
+                              {issue.cvss != null && <span className="ml-1 opacity-70">CVSS {issue.cvss}</span>}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {plugin.status === 'healthy' && plugin.issues.length === 0 && (
+                      <p className="text-xs text-green-600 dark:text-green-400 mt-1">No issues found</p>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function pluginWord(n?: number) {
+  return n === 1 ? '1 plugin' : `${n ?? '…'} plugins`
+}
+
+function formatInstalls(n: number): string {
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M+'
+  if (n >= 1_000) return (n / 1_000).toFixed(0) + 'K+'
+  return String(n)
 }
 
 export function Plugins() {
@@ -361,10 +582,14 @@ export function Plugins() {
       <div className="p-6">
         <Tabs defaultValue="installed">
           <div className="flex items-center justify-between mb-4">
-            <TabsList>
+            <TabsList className="overflow-x-auto max-w-full flex-nowrap scrollbar-none">
               <TabsTrigger value="installed">Installed ({pluginsData?.plugins.length || 0})</TabsTrigger>
               <TabsTrigger value="search">Search & Install</TabsTrigger>
               <TabsTrigger value="upload">Upload ZIP</TabsTrigger>
+              <TabsTrigger value="health">
+                <ShieldCheck className="h-3.5 w-3.5 mr-1.5" />
+                Health Check
+              </TabsTrigger>
             </TabsList>
           </div>
 
@@ -734,6 +959,11 @@ export function Plugins() {
                 </Button>
               </div>
             </div>
+          </TabsContent>
+
+          {/* ── Health Check ── */}
+          <TabsContent value="health" className="mt-0">
+            <HealthCheck />
           </TabsContent>
         </Tabs>
       </div>

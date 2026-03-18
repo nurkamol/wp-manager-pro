@@ -591,4 +591,209 @@ class Plugins_Controller {
             }
         }
     }
+
+    // ── Plugin Health Check ────────────────────────────────────────────────────
+
+    /**
+     * GET /plugins/health
+     * Returns health data for all installed plugins.
+     * Results are cached in a 24-hour transient.
+     */
+    public static function get_health( WP_REST_Request $request ): WP_REST_Response {
+        self::load_plugin_functions();
+
+        $bust  = (bool) $request->get_param( 'bust' );
+        $cache_key = 'wmp_plugin_health_v1';
+
+        if ( ! $bust ) {
+            $cached = get_transient( $cache_key );
+            if ( $cached !== false ) {
+                return new WP_REST_Response( $cached, 200 );
+            }
+        }
+
+        $all_plugins    = get_plugins();
+        $active_plugins = get_option( 'active_plugins', [] );
+        $wp_version     = get_bloginfo( 'version' );
+        $api_key        = get_option( 'wmp_wpscan_api_key', '' );
+
+        $results = [];
+
+        foreach ( $all_plugins as $plugin_file => $plugin_data ) {
+            $slug    = explode( '/', $plugin_file )[0];
+            $active  = in_array( $plugin_file, $active_plugins, true );
+            $issues  = [];
+            $status  = 'healthy'; // healthy | warning | critical | unknown
+
+            // ── 1. Fetch WP.org plugin info ──────────────────────────────────
+            $wporg = self::fetch_wporg_info( $slug );
+
+            if ( $wporg === null ) {
+                // Not on WP.org — premium / custom plugin.
+                $issues[] = [
+                    'type'    => 'not_on_wporg',
+                    'level'   => 'info',
+                    'message' => 'Not listed on WordPress.org — may be a premium or custom plugin.',
+                ];
+                if ( $status === 'healthy' ) $status = 'unknown';
+            } else {
+                // ── 2. Abandoned check (last updated > 2 years) ──────────────
+                if ( ! empty( $wporg['last_updated'] ) ) {
+                    $last_updated = strtotime( $wporg['last_updated'] );
+                    $two_years_ago = strtotime( '-2 years' );
+                    if ( $last_updated && $last_updated < $two_years_ago ) {
+                        $years = round( ( time() - $last_updated ) / YEAR_IN_SECONDS, 1 );
+                        $issues[] = [
+                            'type'    => 'abandoned',
+                            'level'   => 'warning',
+                            'message' => "Not updated in {$years} years — may be abandoned.",
+                        ];
+                        if ( $status === 'healthy' ) $status = 'warning';
+                    }
+                }
+
+                // ── 3. Compatibility check ───────────────────────────────────
+                if ( ! empty( $wporg['tested'] ) ) {
+                    if ( version_compare( $wporg['tested'], $wp_version, '<' ) ) {
+                        $issues[] = [
+                            'type'    => 'compatibility',
+                            'level'   => 'warning',
+                            'message' => "Only tested up to WP {$wporg['tested']} (current: {$wp_version}).",
+                        ];
+                        if ( $status === 'healthy' ) $status = 'warning';
+                    }
+                }
+
+                // ── 4. Low rating check ──────────────────────────────────────
+                if ( ! empty( $wporg['rating'] ) && ! empty( $wporg['num_ratings'] ) ) {
+                    $rating     = (float) $wporg['rating'] / 20; // WP.org uses 0–100 scale
+                    $num_ratings = (int) $wporg['num_ratings'];
+                    if ( $rating < 3.0 && $num_ratings >= 10 ) {
+                        $issues[] = [
+                            'type'    => 'low_rating',
+                            'level'   => 'warning',
+                            'message' => sprintf( 'Low rating: %.1f★ from %s ratings.', $rating, number_format( $num_ratings ) ),
+                        ];
+                        if ( $status === 'healthy' ) $status = 'warning';
+                    }
+                }
+            }
+
+            // ── 5. WPScan vulnerability check ───────────────────────────────
+            if ( $api_key ) {
+                $vulns = self::fetch_wpscan_for_health( $slug, $plugin_data['Version'], $api_key );
+                if ( ! empty( $vulns ) ) {
+                    foreach ( $vulns as $v ) {
+                        $issues[] = [
+                            'type'    => 'vulnerability',
+                            'level'   => 'critical',
+                            'message' => $v['title'],
+                            'cvss'    => $v['cvss'] ?? null,
+                            'cve'     => $v['cve']  ?? null,
+                        ];
+                    }
+                    $status = 'critical';
+                }
+            }
+
+            $results[] = [
+                'file'          => $plugin_file,
+                'slug'          => $slug,
+                'name'          => $plugin_data['Name'],
+                'version'       => $plugin_data['Version'],
+                'active'        => $active,
+                'status'        => $status,
+                'issues'        => $issues,
+                'wporg'         => $wporg ? [
+                    'rating'       => isset( $wporg['rating'] ) ? round( (float) $wporg['rating'] / 20, 1 ) : null,
+                    'num_ratings'  => $wporg['num_ratings'] ?? null,
+                    'active_installs' => $wporg['active_installs'] ?? null,
+                    'last_updated' => $wporg['last_updated'] ?? null,
+                    'tested'       => $wporg['tested'] ?? null,
+                ] : null,
+            ];
+        }
+
+        // Sort: critical first, then warning, unknown, healthy.
+        $order = [ 'critical' => 0, 'warning' => 1, 'unknown' => 2, 'healthy' => 3 ];
+        usort( $results, fn( $a, $b ) => ( $order[ $a['status'] ] ?? 9 ) - ( $order[ $b['status'] ] ?? 9 ) );
+
+        $summary = [
+            'total'    => count( $results ),
+            'critical' => count( array_filter( $results, fn( $r ) => $r['status'] === 'critical' ) ),
+            'warning'  => count( array_filter( $results, fn( $r ) => $r['status'] === 'warning' ) ),
+            'unknown'  => count( array_filter( $results, fn( $r ) => $r['status'] === 'unknown' ) ),
+            'healthy'  => count( array_filter( $results, fn( $r ) => $r['status'] === 'healthy' ) ),
+            'cached_at' => current_time( 'c' ),
+        ];
+
+        $response = [ 'summary' => $summary, 'plugins' => $results ];
+        set_transient( $cache_key, $response, DAY_IN_SECONDS );
+
+        return new WP_REST_Response( $response, 200 );
+    }
+
+    /**
+     * Fetch basic plugin info from the WordPress.org API.
+     * Returns null if the plugin is not on WP.org.
+     */
+    private static function fetch_wporg_info( string $slug ): ?array {
+        $url = "https://api.wordpress.org/plugins/info/1.0/{$slug}.json";
+        $response = wp_remote_get( $url, [ 'timeout' => 8, 'sslverify' => true ] );
+
+        if ( is_wp_error( $response ) ) return null;
+        $body = wp_remote_retrieve_body( $response );
+        $data = json_decode( $body, true );
+
+        if ( empty( $data ) || isset( $data['error'] ) ) return null;
+
+        return [
+            'rating'          => $data['rating']          ?? null,
+            'num_ratings'     => $data['num_ratings']     ?? null,
+            'active_installs' => $data['active_installs'] ?? null,
+            'last_updated'    => $data['last_updated']    ?? null,
+            'tested'          => $data['tested']          ?? null,
+        ];
+    }
+
+    /**
+     * Fetch vulnerabilities from WPScan for a single plugin.
+     */
+    private static function fetch_wpscan_for_health( string $slug, string $version, string $api_key ): array {
+        $url      = "https://wpscan.com/api/v3/plugins/{$slug}";
+        $response = wp_remote_get( $url, [
+            'timeout' => 8,
+            'headers' => [ 'Authorization' => 'Token token=' . $api_key ],
+        ] );
+
+        if ( is_wp_error( $response ) || wp_remote_retrieve_response_code( $response ) !== 200 ) {
+            return [];
+        }
+
+        $body = json_decode( wp_remote_retrieve_body( $response ), true );
+        $item = $body[ $slug ] ?? null;
+        if ( ! $item ) return [];
+
+        $vulns = [];
+        foreach ( $item['vulnerabilities'] ?? [] as $v ) {
+            $fixed_in = $v['fixed_in'] ?? null;
+            if ( $fixed_in && version_compare( $version, $fixed_in, '>=' ) ) continue;
+
+            $cvss = null;
+            if ( ! empty( $v['cvss'] ) ) {
+                $cvss = is_array( $v['cvss'] ) ? ( $v['cvss']['score'] ?? null ) : $v['cvss'];
+            }
+            $cve = null;
+            if ( ! empty( $v['references']['cve'] ) ) {
+                $cve = 'CVE-' . $v['references']['cve'][0];
+            }
+            $vulns[] = [
+                'title' => $v['title'] ?? 'Unknown vulnerability',
+                'cvss'  => $cvss,
+                'cve'   => $cve,
+            ];
+        }
+
+        return $vulns;
+    }
 }
