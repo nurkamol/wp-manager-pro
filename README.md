@@ -2,7 +2,7 @@
 
 > A comprehensive, agency-ready WordPress management suite — built with React 19, TypeScript, and the WordPress REST API.
 
-![Version](https://img.shields.io/badge/version-2.9.4-blue)
+![Version](https://img.shields.io/badge/version-3.0.0-blue)
 ![WordPress](https://img.shields.io/badge/WordPress-5.9%2B-21759b)
 ![PHP](https://img.shields.io/badge/PHP-7.4%2B-8892be)
 ![License](https://img.shields.io/badge/license-GPL--2.0%2B-green)
@@ -57,37 +57,17 @@ All operations happen through a secured REST API (`wp-manager-pro/v1`) that requ
 
 ---
 
-## What's New in v2.9.4 — Media Library Root Cause Fix
-
-| Change | Description |
-|--------|-------------|
-| 🎯 Media Library — deep root cause fixed | Rollup's minifier named a Lucide icon `const wp` at the bundle top-level, shadowing `window.wp` globally without replacing it. All media pickers (Agency Tools: Login Page logo/bg, Coming Soon logo/bg; Settings: sidebar logo) now reliably open the native WordPress Media Library modal on every button click |
-| 🔧 Build format → IIFE | Vite output switched to `format: 'iife'` — bundle variables are now function-scoped and cannot shadow WordPress or any other global |
-| 🛡️ Bridge hardened | `window.wmpOpenMedia` now explicitly uses `window.wp` to bypass any scope-level variable shadowing |
-
-## What's New in v2.9.3 — Bug Fixes & Malware Scanner Actions
-
-| Change | Description |
-|--------|-------------|
-| 🛠️ Image Tools status cards fixed | GD / ImageMagick / WebP / AVIF all showed "Not available" due to `Imagick::queryFormats('AVIF')` throwing an exception that corrupted the REST response. All checks now use `wp_image_editor_supports()` |
-| 🔍 Malware Scanner — self-exclusion | Scanner was flagging its own source files as critical threats. WP Manager Pro directory is now excluded from all scans |
-| 🔬 Malware Scanner — Inspect modal | Each finding has an Inspect button that opens a file viewer showing ±40 lines of context with the suspicious line highlighted |
-| 🗄️ Malware Scanner — Quarantine | Move suspicious files to `wp-content/wmp-quarantine/` with HTTP access blocked via `.htaccess` |
-| 🗑️ Malware Scanner — Delete & Ignore | Permanently delete a flagged file or add it to a persistent ignore list that survives future scans |
-| 🏷️ Sidebar environment badge | Redesigned to semi-transparent pill with ring border and coloured dot indicator (🔴 Production · 🟡 Staging · 🟢 Development · 🔵 Local) |
-| 📐 Cron Manager spacing | Normalised to `fade-in` wrapper and `space-y-6` tab content, consistent with all other multi-tab pages |
-
-## What's New in v2.9.0 — Developer Utilities
+## What's New in v3.0.0 — Notification Centre + Major UI Refresh
 
 | Feature | Description |
 |---------|-------------|
-| 🔗 Hook Explorer | Browse all registered `add_action`/`add_filter` calls with hook name, priority, callback name and source file; searchable |
-| 🔌 REST API Tester | Built-in Postman-style tester with pre-authenticated credentials; browse routes by namespace; request/response panel with timing |
-| 🧪 Dummy Data Generator | Create up to 50 test posts, pages, users, or WooCommerce products; tagged for safe bulk cleanup |
-| 🔄 Rewrite Rules Tester | Input any URL, see matching rule, redirect query string, and resolved `$query_vars`; full rules table |
-| 💾 Object Cache Browser | List Redis keys (SCAN) or WP cache entries by prefix; inspect and delete individual keys |
-| 🗄️ Database Prefix Changer | Safely rename DB prefix with dry-run preview, `RENAME TABLE`, option/meta row updates, and wp-config.php rewrite |
-| 🎨 Login Page redesign | Side-by-side settings + live preview; Media Library pickers for logo and background image; colour swatches with native picker overlay |
+| 🌙 Dark Mode Auto-Sync | Three-state Light / Dark / Auto toggle — Auto follows OS `prefers-color-scheme` with no flash on load |
+| 📊 Dashboard Widgets | Configurable widget grid (8 widgets): Quick Stats, Site Status, System Resources, Recent Posts, Quick Actions, Audit Events, Cache Status, Uptime Ping — show/hide via Customize panel |
+| 🔔 Notification Centre | Persistent bell icon with unread count; slide-out panel for alerts (backup errors, cron failures, lockouts, SSL expiry, vulnerability alerts) with mark-read and dismiss |
+| 📱 Mobile / Tablet Layout | Bottom nav bar on mobile with full-page "More" drawer; sidebar auto-collapses to icon-rail on tablet |
+| 🔍 Global Search | Live search in Command Palette across plugins, users, notes, audit log, and wp_options as you type |
+| ⌨️ System-wide Command Palette | Standalone overlay injected into all WP admin pages — open from the **WPMGR** admin bar button or keyboard shortcut from anywhere in wp-admin |
+| 📦 Custom Post Type Manager | Register, edit, and delete CPTs and taxonomies from the UI — dashicons picker, supports selector, Public / REST / Archive toggles, taxonomy-to-CPT attachment |
 
 ---
 
