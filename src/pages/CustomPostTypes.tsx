@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
   Plus, Pencil, Trash2, FileText, Tag, ChevronRight, RefreshCw, Check, LayoutGrid,
+  Layers, GripVertical, X, ChevronDown, ChevronUp,
 } from 'lucide-react'
 import { api } from '@/lib/api'
 import { PageHeader } from '@/components/PageHeader'
@@ -10,12 +11,15 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog'
 import { Switch } from '@/components/ui/switch'
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -44,6 +48,58 @@ interface Taxonomy {
 interface PostTypeOption {
   slug: string
   label: string
+}
+
+// ── Field Groups types ────────────────────────────────────────────────────────
+
+const FIELD_TYPES = [
+  { value: 'text',       label: 'Text' },
+  { value: 'textarea',   label: 'Textarea' },
+  { value: 'number',     label: 'Number' },
+  { value: 'email',      label: 'Email' },
+  { value: 'url',        label: 'URL' },
+  { value: 'select',     label: 'Select' },
+  { value: 'checkbox',   label: 'Checkbox' },
+  { value: 'radio',      label: 'Radio' },
+  { value: 'true_false', label: 'True / False' },
+  { value: 'image',      label: 'Image' },
+  { value: 'wysiwyg',    label: 'WYSIWYG' },
+  { value: 'date',       label: 'Date' },
+  { value: 'color',      label: 'Color' },
+] as const
+
+type FieldType = typeof FIELD_TYPES[number]['value']
+
+interface FGField {
+  id: string
+  type: FieldType
+  label: string
+  name: string
+  required: boolean
+  instructions: string
+  options: { choices?: string }
+}
+
+interface FieldGroup {
+  id: string
+  title: string
+  description: string
+  location: string[]
+  fields: FGField[]
+  active: boolean
+  created?: string
+}
+
+function newField(): FGField {
+  return {
+    id: 'f_' + Math.random().toString(36).slice(2),
+    type: 'text', label: '', name: '', required: false, instructions: '',
+    options: {},
+  }
+}
+
+function emptyGroup(): Omit<FieldGroup, 'id' | 'created'> {
+  return { title: '', description: '', location: [], fields: [], active: true }
 }
 
 const SUPPORTS_OPTIONS = [
@@ -143,6 +199,294 @@ function IconPicker({ value, onChange }: { value: string; onChange: (v: string) 
         className="text-xs font-mono dark:bg-slate-900"
       />
     </div>
+  )
+}
+
+// ── Field Group Dialog ────────────────────────────────────────────────────────
+
+function FieldGroupDialog({
+  open, onClose, initial, postTypeOptions,
+}: {
+  open: boolean
+  onClose: () => void
+  initial: FieldGroup | null
+  postTypeOptions: PostTypeOption[]
+}) {
+  const qc = useQueryClient()
+  const isEditing = initial !== null
+  const [form, setForm] = useState<Omit<FieldGroup, 'id' | 'created'>>(
+    initial ? { title: initial.title, description: initial.description, location: initial.location, fields: initial.fields, active: initial.active }
+            : emptyGroup()
+  )
+  const [expandedField, setExpandedField] = useState<string | null>(null)
+
+  function setTop<K extends keyof typeof form>(key: K, val: typeof form[K]) {
+    setForm(prev => ({ ...prev, [key]: val }))
+  }
+
+  function toggleLocation(slug: string) {
+    setForm(prev => ({
+      ...prev,
+      location: prev.location.includes(slug)
+        ? prev.location.filter(s => s !== slug)
+        : [...prev.location, slug],
+    }))
+  }
+
+  function addField() {
+    const f = newField()
+    setForm(prev => ({ ...prev, fields: [...prev.fields, f] }))
+    setExpandedField(f.id)
+  }
+
+  function updateField(idx: number, patch: Partial<FGField>) {
+    setForm(prev => {
+      const fields = [...prev.fields]
+      fields[idx] = { ...fields[idx], ...patch }
+      return { ...prev, fields }
+    })
+  }
+
+  function removeField(idx: number) {
+    setForm(prev => ({ ...prev, fields: prev.fields.filter((_, i) => i !== idx) }))
+  }
+
+  function moveField(idx: number, dir: -1 | 1) {
+    setForm(prev => {
+      const fields = [...prev.fields]
+      const target = idx + dir
+      if (target < 0 || target >= fields.length) return prev
+      ;[fields[idx], fields[target]] = [fields[target], fields[idx]]
+      return { ...prev, fields }
+    })
+  }
+
+  const mutation = useMutation({
+    mutationFn: (data: typeof form) =>
+      isEditing
+        ? api.put(`/field-groups/${initial!.id}`, data)
+        : api.post('/field-groups', data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['field-groups'] })
+      toast.success(`Field group "${form.title}" ${isEditing ? 'updated' : 'created'}`)
+      onClose()
+    },
+    onError: (e: any) => toast.error(e?.message ?? 'Failed to save'),
+  })
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!form.title.trim()) return toast.error('Title is required')
+    mutation.mutate(form)
+  }
+
+  const hasChoices = (type: FieldType) => ['select', 'checkbox', 'radio'].includes(type)
+
+  return (
+    <Dialog open={open} onOpenChange={v => !v && onClose()}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto dark:bg-slate-900 dark:border-slate-700">
+        <DialogHeader>
+          <DialogTitle className="dark:text-white">
+            {isEditing ? 'Edit Field Group' : 'New Field Group'}
+          </DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-5 mt-2">
+          {/* Title + active */}
+          <div className="flex gap-3 items-start">
+            <div className="flex-1 space-y-1.5">
+              <Label className="dark:text-slate-300">Title *</Label>
+              <Input
+                value={form.title}
+                onChange={e => setTop('title', e.target.value)}
+                placeholder="e.g. Book Details"
+                className="dark:bg-slate-800 dark:border-slate-600 dark:text-white"
+              />
+            </div>
+            <div className="flex items-center gap-2 pt-7">
+              <Switch checked={form.active} onCheckedChange={v => setTop('active', v)} />
+              <span className="text-sm dark:text-slate-300">Active</span>
+            </div>
+          </div>
+
+          {/* Description */}
+          <div className="space-y-1.5">
+            <Label className="dark:text-slate-300">Description</Label>
+            <Input
+              value={form.description}
+              onChange={e => setTop('description', e.target.value)}
+              placeholder="Optional description"
+              className="dark:bg-slate-800 dark:border-slate-600 dark:text-white"
+            />
+          </div>
+
+          {/* Location */}
+          <div className="space-y-2">
+            <Label className="dark:text-slate-300">Show on Post Types</Label>
+            {postTypeOptions.length === 0 ? (
+              <p className="text-xs text-slate-400 dark:text-slate-500">No post types available. Create one first.</p>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {postTypeOptions.map(pt => (
+                  <button
+                    key={pt.slug}
+                    type="button"
+                    onClick={() => toggleLocation(pt.slug)}
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs border transition-colors
+                      ${form.location.includes(pt.slug)
+                        ? 'bg-blue-600 border-blue-600 text-white'
+                        : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-blue-400'}`}
+                  >
+                    {form.location.includes(pt.slug) && <Check className="h-3 w-3" />}
+                    {pt.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Fields */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="dark:text-slate-300">Fields</Label>
+              <Button type="button" size="sm" variant="outline" onClick={addField}
+                className="dark:border-slate-600 dark:text-slate-300 h-7 text-xs">
+                <Plus className="h-3 w-3 mr-1" /> Add Field
+              </Button>
+            </div>
+
+            {form.fields.length === 0 && (
+              <div className="border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-lg py-8 text-center">
+                <p className="text-sm text-slate-400 dark:text-slate-500">No fields yet. Click "Add Field" to start.</p>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              {form.fields.map((field, idx) => {
+                const expanded = expandedField === field.id
+                return (
+                  <div key={field.id} className="border rounded-lg dark:border-slate-700 overflow-hidden">
+                    {/* Field header row */}
+                    <div className="flex items-center gap-2 p-2.5 bg-slate-50 dark:bg-slate-800/60">
+                      <GripVertical className="h-4 w-4 text-slate-300 dark:text-slate-600 flex-shrink-0" />
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        <button type="button" onClick={() => moveField(idx, -1)} disabled={idx === 0}
+                          className="p-0.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-30">
+                          <ChevronUp className="h-3.5 w-3.5 text-slate-500" />
+                        </button>
+                        <button type="button" onClick={() => moveField(idx, 1)} disabled={idx === form.fields.length - 1}
+                          className="p-0.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-30">
+                          <ChevronDown className="h-3.5 w-3.5 text-slate-500" />
+                        </button>
+                      </div>
+                      <div
+                        className="flex-1 flex items-center gap-2 cursor-pointer min-w-0"
+                        onClick={() => setExpandedField(expanded ? null : field.id)}
+                      >
+                        <span className="text-sm font-medium dark:text-white truncate">
+                          {field.label || <span className="text-slate-400">Untitled Field</span>}
+                        </span>
+                        <Badge variant="secondary" className="text-xs dark:bg-slate-700 dark:text-slate-300 flex-shrink-0">
+                          {FIELD_TYPES.find(t => t.value === field.type)?.label ?? field.type}
+                        </Badge>
+                        {field.name && (
+                          <code className="text-xs text-slate-400 dark:text-slate-500 flex-shrink-0">{field.name}</code>
+                        )}
+                      </div>
+                      <button type="button" onClick={() => setExpandedField(expanded ? null : field.id)}
+                        className="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700">
+                        {expanded ? <ChevronUp className="h-4 w-4 text-slate-400" /> : <ChevronDown className="h-4 w-4 text-slate-400" />}
+                      </button>
+                      <button type="button" onClick={() => removeField(idx)}
+                        className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-400 hover:text-red-500">
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    {/* Expanded field editor */}
+                    {expanded && (
+                      <div className="p-3 space-y-3 border-t dark:border-slate-700">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1.5">
+                            <Label className="text-xs dark:text-slate-400">Label *</Label>
+                            <Input
+                              value={field.label}
+                              onChange={e => updateField(idx, { label: e.target.value })}
+                              placeholder="Field Label"
+                              className="h-8 text-sm dark:bg-slate-800 dark:border-slate-600 dark:text-white"
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label className="text-xs dark:text-slate-400">Field Name *</Label>
+                            <Input
+                              value={field.name}
+                              onChange={e => updateField(idx, { name: toSlug(e.target.value) })}
+                              placeholder="field_name"
+                              className="h-8 text-sm font-mono dark:bg-slate-800 dark:border-slate-600 dark:text-white"
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs dark:text-slate-400">Type</Label>
+                          <Select value={field.type} onValueChange={v => updateField(idx, { type: v as FieldType })}>
+                            <SelectTrigger className="h-8 text-sm dark:bg-slate-800 dark:border-slate-600 dark:text-white">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="dark:bg-slate-800 dark:border-slate-600">
+                              {FIELD_TYPES.map(ft => (
+                                <SelectItem key={ft.value} value={ft.value} className="dark:text-slate-300 dark:focus:bg-slate-700">
+                                  {ft.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        {hasChoices(field.type) && (
+                          <div className="space-y-1.5">
+                            <Label className="text-xs dark:text-slate-400">Choices (one per line, or <code className="bg-slate-100 dark:bg-slate-700 px-1 rounded">value : Label</code>)</Label>
+                            <textarea
+                              value={field.options.choices ?? ''}
+                              onChange={e => updateField(idx, { options: { choices: e.target.value } })}
+                              rows={4}
+                              placeholder={'red : Red\ngreen : Green\nblue : Blue'}
+                              className="w-full rounded-md border px-3 py-2 text-sm font-mono dark:bg-slate-800 dark:border-slate-600 dark:text-white resize-none"
+                            />
+                          </div>
+                        )}
+                        <div className="space-y-1.5">
+                          <Label className="text-xs dark:text-slate-400">Instructions</Label>
+                          <Input
+                            value={field.instructions}
+                            onChange={e => updateField(idx, { instructions: e.target.value })}
+                            placeholder="Helper text shown below the field"
+                            className="h-8 text-sm dark:bg-slate-800 dark:border-slate-600 dark:text-white"
+                          />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Switch
+                            checked={field.required}
+                            onCheckedChange={v => updateField(idx, { required: v })}
+                          />
+                          <span className="text-sm dark:text-slate-300">Required</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose} className="dark:border-slate-600 dark:text-slate-300">
+              Cancel
+            </Button>
+            <Button type="submit" disabled={mutation.isPending}>
+              {mutation.isPending ? 'Saving…' : isEditing ? 'Update' : 'Create'}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -447,6 +791,21 @@ export default function CustomPostTypes() {
   const qc = useQueryClient()
   const [cptDialog, setCptDialog] = useState<{ open: boolean; item: CPT | null }>({ open: false, item: null })
   const [taxDialog, setTaxDialog] = useState<{ open: boolean; item: Taxonomy | null }>({ open: false, item: null })
+  const [fgDialog, setFgDialog] = useState<{ open: boolean; item: FieldGroup | null }>({ open: false, item: null })
+
+  const { data: fieldGroups = [], isLoading: fgLoading } = useQuery<FieldGroup[]>({
+    queryKey: ['field-groups'],
+    queryFn: () => api.get('/field-groups'),
+  })
+
+  const deleteFG = useMutation({
+    mutationFn: (id: string) => api.delete(`/field-groups/${id}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['field-groups'] })
+      toast.success('Field group deleted')
+    },
+    onError: () => toast.error('Failed to delete'),
+  })
 
   const { data: cpts = [], isLoading: cptLoading } = useQuery<CPT[]>({
     queryKey: ['cpts'],
@@ -489,8 +848,15 @@ export default function CustomPostTypes() {
       />
 
       <div className="p-6 space-y-6">
-      <Tabs defaultValue="post-types">
+      <Tabs defaultValue="field-groups">
         <TabsList className="overflow-x-auto max-w-full flex-nowrap scrollbar-none">
+          <TabsTrigger value="field-groups">
+            <Layers className="h-4 w-4 mr-1.5" />
+            Field Groups
+            {fieldGroups.length > 0 && (
+              <Badge variant="secondary" className="ml-1.5 text-xs">{fieldGroups.length}</Badge>
+            )}
+          </TabsTrigger>
           <TabsTrigger value="post-types">
             <FileText className="h-4 w-4 mr-1.5" />
             Post Types
@@ -506,6 +872,95 @@ export default function CustomPostTypes() {
             )}
           </TabsTrigger>
         </TabsList>
+
+        {/* ── Field Groups tab ────────────────────────────────────────────── */}
+        <TabsContent value="field-groups" className="mt-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              {fieldGroups.length === 0 ? 'No field groups yet.' : `${fieldGroups.length} group${fieldGroups.length !== 1 ? 's' : ''}`}
+            </p>
+            <Button size="sm" onClick={() => setFgDialog({ open: true, item: null })}>
+              <Plus className="h-4 w-4 mr-1.5" />
+              New Field Group
+            </Button>
+          </div>
+
+          {fgLoading && (
+            <div className="flex items-center justify-center py-12 text-slate-400">
+              <RefreshCw className="h-5 w-5 animate-spin mr-2" />
+              Loading…
+            </div>
+          )}
+
+          {!fgLoading && fieldGroups.length === 0 && (
+            <Card className="dark:bg-slate-900 dark:border-slate-700">
+              <CardContent className="py-12 text-center">
+                <Layers className="h-10 w-10 mx-auto mb-3 text-slate-300 dark:text-slate-600" />
+                <p className="font-medium text-slate-600 dark:text-slate-400">No field groups yet</p>
+                <p className="text-sm text-slate-400 dark:text-slate-500 mt-1 mb-4">
+                  Create a field group to add custom meta fields to any post type.
+                </p>
+                <Button size="sm" onClick={() => setFgDialog({ open: true, item: null })}>
+                  <Plus className="h-4 w-4 mr-1.5" />
+                  New Field Group
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          <div className="grid gap-3">
+            {fieldGroups.map(fg => (
+              <Card key={fg.id} className="dark:bg-slate-900 dark:border-slate-700">
+                <CardContent className="py-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center flex-shrink-0">
+                      <Layers className="h-5 w-5 text-blue-500 dark:text-blue-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-semibold text-slate-900 dark:text-white">{fg.title}</span>
+                        <Badge variant={fg.active ? 'default' : 'secondary'} className="text-xs">
+                          {fg.active ? 'Active' : 'Inactive'}
+                        </Badge>
+                        <Badge variant="secondary" className="text-xs dark:bg-slate-700 dark:text-slate-300">
+                          {fg.fields.length} field{fg.fields.length !== 1 ? 's' : ''}
+                        </Badge>
+                      </div>
+                      {fg.description && (
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">{fg.description}</p>
+                      )}
+                      {fg.location.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1.5">
+                          {fg.location.map(loc => (
+                            <span key={loc} className="text-xs text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-800 px-1.5 py-0.5 rounded flex items-center gap-1">
+                              <ChevronRight className="h-2.5 w-2.5" />
+                              {postTypeOptions.find(p => p.slug === loc)?.label ?? loc}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <Button size="sm" variant="outline"
+                        className="dark:border-slate-600 dark:text-slate-300"
+                        onClick={() => setFgDialog({ open: true, item: fg })}>
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button size="sm" variant="outline"
+                        className="dark:border-slate-600 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                        onClick={() => {
+                          if (confirm(`Delete field group "${fg.title}"? This will not delete existing post meta.`))
+                            deleteFG.mutate(fg.id)
+                        }}>
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </TabsContent>
 
         {/* ── Post Types tab ─────────────────────────────────────────────── */}
         <TabsContent value="post-types" className="mt-4 space-y-4">
@@ -703,6 +1158,14 @@ export default function CustomPostTypes() {
       </Tabs>
 
       {/* Dialogs */}
+      {fgDialog.open && (
+        <FieldGroupDialog
+          open={fgDialog.open}
+          onClose={() => setFgDialog({ open: false, item: null })}
+          initial={fgDialog.item}
+          postTypeOptions={postTypeOptions}
+        />
+      )}
       {cptDialog.open && (
         <CPTDialog
           open={cptDialog.open}

@@ -62,6 +62,7 @@ class Plugin {
             'class-notifications-controller',
             'class-search-controller',
             'class-cpt-controller',
+            'class-field-groups-controller',
         ];
 
         foreach ( $controllers as $controller ) {
@@ -149,6 +150,7 @@ class Plugin {
         add_filter( 'login_headertext',      [ Agency_Controller::class, 'login_header_text'  ] );
         add_action( 'login_footer',          [ Agency_Controller::class, 'apply_login_footer' ] );
         add_action( 'login_form',            [ Agency_Controller::class, 'apply_login_form_fields' ] );
+        add_action( 'login_header',          [ Agency_Controller::class, 'inject_brand_panel' ], 5 );
 
         // Agency — admin customiser (priority 999 to run after all menus are registered)
         add_action( 'admin_menu',        [ Agency_Controller::class, 'apply_admin_customiser'  ], 999 );
@@ -181,6 +183,10 @@ class Plugin {
 
         // Custom Post Types — register saved CPTs & taxonomies at init.
         add_action( 'init', [ API\Controllers\CPT_Controller::class, 'register_all' ], 5 );
+
+        // Field Groups — meta boxes + save_post hook.
+        add_action( 'add_meta_boxes', [ API\Controllers\Field_Groups_Controller::class, 'register_meta_boxes' ] );
+        add_action( 'save_post',      [ API\Controllers\Field_Groups_Controller::class, 'save_meta' ], 10, 1 );
     }
 
     /**

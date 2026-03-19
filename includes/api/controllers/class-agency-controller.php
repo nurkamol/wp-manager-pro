@@ -37,6 +37,20 @@ class Agency_Controller {
     const OPT_LOGIN_SHOW_PRIVACY = 'wmp_login_show_privacy';
     const OPT_LOGIN_LINKS_HTML   = 'wmp_login_links_html';
     const OPT_LOGIN_FORM_HTML    = 'wmp_login_form_html';
+    const OPT_LOGIN_CARD_BG      = 'wmp_login_card_bg';
+    const OPT_LOGIN_TEXT_COLOR   = 'wmp_login_text_color';
+    const OPT_LOGIN_LINK_COLOR   = 'wmp_login_link_color';
+    const OPT_LOGIN_CARD_RADIUS  = 'wmp_login_card_radius';
+    const OPT_LOGIN_INPUT_RADIUS = 'wmp_login_input_radius';
+    const OPT_LOGIN_FORM_WIDTH   = 'wmp_login_form_width';
+    const OPT_LOGIN_CARD_SHADOW  = 'wmp_login_card_shadow';
+    const OPT_LOGIN_OVERLAY       = 'wmp_login_overlay';
+    const OPT_LOGIN_CUSTOM_CSS    = 'wmp_login_custom_css';
+    const OPT_LOGIN_LAYOUT        = 'wmp_login_layout';          // centered | split
+    const OPT_LOGIN_BRAND_COLOR   = 'wmp_login_brand_color';     // split right-panel bg
+    const OPT_LOGIN_BRAND_IMAGE   = 'wmp_login_brand_image';     // split right-panel image
+    const OPT_LOGIN_HEADING_SUB   = 'wmp_login_heading_sub';     // subtitle below heading
+    const OPT_LOGIN_BTN_FULL      = 'wmp_login_btn_full_width';  // full-width button
 
     // Admin Customiser
     const OPT_HIDDEN_MENUS   = 'wmp_hidden_admin_menus';
@@ -181,6 +195,20 @@ class Agency_Controller {
             'show_privacy'     => (bool) get_option( self::OPT_LOGIN_SHOW_PRIVACY, false ),
             'custom_links_html'=> (string) get_option( self::OPT_LOGIN_LINKS_HTML, '' ),
             'form_html'        => (string) get_option( self::OPT_LOGIN_FORM_HTML, '' ),
+            'card_bg'          => (string) get_option( self::OPT_LOGIN_CARD_BG,     '#ffffff' ),
+            'text_color'       => (string) get_option( self::OPT_LOGIN_TEXT_COLOR,  '#1d2327' ),
+            'link_color'       => (string) get_option( self::OPT_LOGIN_LINK_COLOR,  '' ),
+            'card_radius'      => (int)    get_option( self::OPT_LOGIN_CARD_RADIUS,  8 ),
+            'input_radius'     => (int)    get_option( self::OPT_LOGIN_INPUT_RADIUS, 6 ),
+            'form_width'       => (int)    get_option( self::OPT_LOGIN_FORM_WIDTH,  360 ),
+            'card_shadow'      => (string) get_option( self::OPT_LOGIN_CARD_SHADOW, 'md' ),
+            'overlay'          => (int)    get_option( self::OPT_LOGIN_OVERLAY,       0 ),
+            'custom_css'       => (string) get_option( self::OPT_LOGIN_CUSTOM_CSS,   '' ),
+            'layout'           => (string) get_option( self::OPT_LOGIN_LAYOUT,       'centered' ),
+            'brand_color'      => (string) get_option( self::OPT_LOGIN_BRAND_COLOR,  '#e8e8e8' ),
+            'brand_image'      => (string) get_option( self::OPT_LOGIN_BRAND_IMAGE,  '' ),
+            'heading_sub'      => (string) get_option( self::OPT_LOGIN_HEADING_SUB,  '' ),
+            'btn_full_width'   => (bool)   get_option( self::OPT_LOGIN_BTN_FULL,     false ),
         ], 200 );
     }
 
@@ -196,6 +224,20 @@ class Agency_Controller {
             'show_privacy'     => [ self::OPT_LOGIN_SHOW_PRIVACY, 'bool'  ],
             'custom_links_html'=> [ self::OPT_LOGIN_LINKS_HTML,   'html'  ],
             'form_html'        => [ self::OPT_LOGIN_FORM_HTML,    'html'  ],
+            'card_bg'          => [ self::OPT_LOGIN_CARD_BG,      'color' ],
+            'text_color'       => [ self::OPT_LOGIN_TEXT_COLOR,   'color' ],
+            'link_color'       => [ self::OPT_LOGIN_LINK_COLOR,   'color' ],
+            'card_radius'      => [ self::OPT_LOGIN_CARD_RADIUS,  'int'   ],
+            'input_radius'     => [ self::OPT_LOGIN_INPUT_RADIUS, 'int'   ],
+            'form_width'       => [ self::OPT_LOGIN_FORM_WIDTH,   'int'   ],
+            'card_shadow'      => [ self::OPT_LOGIN_CARD_SHADOW,  'text'  ],
+            'overlay'          => [ self::OPT_LOGIN_OVERLAY,       'int'   ],
+            'custom_css'       => [ self::OPT_LOGIN_CUSTOM_CSS,    'css'   ],
+            'layout'           => [ self::OPT_LOGIN_LAYOUT,        'text'  ],
+            'brand_color'      => [ self::OPT_LOGIN_BRAND_COLOR,   'color' ],
+            'brand_image'      => [ self::OPT_LOGIN_BRAND_IMAGE,   'url'   ],
+            'heading_sub'      => [ self::OPT_LOGIN_HEADING_SUB,   'text'  ],
+            'btn_full_width'   => [ self::OPT_LOGIN_BTN_FULL,      'bool'  ],
         ];
 
         foreach ( $fields as $param => [ $opt, $type ] ) {
@@ -206,6 +248,8 @@ class Agency_Controller {
                 case 'url':   update_option( $opt, esc_url_raw( $val ) ); break;
                 case 'color': update_option( $opt, sanitize_hex_color( $val ) ?: $val ); break;
                 case 'html':  update_option( $opt, wp_kses_post( $val ) ); break;
+                case 'int':   update_option( $opt, absint( $val ) ); break;
+                case 'css':   update_option( $opt, wp_strip_all_tags( $val ) ); break;
                 default:      update_option( $opt, sanitize_text_field( $val ) ); break;
             }
         }
@@ -223,27 +267,153 @@ class Agency_Controller {
     public static function apply_login_styles(): void {
         if ( ! get_option( self::OPT_LOGIN_ENABLED, false ) ) return;
 
-        $logo      = esc_url( get_option( self::OPT_LOGIN_LOGO, '' ) );
-        $bg_color  = esc_attr( get_option( self::OPT_LOGIN_BG_COLOR, '#f0f0f1' ) );
-        $bg_image  = esc_url( get_option( self::OPT_LOGIN_BG_IMAGE, '' ) );
-        $btn_color = esc_attr( get_option( self::OPT_LOGIN_BTN_COLOR, '#2271b1' ) );
+        $logo         = esc_url( get_option( self::OPT_LOGIN_LOGO,        '' ) );
+        $bg_color     = esc_attr( get_option( self::OPT_LOGIN_BG_COLOR,   '#f0f0f1' ) );
+        $bg_image     = esc_url( get_option( self::OPT_LOGIN_BG_IMAGE,    '' ) );
+        $btn_color    = esc_attr( get_option( self::OPT_LOGIN_BTN_COLOR,  '#2271b1' ) );
+        $card_bg      = esc_attr( get_option( self::OPT_LOGIN_CARD_BG,    '#ffffff' ) );
+        $text_color   = esc_attr( get_option( self::OPT_LOGIN_TEXT_COLOR, '#1d2327' ) );
+        $link_color   = esc_attr( get_option( self::OPT_LOGIN_LINK_COLOR, '' ) ) ?: $btn_color;
+        $card_radius  = absint( get_option( self::OPT_LOGIN_CARD_RADIUS,   12 ) );
+        $input_radius = absint( get_option( self::OPT_LOGIN_INPUT_RADIUS,  8 ) );
+        $form_width   = absint( get_option( self::OPT_LOGIN_FORM_WIDTH,   400 ) );
+        $card_shadow  = sanitize_text_field( get_option( self::OPT_LOGIN_CARD_SHADOW, 'md' ) );
+        $overlay      = absint( get_option( self::OPT_LOGIN_OVERLAY, 0 ) );
+        $custom_css   = wp_strip_all_tags( get_option( self::OPT_LOGIN_CUSTOM_CSS, '' ) );
+        $layout       = sanitize_key( get_option( self::OPT_LOGIN_LAYOUT, 'centered' ) );
+        $brand_color  = esc_attr( get_option( self::OPT_LOGIN_BRAND_COLOR, '#e8e8e8' ) );
+        $brand_image  = esc_url( get_option( self::OPT_LOGIN_BRAND_IMAGE, '' ) );
+        $btn_full     = (bool) get_option( self::OPT_LOGIN_BTN_FULL, false );
+        $heading_sub  = esc_html( get_option( self::OPT_LOGIN_HEADING_SUB, '' ) );
 
-        $css  = "body.login { background-color: {$bg_color} !important; }";
+        $shadows = [
+            'none' => 'none',
+            'sm'   => '0 4px 16px rgba(0,0,0,.08)',
+            'md'   => '0 8px 40px rgba(0,0,0,.14)',
+            'lg'   => '0 20px 60px rgba(0,0,0,.22)',
+            'xl'   => '0 32px 80px rgba(0,0,0,.30)',
+        ];
+        $shadow = $shadows[ $card_shadow ] ?? $shadows['md'];
+
+        // ── Body & background ────────────────────────────────────────────────
+        $css  = "html { height: 100%; }";
+        $css .= "body.login { background-color: {$bg_color}; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; }";
 
         if ( $bg_image ) {
-            $css .= "body.login { background-image: url('{$bg_image}') !important; background-size: cover !important; background-position: center center !important; background-repeat: no-repeat !important; }";
+            $css .= "body.login { background-image: url('{$bg_image}'); background-size: cover; background-position: center; background-repeat: no-repeat; }";
+        }
+        if ( $bg_image && $overlay > 0 ) {
+            $alpha = round( $overlay / 100, 2 );
+            $css .= "body.login::before { content: ''; position: fixed; inset: 0; background: rgba(0,0,0,{$alpha}); z-index: 0; }";
         }
 
-        if ( $logo ) {
-            $css .= "#login h1 a, .login h1 a { background-image: url('{$logo}') !important; background-size: contain !important; background-repeat: no-repeat !important; background-position: center center !important; width: 220px !important; height: 80px !important; display: block !important; text-indent: -9999px !important; }";
+        if ( $layout === 'split' ) {
+            // ── Split layout ─────────────────────────────────────────────────
+            $split_width = $form_width * 2;
+            $css .= "#login { display: flex; flex-direction: row; background: {$card_bg}; border-radius: {$card_radius}px; box-shadow: {$shadow}; width: 100%; max-width: {$split_width}px; padding: 0; overflow: hidden; position: relative; z-index: 1; margin: 0 auto; min-height: 500px; }";
+
+            // Form panel — left side
+            $css .= "#login > h1, #login > form, #login > #nav, #login > #backtoblog, #login > .wmp-login-footer, #login > .login-footer { position: relative; z-index: 1; flex-shrink: 0; width: 50%; box-sizing: border-box; }";
+            $css .= "#login > h1 { padding: 44px 44px 0; margin: 0; }";
+            $css .= "#login > form { padding: 0 44px 0; margin-top: 20px; }";
+            $css .= "#login > #nav, #login > #backtoblog { padding: 8px 44px; }";
+            $css .= "#login > .wmp-login-footer, #login > .login-footer { padding: 8px 44px 32px; }";
+            $css .= ".login h1 { text-align: left; margin-bottom: 4px; }";
+
+            // Heading + subtitle in split mode
+            $css .= ".wmp-heading { font-size: 26px; font-weight: 800; color: {$text_color}; margin: 0 0 6px; line-height: 1.2; }";
+            $css .= ".wmp-heading-sub { font-size: 14px; color: #64748b; margin: 0 0 24px; }";
+
+            // Brand panel — right side, injected div
+            $brand_bg_image_css = $brand_image ? "background-image: url('{$brand_image}'); background-size: cover; background-position: center;" : '';
+            $css .= "#wmp-brand-panel { flex: 1; background-color: {$brand_color}; {$brand_bg_image_css} display: flex; align-items: center; justify-content: center; border-radius: 0 {$card_radius}px {$card_radius}px 0; }";
+            $css .= "#wmp-brand-panel img { max-width: 60%; max-height: 120px; object-fit: contain; }";
+            $css .= "#wmp-brand-panel .wmp-brand-placeholder { width: 80px; height: 80px; border: 2px solid rgba(0,0,0,.12); border-radius: 12px; display: flex; align-items: center; justify-content: center; }";
+
+            // Full-width button in split layout
+            $css .= ".wp-core-ui .button-primary { float: none; width: 100%; text-align: center; display: block; }";
+            $css .= "p.submit { margin: 16px 0 0; }";
+            $css .= "p.forgetmenot { display: none; }"; // hide Remember Me in split (clean look)
+            $css .= "#loginform p.submit { overflow: visible; }";
+            $css .= "#nav { text-align: center; }";
+            $css .= "#backtoblog { text-align: center; }";
+
+        } else {
+            // ── Centered layout (default) ─────────────────────────────────────
+            $css .= "#login { background: {$card_bg}; border-radius: {$card_radius}px; padding: 40px 40px 32px; box-shadow: {$shadow}; width: 100%; max-width: {$form_width}px; position: relative; z-index: 1; margin: 0 auto; }";
+            $css .= ".login h1 { text-align: center; margin-bottom: 24px; }";
+            if ( $logo ) {
+                $css .= ".login h1 a { background-image: url('{$logo}'); background-size: contain; background-repeat: no-repeat; background-position: center; width: 100%; max-width: 200px; height: 72px; display: block; margin: 0 auto; text-indent: -9999px; }";
+            } else {
+                $css .= ".login h1 a { display: none; }";
+            }
+            $css .= ".wmp-heading { font-size: 22px; font-weight: 700; color: {$text_color}; text-align: center; margin: 0 0 4px; }";
+            $css .= ".wmp-heading-sub { font-size: 13px; color: #64748b; text-align: center; margin: 0 0 20px; }";
+            $css .= "p.forgetmenot { float: left; margin: 0; }";
+            $css .= "p.submit { margin: 0; }";
+            if ( $btn_full ) {
+                $css .= ".wp-core-ui .button-primary { float: none; width: 100%; display: block; margin-top: 4px; }";
+                $css .= "#loginform p.submit { overflow: visible; }";
+                $css .= "p.forgetmenot { float: none; margin-bottom: 8px; }";
+            } else {
+                $css .= ".wp-core-ui .button-primary { float: right; }";
+                $css .= "#loginform p.submit { overflow: hidden; }";
+            }
         }
 
-        $css .= ".wp-core-ui .button-primary { background: {$btn_color} !important; border-color: {$btn_color} !important; box-shadow: none !important; }";
-        $css .= ".wp-core-ui .button-primary:hover { filter: brightness(1.1) !important; }";
-        $css .= "#login_error, .login .message, .login .success { border-left-color: {$btn_color} !important; }";
+        // ── Shared styles (both layouts) ─────────────────────────────────────
+        $css .= ".login label { color: {$text_color}; font-size: 13px; font-weight: 600; }";
+        $css .= ".login input[type='text'], .login input[type='password'], .login input[type='email'] { border: 1.5px solid #e2e8f0; border-radius: {$input_radius}px; padding: 10px 14px; font-size: 14px; color: {$text_color}; background: #f8fafc; width: 100%; box-sizing: border-box; transition: border-color .2s, box-shadow .2s; }";
+        $css .= ".login input[type='text']:focus, .login input[type='password']:focus { border-color: {$btn_color}; box-shadow: 0 0 0 3px {$btn_color}25; outline: none; background: #fff; }";
+        $css .= ".wp-pwd { position: relative; }";
+        $css .= ".wp-hide-pw { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #94a3b8; padding: 4px; }";
+        $css .= "p.forgetmenot label { font-weight: 400; color: {$text_color}; font-size: 13px; }";
+        $css .= ".wp-core-ui .button-primary { background: {$btn_color}; border: none; border-radius: {$input_radius}px; padding: 11px 20px; font-size: 14px; font-weight: 600; letter-spacing: .3px; color: #fff; cursor: pointer; transition: filter .2s, transform .1s; box-shadow: 0 2px 8px {$btn_color}55; }";
+        $css .= ".wp-core-ui .button-primary:hover { filter: brightness(1.08); transform: translateY(-1px); }";
+        $css .= ".wp-core-ui .button-primary:active { transform: translateY(0); }";
+        $css .= "#nav, #backtoblog { margin-top: 12px; }";
+        $css .= "#nav a, #backtoblog a { color: {$link_color}; font-size: 13px; text-decoration: none; }";
+        $css .= "#nav a:hover, #backtoblog a:hover { text-decoration: underline; }";
+        $css .= "#login_error, .login .message, .login .success { border-radius: {$input_radius}px; border-left-color: {$btn_color}; font-size: 13px; }";
+        $css .= ".wmp-login-footer { text-align: center; font-size: 12px; color: #64748b; margin-top: 8px; }";
 
-        // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- CSS values are already escaped above
+        if ( $custom_css ) {
+            $css .= "\n/* Custom CSS */\n" . $custom_css;
+        }
+
+        // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- values are escaped above
         echo "\n<style id=\"wmp-login-custom\">\n{$css}\n</style>\n";
+    }
+
+    /** Hooked to login_header — inject heading, subtitle, and brand panel for split layout. */
+    public static function inject_brand_panel(): void {
+        if ( ! get_option( self::OPT_LOGIN_ENABLED, false ) ) return;
+
+        $layout      = sanitize_key( get_option( self::OPT_LOGIN_LAYOUT, 'centered' ) );
+        $heading     = esc_html( get_option( self::OPT_LOGIN_HEADING, '' ) );
+        $heading_sub = esc_html( get_option( self::OPT_LOGIN_HEADING_SUB, '' ) );
+        $logo        = esc_url( get_option( self::OPT_LOGIN_LOGO, '' ) );
+
+        // Inject heading + subtitle for both layouts if set
+        if ( $heading || $heading_sub ) {
+            $site_name = esc_html( get_bloginfo( 'name' ) );
+            $h  = $heading ?: $site_name;
+            echo '<h2 class="wmp-heading">' . $h . '</h2>';
+            if ( $heading_sub ) {
+                echo '<p class="wmp-heading-sub">' . $heading_sub . '</p>';
+            }
+        }
+
+        // Inject brand panel for split layout only
+        if ( $layout === 'split' ) {
+            echo '<div id="wmp-brand-panel">';
+            if ( $logo ) {
+                echo '<img src="' . esc_url( $logo ) . '" alt="' . esc_attr( get_bloginfo( 'name' ) ) . '" />';
+            } else {
+                echo '<div class="wmp-brand-placeholder"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(0,0,0,.3)" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>';
+            }
+            echo '</div>';
+        }
     }
 
     /** Hooked to login_headerurl */

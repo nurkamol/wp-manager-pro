@@ -34,6 +34,7 @@ use WP_Manager_Pro\API\Controllers\Developer_Controller;
 use WP_Manager_Pro\API\Controllers\Notifications_Controller;
 use WP_Manager_Pro\API\Controllers\Search_Controller;
 use WP_Manager_Pro\API\Controllers\CPT_Controller;
+use WP_Manager_Pro\API\Controllers\Field_Groups_Controller;
 
 class Routes {
 
@@ -1208,6 +1209,28 @@ class Routes {
         register_rest_route( $namespace, '/cpt/post-types', [
             'methods'             => 'GET',
             'callback'            => [ CPT_Controller::class, 'get_all_post_types' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+
+        // Field Groups.
+        register_rest_route( $namespace, '/field-groups', [
+            'methods'             => 'GET',
+            'callback'            => [ Field_Groups_Controller::class, 'list_groups' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/field-groups', [
+            'methods'             => 'POST',
+            'callback'            => [ Field_Groups_Controller::class, 'save_group' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/field-groups/(?P<id>[a-z0-9_]+)', [
+            'methods'             => 'PUT',
+            'callback'            => [ Field_Groups_Controller::class, 'save_group' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/field-groups/(?P<id>[a-z0-9_]+)', [
+            'methods'             => 'DELETE',
+            'callback'            => [ Field_Groups_Controller::class, 'delete_group' ],
             'permission_callback' => [ self::class, 'admin_permission' ],
         ] );
     }

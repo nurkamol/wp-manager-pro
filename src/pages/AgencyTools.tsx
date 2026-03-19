@@ -3,8 +3,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Mail, Eye, RotateCcw, Trash2, Shield, LayoutDashboard, FileBarChart2,
   Rocket, Download, Copy, Check, Loader2, ExternalLink, ImageIcon, X,
-  Palette, Type, Layout, Image,
+  Palette, Type, Layout, Image, Sliders, Monitor,
 } from 'lucide-react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from 'sonner'
 import { api } from '@/lib/api'
 import { PageHeader } from '@/components/PageHeader'
@@ -76,6 +77,11 @@ interface LoginSettings {
   enabled: boolean; logo_url: string; bg_color: string
   bg_image: string; heading: string; footer: string; btn_color: string
   show_privacy: boolean; custom_links_html: string; form_html: string
+  card_bg: string; text_color: string; link_color: string
+  card_radius: number; input_radius: number; form_width: number
+  card_shadow: string; overlay: number; custom_css: string
+  layout: 'centered' | 'split'; brand_color: string; brand_image: string
+  heading_sub: string; btn_full_width: boolean
 }
 interface AdminCustomiser {
   hidden_menus: string[]; hidden_widgets: string[]
@@ -94,6 +100,126 @@ interface ComingSoonSettings {
   active: boolean; title: string; message: string; launch_date: string
   email_capture: boolean; emails: string[]; bg_color: string; accent_color: string
   bg_image: string; logo_url: string
+}
+
+// ── Login preview HTML builder (mirrors PHP apply_login_styles exactly) ────────
+
+function buildLoginPreviewHTML(s: Partial<LoginSettings>): string {
+  const bg        = s.bg_color    || '#f0f0f1'
+  const cardBg    = s.card_bg     || '#ffffff'
+  const btnColor  = s.btn_color   || '#2271b1'
+  const textColor = s.text_color  || '#1d2327'
+  const linkColor = s.link_color  || btnColor
+  const cardR     = s.card_radius  ?? 12
+  const inputR    = s.input_radius ?? 8
+  const width     = s.form_width   ?? 400
+  const overlay   = s.overlay      ?? 0
+  const layout    = s.layout       ?? 'centered'
+  const brandColor = s.brand_color || '#e8e8e8'
+  const isSplit   = layout === 'split'
+  const shadows: Record<string, string> = {
+    none: 'none', sm: '0 4px 16px rgba(0,0,0,.08)',
+    md: '0 8px 40px rgba(0,0,0,.14)', lg: '0 20px 60px rgba(0,0,0,.22)', xl: '0 32px 80px rgba(0,0,0,.30)',
+  }
+  const shadow = shadows[s.card_shadow ?? 'md'] ?? shadows.md
+  const siteName = typeof window !== 'undefined' ? (window as any).wpManagerPro?.siteName || 'Your Site' : 'Your Site'
+
+  const splitCss = isSplit ? `
+#login{display:flex;flex-direction:row;background:${cardBg};border-radius:${cardR}px;box-shadow:${shadow};width:100%;max-width:${width*2}px;padding:0;overflow:hidden;position:relative;z-index:1;margin:0 auto;min-height:500px}
+#login>h1,#login>form,#login>#nav,#login>#backtoblog,#login>.wmp-inject{position:relative;z-index:1;flex-shrink:0;width:50%;box-sizing:border-box}
+#login>h1{padding:44px 44px 0;margin:0}
+#login>form{padding:0 44px;margin-top:8px}
+#login>#nav,#login>#backtoblog{padding:6px 44px;text-align:center}
+#login>.wmp-inject{padding:0 44px 32px}
+.login h1{text-align:left;margin:0}
+.login h1 a{${s.logo_url ? `background-image:url('${s.logo_url}');background-size:contain;background-repeat:no-repeat;background-position:left;width:100%;max-width:160px;height:48px;display:block;text-indent:-9999px` : 'display:none'}}
+#wmp-brand{flex:1;background-color:${brandColor};${s.brand_image ? `background-image:url('${s.brand_image}');background-size:cover;background-position:center;` : ''}display:flex;align-items:center;justify-content:center;border-radius:0 ${cardR}px ${cardR}px 0}
+.wmp-heading{font-size:24px;font-weight:800;color:${textColor};margin:16px 0 4px;line-height:1.2}
+.wmp-heading-sub{font-size:14px;color:#64748b;margin:0 0 20px}
+p.forgetmenot{display:none}
+p.submit{margin:12px 0 0}
+.button-primary{float:none !important;width:100%;display:block;text-align:center}
+` : `
+#login{background:${cardBg};border-radius:${cardR}px;padding:40px 40px 32px;box-shadow:${shadow};width:100%;max-width:${width}px;position:relative;z-index:1;box-sizing:border-box;margin:0 auto}
+.login h1{text-align:center;margin:0 0 20px;padding:0}
+.login h1 a{${s.logo_url ? `background-image:url('${s.logo_url}');background-size:contain;background-repeat:no-repeat;background-position:center;width:100%;max-width:200px;height:64px;display:block;margin:0 auto;text-indent:-9999px` : 'display:none'}}
+.wmp-heading{font-size:22px;font-weight:700;color:${textColor};text-align:center;margin:0 0 4px}
+.wmp-heading-sub{font-size:13px;color:#64748b;text-align:center;margin:0 0 20px}
+p.forgetmenot{float:left;margin:0}
+p.submit{float:right;margin:0}
+${s.btn_full_width ? `.button-primary{float:none !important;width:100%;display:block} p.forgetmenot{float:none;margin-bottom:8px} #loginform p.submit{overflow:visible}` : `#loginform p.submit{overflow:hidden}`}
+`
+
+  const css = `
+html,body{height:100%;margin:0;padding:0}
+body{background-color:${bg};${s.bg_image ? `background-image:url('${s.bg_image}');background-size:cover;background-position:center;` : ''}min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:20px;box-sizing:border-box}
+${s.bg_image && overlay > 0 ? `body::before{content:'';position:fixed;inset:0;background:rgba(0,0,0,${overlay / 100});z-index:0}` : ''}
+${splitCss}
+label{color:${textColor};font-size:13px;font-weight:600;display:block;margin-bottom:5px}
+input[type=text],input[type=password]{border:1.5px solid #e2e8f0;border-radius:${inputR}px;padding:11px 14px;font-size:14px;color:${textColor};background:#f8fafc;width:100%;box-sizing:border-box;outline:none;transition:border-color .2s,box-shadow .2s}
+input[type=text]:focus,input[type=password]:focus{border-color:${btnColor};box-shadow:0 0 0 3px ${btnColor}22;background:#fff}
+form p{margin:0 0 16px}
+.user-pass-wrap{margin-bottom:16px}
+.wp-pwd{position:relative}
+.wp-pwd input{padding-right:44px}
+.wp-hide-pw{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#94a3b8;padding:4px;font-size:16px}
+p.forgetmenot label{font-weight:400}
+.button-primary{background:${btnColor};border:none;border-radius:${inputR}px;padding:12px 24px;font-size:14px;font-weight:600;color:#fff;cursor:pointer;box-shadow:0 2px 8px ${btnColor}44;transition:filter .15s;letter-spacing:.2px}
+.button-primary:hover{filter:brightness(1.08)}
+form::after{content:'';display:table;clear:both}
+#nav,#backtoblog{margin-top:14px;padding:0;text-align:center}
+#nav a,#backtoblog a{color:${linkColor};font-size:13px;text-decoration:none}
+#nav a:hover,#backtoblog a:hover{text-decoration:underline}
+.login-footer,.wmp-login-footer{text-align:center;margin-top:10px;font-size:12px;color:#64748b}
+#login_error,.message,.success{border-radius:${inputR}px;border-left-color:${btnColor};font-size:13px}
+${s.custom_css || ''}
+`
+
+  const h   = s.heading || ''
+  const sub = s.heading_sub || ''
+  const brandLogoHTML = s.logo_url
+    ? `<img src="${s.logo_url}" style="max-width:55%;max-height:100px;object-fit:contain" />`
+    : `<div style="width:72px;height:72px;border:2px solid rgba(0,0,0,.15);border-radius:12px;display:flex;align-items:center;justify-content:center"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="rgba(0,0,0,.3)" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>`
+
+  const injectHTML = isSplit ? `
+  ${(h || sub) ? `<h2 class="wmp-heading">${h || 'Welcome back'}</h2><p class="wmp-heading-sub">${sub || `Login to your ${siteName} account`}</p>` : ''}
+  ${s.form_html ? `<div style="margin-bottom:16px">${s.form_html}</div>` : ''}
+  <div class="wmp-inject">
+    ${s.footer ? `<p class="login-footer">${s.footer}</p>` : ''}
+    ${s.show_privacy ? `<p class="login-footer"><a href="#" style="color:${linkColor};text-decoration:none">Privacy Policy</a></p>` : ''}
+    ${s.custom_links_html ? `<div class="login-footer">${s.custom_links_html}</div>` : ''}
+  </div>
+  ` : `
+  ${(h || sub) ? `<h2 class="wmp-heading">${h}</h2>${sub ? `<p class="wmp-heading-sub">${sub}</p>` : ''}` : ''}
+  ${s.form_html ? `<div style="margin-bottom:16px">${s.form_html}</div>` : ''}
+  `
+
+  const logoH1HTML = isSplit
+    ? `<h1><a href="#">${siteName}</a></h1>${injectHTML}`
+    : `<h1><a href="#">${h || siteName}</a></h1>${injectHTML}`
+
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>${css}</style></head>
+<body class="login wp-core-ui">
+<div id="login">
+  ${logoH1HTML}
+  <form name="loginform" id="loginform" method="post" action="#">
+    <p><label>Username or Email Address</label><input type="text" class="input" autocomplete="off" /></p>
+    <div class="user-pass-wrap">
+      <label>Password</label>
+      <div class="wp-pwd">
+        <input type="password" class="input password-input" autocomplete="off" />
+        <button type="button" class="button wp-hide-pw">👁</button>
+      </div>
+    </div>
+    ${!isSplit ? `<p class="forgetmenot"><label><input type="checkbox" /> Remember Me</label></p>` : ''}
+    <p class="submit"><input type="submit" class="button button-primary button-large" value="Log In" /></p>
+  </form>
+  <p id="nav"><a href="#">Lost your password?</a></p>
+  <p id="backtoblog"><a href="#">&#8592; Go to ${siteName}</a></p>
+  ${!isSplit ? `${s.footer ? `<p class="login-footer">${s.footer}</p>` : ''}${s.show_privacy ? `<p class="login-footer"><a href="#" style="color:${linkColor};text-decoration:none">Privacy Policy</a></p>` : ''}${s.custom_links_html ? `<div class="login-footer">${s.custom_links_html}</div>` : ''}` : ''}
+  ${isSplit ? `<div id="wmp-brand">${brandLogoHTML}</div>` : ''}
+</div>
+</body></html>`
 }
 
 // ── Component ──────────────────────────────────────────────────────────────────
@@ -138,7 +264,7 @@ export function AgencyTools() {
   })
   const [login, setLogin] = useState<Partial<LoginSettings>>({})
 
-  const updateLogin = (key: keyof LoginSettings, val: string | boolean) =>
+  const updateLogin = (key: keyof LoginSettings, val: string | boolean | number) =>
     setLogin(prev => ({ ...prev, [key]: val }))
 
   const saveLogin = useMutation({
@@ -324,7 +450,7 @@ export function AgencyTools() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-semibold text-slate-800 dark:text-slate-100">White-label Login Page</p>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">Customise wp-login.php with your client's branding</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Fully customise wp-login.php — preview auto-syncs with the real page</p>
                 </div>
                 <div className="flex items-center gap-3">
                   <span className={`text-sm font-medium ${merged.enabled ? 'text-green-600 dark:text-green-400' : 'text-slate-400'}`}>
@@ -342,201 +468,173 @@ export function AgencyTools() {
             {/* ── Left: Settings ── */}
             <div className="xl:col-span-3 space-y-4">
 
-              {/* Logo section */}
+              {/* Branding */}
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                    <ImageIcon className="w-4 h-4 text-slate-500" /> Logo
+                    <ImageIcon className="w-4 h-4 text-slate-500" /> Branding
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3">
-                  {/* Logo URL + thumbnail + media picker */}
+                <CardContent className="space-y-4">
                   <div className="space-y-2">
+                    <Label className="text-xs font-medium text-slate-600 dark:text-slate-400">Logo</Label>
                     <div className="flex gap-2">
-                      <Input
-                        placeholder="https://example.com/logo.png"
-                        value={merged.logo_url ?? ''}
-                        onChange={e => updateLogin('logo_url', e.target.value)}
-                        className="flex-1"
-                      />
-                      <Button
-                        variant="outline" size="sm" type="button"
-                        onClick={() => openMediaPicker('Choose Logo', url => updateLogin('logo_url', url))}
-                        className="shrink-0 gap-1.5"
-                      >
+                      <Input placeholder="https://example.com/logo.png" value={merged.logo_url ?? ''} onChange={e => updateLogin('logo_url', e.target.value)} className="flex-1" />
+                      <Button variant="outline" size="sm" type="button" onClick={() => openMediaPicker('Choose Logo', url => updateLogin('logo_url', url))} className="shrink-0 gap-1.5">
                         <ImageIcon className="w-3.5 h-3.5" /> Media
                       </Button>
-                      {merged.logo_url && (
-                        <Button
-                          variant="ghost" size="sm" type="button"
-                          onClick={() => updateLogin('logo_url', '')}
-                          className="shrink-0 text-slate-400 hover:text-red-500"
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                      )}
+                      {merged.logo_url && <Button variant="ghost" size="sm" type="button" onClick={() => updateLogin('logo_url', '')} className="shrink-0 text-slate-400 hover:text-red-500"><X className="w-4 h-4" /></Button>}
                     </div>
                     {merged.logo_url && (
-                      <div className="flex items-center gap-3 p-2.5 rounded-md bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-                        <img
-                          src={merged.logo_url} alt="Logo preview"
-                          className="max-h-10 max-w-[140px] object-contain rounded"
-                          onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
-                        />
+                      <div className="flex items-center gap-3 p-2 rounded-md bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                        <img src={merged.logo_url} alt="Logo" className="max-h-8 max-w-[120px] object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
                         <p className="text-xs text-slate-400 truncate">{merged.logo_url}</p>
                       </div>
                     )}
-                    <p className="text-xs text-slate-400">Recommended: transparent PNG, 220×80 px or wider</p>
+                    <p className="text-xs text-slate-400">Transparent PNG, max 200px wide × 72px tall</p>
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs font-medium text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
-                      <Type className="w-3.5 h-3.5" /> Logo tooltip / heading text
-                    </Label>
-                    <Input
-                      placeholder="Log in to your site"
-                      value={merged.heading ?? ''}
-                      onChange={e => updateLogin('heading', e.target.value)}
-                    />
-                    <p className="text-xs text-slate-400">Replaces the "Powered by WordPress" tooltip shown on hover</p>
+                    <Label className="text-xs font-medium text-slate-600 dark:text-slate-400">Page title / heading text</Label>
+                    <Input placeholder={`Log in to ${typeof window !== 'undefined' ? (window as any).wpManagerPro?.siteName || 'Your Site' : 'Your Site'}`} value={merged.heading ?? ''} onChange={e => updateLogin('heading', e.target.value)} />
+                    <p className="text-xs text-slate-400">Shown as the logo title attribute and in the preview</p>
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Colours section */}
+              {/* Background */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                    <Image className="w-4 h-4 text-slate-500" /> Background
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-medium text-slate-600 dark:text-slate-400">Background colour</Label>
+                      <div className="flex gap-2 items-center">
+                        <label className="relative cursor-pointer shrink-0">
+                          <input type="color" value={merged.bg_color ?? '#f0f0f1'} onChange={e => updateLogin('bg_color', e.target.value)} className="absolute inset-0 opacity-0 w-full h-full cursor-pointer" />
+                          <span className="block w-9 h-9 rounded-md border-2 border-white dark:border-slate-700 shadow-sm" style={{ background: merged.bg_color ?? '#f0f0f1' }} />
+                        </label>
+                        <Input value={merged.bg_color ?? '#f0f0f1'} onChange={e => updateLogin('bg_color', e.target.value)} className="font-mono text-sm" maxLength={7} />
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-medium text-slate-600 dark:text-slate-400">Overlay opacity {merged.overlay ? `(${merged.overlay}%)` : ''}</Label>
+                      <input type="range" min={0} max={80} step={5} value={merged.overlay ?? 0} onChange={e => updateLogin('overlay', Number(e.target.value))} className="w-full accent-blue-600" />
+                      <p className="text-xs text-slate-400">Dark overlay on background image</p>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-medium text-slate-600 dark:text-slate-400">Background image <span className="text-slate-400 font-normal">(optional)</span></Label>
+                    <div className="flex gap-2">
+                      <Input placeholder="https://example.com/bg.jpg" value={merged.bg_image ?? ''} onChange={e => updateLogin('bg_image', e.target.value)} className="flex-1" />
+                      <Button variant="outline" size="sm" type="button" onClick={() => openMediaPicker('Choose Background', url => updateLogin('bg_image', url))} className="shrink-0 gap-1.5"><ImageIcon className="w-3.5 h-3.5" /> Media</Button>
+                      {merged.bg_image && <Button variant="ghost" size="sm" type="button" onClick={() => updateLogin('bg_image', '')} className="shrink-0 text-slate-400 hover:text-red-500"><X className="w-4 h-4" /></Button>}
+                    </div>
+                    <p className="text-xs text-slate-400">Recommended: 1920×1080 JPG. Overrides background colour.</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Design */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                    <Sliders className="w-4 h-4 text-slate-500" /> Form Design
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-medium text-slate-600 dark:text-slate-400">Card background</Label>
+                      <div className="flex gap-2 items-center">
+                        <label className="relative cursor-pointer shrink-0">
+                          <input type="color" value={merged.card_bg ?? '#ffffff'} onChange={e => updateLogin('card_bg', e.target.value)} className="absolute inset-0 opacity-0 w-full h-full cursor-pointer" />
+                          <span className="block w-9 h-9 rounded-md border-2 border-white dark:border-slate-700 shadow-sm" style={{ background: merged.card_bg ?? '#ffffff' }} />
+                        </label>
+                        <Input value={merged.card_bg ?? '#ffffff'} onChange={e => updateLogin('card_bg', e.target.value)} className="font-mono text-sm" maxLength={7} />
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-medium text-slate-600 dark:text-slate-400">Shadow</Label>
+                      <Select value={merged.card_shadow ?? 'md'} onValueChange={v => updateLogin('card_shadow', v)}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">None</SelectItem>
+                          <SelectItem value="sm">Subtle</SelectItem>
+                          <SelectItem value="md">Medium</SelectItem>
+                          <SelectItem value="lg">Large</SelectItem>
+                          <SelectItem value="xl">Extra Large</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-medium text-slate-600 dark:text-slate-400">Card radius: {merged.card_radius ?? 8}px</Label>
+                      <input type="range" min={0} max={32} step={2} value={merged.card_radius ?? 8} onChange={e => updateLogin('card_radius', Number(e.target.value))} className="w-full accent-blue-600" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-medium text-slate-600 dark:text-slate-400">Input/Button radius: {merged.input_radius ?? 6}px</Label>
+                      <input type="range" min={0} max={24} step={2} value={merged.input_radius ?? 6} onChange={e => updateLogin('input_radius', Number(e.target.value))} className="w-full accent-blue-600" />
+                    </div>
+                    <div className="space-y-1.5 col-span-2">
+                      <Label className="text-xs font-medium text-slate-600 dark:text-slate-400">Form width: {merged.form_width ?? 360}px</Label>
+                      <input type="range" min={280} max={480} step={10} value={merged.form_width ?? 360} onChange={e => updateLogin('form_width', Number(e.target.value))} className="w-full accent-blue-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Colours */}
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-semibold flex items-center gap-2">
                     <Palette className="w-4 h-4 text-slate-500" /> Colours
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <Label className="text-xs font-medium text-slate-600 dark:text-slate-400">Background colour</Label>
-                    <div className="flex gap-2 items-center">
-                      <label className="relative cursor-pointer shrink-0">
-                        <input
-                          type="color"
-                          value={merged.bg_color ?? '#f0f0f1'}
-                          onChange={e => updateLogin('bg_color', e.target.value)}
-                          className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
-                        />
-                        <span
-                          className="block w-9 h-9 rounded-md border-2 border-white dark:border-slate-700 shadow-sm"
-                          style={{ background: merged.bg_color ?? '#f0f0f1' }}
-                        />
-                      </label>
-                      <Input
-                        value={merged.bg_color ?? '#f0f0f1'}
-                        onChange={e => updateLogin('bg_color', e.target.value)}
-                        className="font-mono text-sm"
-                        maxLength={7}
-                      />
+                <CardContent className="grid grid-cols-3 gap-4">
+                  {([
+                    ['btn_color',  'Button',  '#2271b1'],
+                    ['text_color', 'Text / Labels', '#1d2327'],
+                    ['link_color', 'Links', ''],
+                  ] as const).map(([key, label, def]) => (
+                    <div key={key} className="space-y-1.5">
+                      <Label className="text-xs font-medium text-slate-600 dark:text-slate-400">{label}</Label>
+                      <div className="flex gap-2 items-center">
+                        <label className="relative cursor-pointer shrink-0">
+                          <input type="color" value={(merged as any)[key] || def || '#2271b1'} onChange={e => updateLogin(key as any, e.target.value)} className="absolute inset-0 opacity-0 w-full h-full cursor-pointer" />
+                          <span className="block w-9 h-9 rounded-md border-2 border-white dark:border-slate-700 shadow-sm" style={{ background: (merged as any)[key] || def || '#2271b1' }} />
+                        </label>
+                        <Input value={(merged as any)[key] ?? ''} placeholder={def || 'Same as button'} onChange={e => updateLogin(key as any, e.target.value)} className="font-mono text-sm" maxLength={7} />
+                      </div>
                     </div>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs font-medium text-slate-600 dark:text-slate-400">Button colour</Label>
-                    <div className="flex gap-2 items-center">
-                      <label className="relative cursor-pointer shrink-0">
-                        <input
-                          type="color"
-                          value={merged.btn_color ?? '#2271b1'}
-                          onChange={e => updateLogin('btn_color', e.target.value)}
-                          className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
-                        />
-                        <span
-                          className="block w-9 h-9 rounded-md border-2 border-white dark:border-slate-700 shadow-sm"
-                          style={{ background: merged.btn_color ?? '#2271b1' }}
-                        />
-                      </label>
-                      <Input
-                        value={merged.btn_color ?? '#2271b1'}
-                        onChange={e => updateLogin('btn_color', e.target.value)}
-                        className="font-mono text-sm"
-                        maxLength={7}
-                      />
-                    </div>
-                  </div>
+                  ))}
                 </CardContent>
               </Card>
 
-              {/* Background image section */}
+              {/* Content & Links */}
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                    <Image className="w-4 h-4 text-slate-500" /> Background Image
-                    <span className="text-xs font-normal text-slate-400">(optional)</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="https://example.com/bg.jpg"
-                      value={merged.bg_image ?? ''}
-                      onChange={e => updateLogin('bg_image', e.target.value)}
-                      className="flex-1"
-                    />
-                    <Button
-                      variant="outline" size="sm" type="button"
-                      onClick={() => openMediaPicker('Choose Background Image', url => updateLogin('bg_image', url))}
-                      className="shrink-0 gap-1.5"
-                    >
-                      <ImageIcon className="w-3.5 h-3.5" /> Media
-                    </Button>
-                    {merged.bg_image && (
-                      <Button
-                        variant="ghost" size="sm" type="button"
-                        onClick={() => updateLogin('bg_image', '')}
-                        className="shrink-0 text-slate-400 hover:text-red-500"
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
-                    )}
-                  </div>
-                  <p className="text-xs text-slate-400">Overrides background colour when set. Recommended: 1920×1080 JPG.</p>
-                </CardContent>
-              </Card>
-
-              {/* Text section */}
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                    <Layout className="w-4 h-4 text-slate-500" /> Page Text & Links
+                    <Type className="w-4 h-4 text-slate-500" /> Content & Links
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-1.5">
                     <Label className="text-xs font-medium text-slate-600 dark:text-slate-400">Footer text</Label>
-                    <Input
-                      placeholder="© 2026 Your Company. All rights reserved."
-                      value={merged.footer ?? ''}
-                      onChange={e => updateLogin('footer', e.target.value)}
-                    />
-                    <p className="text-xs text-slate-400">Small text shown below the login form</p>
+                    <Input placeholder="© 2026 Your Company. All rights reserved." value={merged.footer ?? ''} onChange={e => updateLogin('footer', e.target.value)} />
                   </div>
-
-                  <div className="border-t border-slate-100 dark:border-slate-800 pt-4 space-y-3">
-                    <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Privacy & Legal Links</p>
-                    <div className="flex items-center justify-between py-2 px-3 rounded-md bg-slate-50 dark:bg-slate-800">
-                      <div>
-                        <p className="text-sm font-medium">Privacy Policy link</p>
-                        <p className="text-xs text-slate-400 mt-0.5">Show the site's Privacy Policy page link below the form</p>
-                      </div>
-                      <Switch
-                        checked={merged.show_privacy ?? false}
-                        onCheckedChange={v => updateLogin('show_privacy', v)}
-                      />
+                  <div className="flex items-center justify-between py-2 px-3 rounded-md bg-slate-50 dark:bg-slate-800">
+                    <div>
+                      <p className="text-sm font-medium">Privacy Policy link</p>
+                      <p className="text-xs text-slate-400 mt-0.5">Show site's Privacy Policy below the form</p>
                     </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-xs font-medium text-slate-600 dark:text-slate-400">Custom links HTML</Label>
-                      <Textarea
-                        rows={3}
-                        placeholder={'<a href="/terms">Terms of Service</a> · <a href="/cookies">Cookie Policy</a>'}
-                        value={merged.custom_links_html ?? ''}
-                        onChange={e => updateLogin('custom_links_html', e.target.value)}
-                        className="font-mono text-xs"
-                      />
-                      <p className="text-xs text-slate-400">HTML shown below the login form — supports anchor tags with href/target/rel</p>
-                    </div>
+                    <Switch checked={merged.show_privacy ?? false} onCheckedChange={v => updateLogin('show_privacy', v)} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium text-slate-600 dark:text-slate-400">Custom links HTML</Label>
+                    <Textarea rows={2} placeholder={'<a href="/terms">Terms</a> · <a href="/privacy">Privacy</a>'} value={merged.custom_links_html ?? ''} onChange={e => updateLogin('custom_links_html', e.target.value)} className="font-mono text-xs" />
                   </div>
                 </CardContent>
               </Card>
@@ -545,33 +643,31 @@ export function AgencyTools() {
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                    <Layout className="w-4 h-4 text-slate-500" /> Custom Fields Group
-                    <span className="text-xs font-normal text-slate-400">(optional)</span>
+                    <Layout className="w-4 h-4 text-slate-500" /> Custom Fields Group <span className="text-xs font-normal text-slate-400">(optional)</span>
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3">
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    HTML injected inside the login form, just before the submit button. Use standard <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded text-[11px]">&lt;input&gt;</code>, <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded text-[11px]">&lt;select&gt;</code>, or any HTML.
-                  </p>
-                  <Textarea
-                    rows={5}
-                    placeholder={'<p>\n  <label for="company">Company<br />\n    <input type="text" name="company" id="company" class="input" />\n  </label>\n</p>'}
-                    value={merged.form_html ?? ''}
-                    onChange={e => updateLogin('form_html', e.target.value)}
-                    className="font-mono text-xs"
-                  />
-                  <p className="text-xs text-slate-400">Injected via the WordPress <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">login_form</code> action. Values are posted with the login request.</p>
+                <CardContent className="space-y-2">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">HTML injected inside the form before the submit button via WordPress <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">login_form</code> action.</p>
+                  <Textarea rows={4} placeholder={'<p><label for="company">Company<br /><input type="text" name="company" id="company" class="input" /></label></p>'} value={merged.form_html ?? ''} onChange={e => updateLogin('form_html', e.target.value)} className="font-mono text-xs" />
+                </CardContent>
+              </Card>
+
+              {/* Custom CSS */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                    <Monitor className="w-4 h-4 text-slate-500" /> Custom CSS <span className="text-xs font-normal text-slate-400">(advanced)</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <Textarea rows={5} placeholder={'/* Extra CSS appended after all generated styles */\n.login input.input { font-size: 16px; }'}  value={merged.custom_css ?? ''} onChange={e => updateLogin('custom_css', e.target.value)} className="font-mono text-xs" />
                 </CardContent>
               </Card>
 
               {/* Save + open */}
               <div className="flex items-center justify-between pt-1">
-                <a
-                  href={typeof window !== 'undefined' ? `${window.wpManagerPro?.siteUrl || ''}/wp-login.php` : '#'}
-                  target="_blank" rel="noopener"
-                  className="text-sm text-blue-600 dark:text-blue-400 flex items-center gap-1.5 hover:underline"
-                >
-                  <ExternalLink className="w-3.5 h-3.5" /> Open login page
+                <a href={typeof window !== 'undefined' ? `${(window as any).wpManagerPro?.siteUrl || ''}/wp-login.php` : '#'} target="_blank" rel="noopener" className="text-sm text-blue-600 dark:text-blue-400 flex items-center gap-1.5 hover:underline">
+                  <ExternalLink className="w-3.5 h-3.5" /> Open live login page
                 </a>
                 <Button onClick={() => saveLogin.mutate()} disabled={saveLogin.isPending}>
                   {saveLogin.isPending && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
@@ -580,89 +676,21 @@ export function AgencyTools() {
               </div>
             </div>
 
-            {/* ── Right: Live preview ── */}
+            {/* ── Right: Live preview (iframe, pixel-perfect mirror of real page) ── */}
             <div className="xl:col-span-2 sticky top-6">
               <Card className="overflow-hidden">
                 <CardHeader className="py-3 px-4 border-b border-slate-100 dark:border-slate-800">
                   <CardTitle className="text-xs font-semibold flex items-center gap-1.5 text-slate-500 uppercase tracking-wide">
-                    <Eye className="w-3.5 h-3.5" /> Live Preview
+                    <Eye className="w-3.5 h-3.5" /> Live Preview — auto-synced
                   </CardTitle>
                 </CardHeader>
-                {/* Simulated login page */}
-                <div
-                  className="min-h-[460px] flex flex-col items-center justify-center gap-4 p-6 transition-all duration-300"
-                  style={{
-                    background: merged.bg_image
-                      ? `url(${merged.bg_image}) center/cover no-repeat`
-                      : (merged.bg_color ?? '#f0f0f1'),
-                  }}
-                >
-                  {/* Logo — matches WP's #login h1 a position above the form */}
-                  <div className="w-full max-w-[320px] flex justify-center mb-0">
-                    {merged.logo_url ? (
-                      <img
-                        src={merged.logo_url} alt="Logo"
-                        className="max-h-20 max-w-[220px] object-contain drop-shadow"
-                        onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
-                      />
-                    ) : (
-                      <div className="w-16 h-16 bg-slate-200/60 rounded flex items-center justify-center">
-                        <Shield className="w-7 h-7 text-slate-400" />
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Simulated login form — matches real wp-login.php structure */}
-                  <div className="w-full max-w-[320px] bg-white shadow-md rounded p-6 space-y-3 border border-slate-200">
-                    {merged.heading && (
-                      <p className="text-center text-sm font-semibold text-slate-700 mb-1">{merged.heading}</p>
-                    )}
-                    <div className="space-y-1">
-                      <div className="text-xs font-medium text-slate-700">Username or Email Address</div>
-                      <div className="h-8 rounded border border-slate-300 bg-white" />
-                    </div>
-                    <div className="space-y-1">
-                      <div className="text-xs font-medium text-slate-700">Password</div>
-                      <div className="h-8 rounded border border-slate-300 bg-white" />
-                    </div>
-                    {/* Remember Me + Log In side by side — exact WP layout */}
-                    <div className="flex items-center justify-between gap-2 pt-1">
-                      <label className="flex items-center gap-1.5 text-xs text-slate-600 cursor-default">
-                        <div className="w-3.5 h-3.5 rounded-sm border border-slate-400 bg-white" />
-                        Remember Me
-                      </label>
-                      <div
-                        className="px-3 h-8 rounded text-xs font-semibold text-white flex items-center justify-center shadow-sm"
-                        style={{ background: merged.btn_color ?? '#2271b1' }}
-                      >
-                        Log In
-                      </div>
-                    </div>
-                    {/* Custom form fields preview */}
-                    {merged.form_html && (
-                      <div className="border-t border-slate-100 pt-2">
-                        <div className="text-[10px] text-slate-400 mb-1 uppercase tracking-wide">Custom fields</div>
-                        <div className="text-xs text-slate-500 italic truncate">{merged.form_html.substring(0, 60)}…</div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Links below the form — exact WP layout */}
-                  <div className="w-full max-w-[320px] space-y-1 text-center">
-                    <div className="text-xs text-[#50575e] hover:underline cursor-default">Lost your password?</div>
-                    {merged.footer && (
-                      <p className="text-xs opacity-70 mt-1" style={{ color: merged.bg_image ? '#fff' : '#64748b' }}>
-                        {merged.footer}
-                      </p>
-                    )}
-                    {merged.show_privacy && (
-                      <div className="text-xs text-[#50575e] cursor-default">Privacy Policy</div>
-                    )}
-                    {merged.custom_links_html && (
-                      <div className="text-xs text-[#50575e] cursor-default opacity-70">Custom links</div>
-                    )}
-                  </div>
-                </div>
+                <iframe
+                  srcDoc={buildLoginPreviewHTML(merged)}
+                  className="w-full border-0"
+                  style={{ height: 560 }}
+                  title="Login page preview"
+                  sandbox="allow-same-origin"
+                />
               </Card>
             </div>
           </div>
