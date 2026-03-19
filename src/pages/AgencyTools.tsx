@@ -75,7 +75,7 @@ interface MailEntry {
 interface LoginSettings {
   enabled: boolean; logo_url: string; bg_color: string
   bg_image: string; heading: string; footer: string; btn_color: string
-  show_privacy: boolean; custom_links_html: string
+  show_privacy: boolean; custom_links_html: string; form_html: string
 }
 interface AdminCustomiser {
   hidden_menus: string[]; hidden_widgets: string[]
@@ -541,6 +541,29 @@ export function AgencyTools() {
                 </CardContent>
               </Card>
 
+              {/* Custom Form Fields */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                    <Layout className="w-4 h-4 text-slate-500" /> Custom Fields Group
+                    <span className="text-xs font-normal text-slate-400">(optional)</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    HTML injected inside the login form, just before the submit button. Use standard <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded text-[11px]">&lt;input&gt;</code>, <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded text-[11px]">&lt;select&gt;</code>, or any HTML.
+                  </p>
+                  <Textarea
+                    rows={5}
+                    placeholder={'<p>\n  <label for="company">Company<br />\n    <input type="text" name="company" id="company" class="input" />\n  </label>\n</p>'}
+                    value={merged.form_html ?? ''}
+                    onChange={e => updateLogin('form_html', e.target.value)}
+                    className="font-mono text-xs"
+                  />
+                  <p className="text-xs text-slate-400">Injected via the WordPress <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">login_form</code> action. Values are posted with the login request.</p>
+                </CardContent>
+              </Card>
+
               {/* Save + open */}
               <div className="flex items-center justify-between pt-1">
                 <a
@@ -574,58 +597,71 @@ export function AgencyTools() {
                       : (merged.bg_color ?? '#f0f0f1'),
                   }}
                 >
-                  {/* Logo */}
-                  <div className="mb-1">
+                  {/* Logo — matches WP's #login h1 a position above the form */}
+                  <div className="w-full max-w-[320px] flex justify-center mb-0">
                     {merged.logo_url ? (
                       <img
                         src={merged.logo_url} alt="Logo"
-                        className="max-h-16 max-w-[200px] object-contain drop-shadow"
+                        className="max-h-20 max-w-[220px] object-contain drop-shadow"
                         onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
                       />
                     ) : (
-                      <div className="w-16 h-16 rounded-full bg-white/30 backdrop-blur-sm flex items-center justify-center shadow-md">
-                        <Shield className="w-8 h-8 text-white/70" />
+                      <div className="w-16 h-16 bg-slate-200/60 rounded flex items-center justify-center">
+                        <Shield className="w-7 h-7 text-slate-400" />
                       </div>
                     )}
                   </div>
 
-                  {/* Simulated login form */}
-                  <div className="w-full max-w-[280px] bg-white dark:bg-slate-900 rounded-lg shadow-xl p-5 space-y-3">
+                  {/* Simulated login form — matches real wp-login.php structure */}
+                  <div className="w-full max-w-[320px] bg-white shadow-md rounded p-6 space-y-3 border border-slate-200">
                     {merged.heading && (
-                      <p className="text-center text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1">
-                        {merged.heading}
-                      </p>
+                      <p className="text-center text-sm font-semibold text-slate-700 mb-1">{merged.heading}</p>
                     )}
                     <div className="space-y-1">
-                      <div className="text-xs text-slate-500 mb-0.5">Username or Email</div>
-                      <div className="h-8 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+                      <div className="text-xs font-medium text-slate-700">Username or Email Address</div>
+                      <div className="h-8 rounded border border-slate-300 bg-white" />
                     </div>
                     <div className="space-y-1">
-                      <div className="text-xs text-slate-500 mb-0.5">Password</div>
-                      <div className="h-8 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+                      <div className="text-xs font-medium text-slate-700">Password</div>
+                      <div className="h-8 rounded border border-slate-300 bg-white" />
                     </div>
+                    {/* Remember Me + Log In side by side — exact WP layout */}
                     <div className="flex items-center justify-between gap-2 pt-1">
+                      <label className="flex items-center gap-1.5 text-xs text-slate-600 cursor-default">
+                        <div className="w-3.5 h-3.5 rounded-sm border border-slate-400 bg-white" />
+                        Remember Me
+                      </label>
                       <div
-                        className="flex-1 h-8 rounded text-xs font-semibold text-white flex items-center justify-center shadow-sm transition-colors"
+                        className="px-3 h-8 rounded text-xs font-semibold text-white flex items-center justify-center shadow-sm"
                         style={{ background: merged.btn_color ?? '#2271b1' }}
                       >
                         Log In
                       </div>
                     </div>
-                    <div className="text-center">
-                      <span className="text-xs text-slate-400 hover:text-slate-600 cursor-default">Lost your password?</span>
-                    </div>
+                    {/* Custom form fields preview */}
+                    {merged.form_html && (
+                      <div className="border-t border-slate-100 pt-2">
+                        <div className="text-[10px] text-slate-400 mb-1 uppercase tracking-wide">Custom fields</div>
+                        <div className="text-xs text-slate-500 italic truncate">{merged.form_html.substring(0, 60)}…</div>
+                      </div>
+                    )}
                   </div>
 
-                  {/* Footer text */}
-                  {merged.footer && (
-                    <p
-                      className="text-xs text-center max-w-[240px] opacity-80 mt-1"
-                      style={{ color: merged.bg_image ? '#fff' : '#64748b' }}
-                    >
-                      {merged.footer}
-                    </p>
-                  )}
+                  {/* Links below the form — exact WP layout */}
+                  <div className="w-full max-w-[320px] space-y-1 text-center">
+                    <div className="text-xs text-[#50575e] hover:underline cursor-default">Lost your password?</div>
+                    {merged.footer && (
+                      <p className="text-xs opacity-70 mt-1" style={{ color: merged.bg_image ? '#fff' : '#64748b' }}>
+                        {merged.footer}
+                      </p>
+                    )}
+                    {merged.show_privacy && (
+                      <div className="text-xs text-[#50575e] cursor-default">Privacy Policy</div>
+                    )}
+                    {merged.custom_links_html && (
+                      <div className="text-xs text-[#50575e] cursor-default opacity-70">Custom links</div>
+                    )}
+                  </div>
                 </div>
               </Card>
             </div>

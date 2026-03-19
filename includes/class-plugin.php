@@ -148,6 +148,7 @@ class Plugin {
         add_filter( 'login_headerurl',       [ Agency_Controller::class, 'login_header_url'   ] );
         add_filter( 'login_headertext',      [ Agency_Controller::class, 'login_header_text'  ] );
         add_action( 'login_footer',          [ Agency_Controller::class, 'apply_login_footer' ] );
+        add_action( 'login_form',            [ Agency_Controller::class, 'apply_login_form_fields' ] );
 
         // Agency — admin customiser (priority 999 to run after all menus are registered)
         add_action( 'admin_menu',        [ Agency_Controller::class, 'apply_admin_customiser'  ], 999 );

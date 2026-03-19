@@ -36,6 +36,7 @@ class Agency_Controller {
     const OPT_LOGIN_ENABLED      = 'wmp_login_custom_enabled';
     const OPT_LOGIN_SHOW_PRIVACY = 'wmp_login_show_privacy';
     const OPT_LOGIN_LINKS_HTML   = 'wmp_login_links_html';
+    const OPT_LOGIN_FORM_HTML    = 'wmp_login_form_html';
 
     // Admin Customiser
     const OPT_HIDDEN_MENUS   = 'wmp_hidden_admin_menus';
@@ -179,6 +180,7 @@ class Agency_Controller {
             'btn_color'        => (string) get_option( self::OPT_LOGIN_BTN_COLOR, '#2271b1' ),
             'show_privacy'     => (bool) get_option( self::OPT_LOGIN_SHOW_PRIVACY, false ),
             'custom_links_html'=> (string) get_option( self::OPT_LOGIN_LINKS_HTML, '' ),
+            'form_html'        => (string) get_option( self::OPT_LOGIN_FORM_HTML, '' ),
         ], 200 );
     }
 
@@ -193,6 +195,7 @@ class Agency_Controller {
             'btn_color'        => [ self::OPT_LOGIN_BTN_COLOR,    'color' ],
             'show_privacy'     => [ self::OPT_LOGIN_SHOW_PRIVACY, 'bool'  ],
             'custom_links_html'=> [ self::OPT_LOGIN_LINKS_HTML,   'html'  ],
+            'form_html'        => [ self::OPT_LOGIN_FORM_HTML,    'html'  ],
         ];
 
         foreach ( $fields as $param => [ $opt, $type ] ) {
@@ -277,6 +280,17 @@ class Agency_Controller {
         $links_html = get_option( self::OPT_LOGIN_LINKS_HTML, '' );
         if ( $links_html ) {
             echo '<div style="text-align:center;font-size:12px;margin-top:8px;color:#666;">' . wp_kses_post( $links_html ) . '</div>';
+        }
+    }
+
+    /** Hooked to login_form — inject custom form fields HTML just before the submit button. */
+    public static function apply_login_form_fields(): void {
+        if ( ! get_option( self::OPT_LOGIN_ENABLED, false ) ) return;
+
+        $form_html = get_option( self::OPT_LOGIN_FORM_HTML, '' );
+        if ( $form_html ) {
+            // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- saved via wp_kses_post
+            echo wp_kses_post( $form_html );
         }
     }
 
