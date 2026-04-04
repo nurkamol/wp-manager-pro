@@ -12,7 +12,7 @@ import { Switch } from '@/components/ui/switch'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
-import { Plus, Trash2, Edit2, Code2, RefreshCw, X, Save, AlertTriangle } from 'lucide-react'
+import { Plus, Trash2, Edit2, Code2, RefreshCw, X, Save, AlertTriangle, Maximize2, Minimize2 } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
 
 interface Snippet {
@@ -52,6 +52,7 @@ export function Snippets() {
   const [editSnippet, setEditSnippet] = useState<Snippet | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Snippet | null>(null)
   const [form, setForm] = useState(emptyForm)
+  const [editorExpanded, setEditorExpanded] = useState(false)
 
   const { data, isLoading } = useQuery<{ snippets: Snippet[] }>({
     queryKey: ['snippets'],
@@ -101,11 +102,13 @@ export function Snippets() {
   const openEdit = (s: Snippet) => {
     setEditSnippet(s)
     setForm({ title: s.title, description: s.description, code: s.code, type: s.type })
+    setEditorExpanded(false)
   }
 
   const openCreate = () => {
     setEditSnippet(null)
     setForm(emptyForm)
+    setEditorExpanded(false)
     setShowForm(true)
   }
 
@@ -205,62 +208,76 @@ export function Snippets() {
       <Dialog
         open={isFormOpen}
         onOpenChange={(open) => {
-          if (!open) { setShowForm(false); setEditSnippet(null) }
+          if (!open) { setShowForm(false); setEditSnippet(null); setEditorExpanded(false) }
         }}
       >
-        <DialogContent className="max-w-3xl">
+        <DialogContent className={editorExpanded ? 'max-w-[95vw] w-[95vw] h-[95vh] flex flex-col' : 'max-w-3xl'}>
           <DialogHeader>
             <DialogTitle>{editSnippet ? 'Edit Snippet' : 'New Snippet'}</DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="snippet-title">Title</Label>
-                <Input
-                  id="snippet-title"
-                  placeholder="My custom snippet"
-                  value={form.title}
-                  onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-                  autoFocus
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="snippet-type">Type</Label>
-                <Select value={form.type} onValueChange={(v) => setForm(f => ({ ...f, type: v as SnippetType }))}>
-                  <SelectTrigger id="snippet-type">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="php">PHP</SelectItem>
-                    <SelectItem value="css">CSS</SelectItem>
-                    <SelectItem value="js">JavaScript</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+          <div className={`space-y-4 ${editorExpanded ? 'flex flex-col flex-1 min-h-0' : ''}`}>
+            {!editorExpanded && (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="snippet-title">Title</Label>
+                    <Input
+                      id="snippet-title"
+                      placeholder="My custom snippet"
+                      value={form.title}
+                      onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+                      autoFocus
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="snippet-type">Type</Label>
+                    <Select value={form.type} onValueChange={(v) => setForm(f => ({ ...f, type: v as SnippetType }))}>
+                      <SelectTrigger id="snippet-type">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="php">PHP</SelectItem>
+                        <SelectItem value="css">CSS</SelectItem>
+                        <SelectItem value="js">JavaScript</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="snippet-desc">Description (optional)</Label>
-              <Input
-                id="snippet-desc"
-                placeholder="What does this snippet do?"
-                value={form.description}
-                onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-              />
-            </div>
+                <div className="space-y-2">
+                  <Label htmlFor="snippet-desc">Description (optional)</Label>
+                  <Input
+                    id="snippet-desc"
+                    placeholder="What does this snippet do?"
+                    value={form.description}
+                    onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+                  />
+                </div>
+              </>
+            )}
 
-            <div className="space-y-2">
-              <Label>Code</Label>
-              <div className="border rounded-md overflow-hidden" style={{ height: '300px' }}>
+            <div className={`space-y-2 ${editorExpanded ? 'flex flex-col flex-1 min-h-0' : ''}`}>
+              <div className="flex items-center justify-between">
+                <Label>Code</Label>
+                <button
+                  type="button"
+                  onClick={() => setEditorExpanded(e => !e)}
+                  className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded transition-colors"
+                  title={editorExpanded ? 'Collapse editor' : 'Expand editor'}
+                >
+                  {editorExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+                </button>
+              </div>
+              <div className={`border rounded-md overflow-hidden ${editorExpanded ? 'flex-1 min-h-0' : ''}`} style={editorExpanded ? {} : { height: '300px' }}>
                 <Editor
-                  height="300px"
+                  height={editorExpanded ? '100%' : '300px'}
                   language={getSnippetLang(form.type)}
                   theme="vs-dark"
                   value={form.code}
                   onChange={v => setForm(f => ({ ...f, code: v || '' }))}
                   options={{
-                    minimap: { enabled: false },
+                    minimap: { enabled: editorExpanded },
                     fontSize: 13,
                     wordWrap: 'on',
                     scrollBeyondLastLine: false,
@@ -273,8 +290,8 @@ export function Snippets() {
             </div>
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => { setShowForm(false); setEditSnippet(null) }}>
+          <DialogFooter className={editorExpanded ? 'mt-auto' : ''}>
+            <Button variant="outline" onClick={() => { setShowForm(false); setEditSnippet(null); setEditorExpanded(false) }}>
               <X className="w-4 h-4" /> Cancel
             </Button>
             <Button
