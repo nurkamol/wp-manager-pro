@@ -211,12 +211,12 @@ export function Snippets() {
           if (!open) { setShowForm(false); setEditSnippet(null); setEditorExpanded(false) }
         }}
       >
-        <DialogContent className={editorExpanded ? 'max-w-[95vw] w-[95vw] h-[95vh] flex flex-col' : 'max-w-3xl'}>
+        <DialogContent className={editorExpanded ? 'max-w-[95vw] w-[95vw]' : 'max-w-3xl'}>
           <DialogHeader>
             <DialogTitle>{editSnippet ? 'Edit Snippet' : 'New Snippet'}</DialogTitle>
           </DialogHeader>
 
-          <div className={`space-y-4 ${editorExpanded ? 'flex flex-col flex-1 min-h-0' : ''}`}>
+          <div className="space-y-4">
             {!editorExpanded && (
               <>
                 <div className="grid grid-cols-2 gap-4">
@@ -257,7 +257,7 @@ export function Snippets() {
               </>
             )}
 
-            <div className={`space-y-2 ${editorExpanded ? 'flex flex-col flex-1 min-h-0' : ''}`}>
+            <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label>Code</Label>
                 <button
@@ -269,9 +269,10 @@ export function Snippets() {
                   {editorExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
                 </button>
               </div>
-              <div className={`border rounded-md overflow-hidden ${editorExpanded ? 'flex-1 min-h-0' : ''}`} style={editorExpanded ? {} : { height: '300px' }}>
+              <div className="border rounded-md overflow-hidden" style={{ height: editorExpanded ? `${Math.round(window.innerHeight * 0.95) - 180}px` : '300px' }}>
                 <Editor
-                  height={editorExpanded ? '100%' : '300px'}
+                  key={editorExpanded ? 'expanded' : 'normal'}
+                  height={editorExpanded ? `${Math.round(window.innerHeight * 0.95) - 180}px` : '300px'}
                   language={getSnippetLang(form.type)}
                   theme="vs-dark"
                   value={form.code}
@@ -290,7 +291,7 @@ export function Snippets() {
             </div>
           </div>
 
-          <DialogFooter className={editorExpanded ? 'mt-auto' : ''}>
+          <DialogFooter>
             <Button variant="outline" onClick={() => { setShowForm(false); setEditSnippet(null); setEditorExpanded(false) }}>
               <X className="w-4 h-4" /> Cancel
             </Button>
