@@ -209,8 +209,8 @@ export function Snippets() {
       {/* Fullscreen editor overlay — portaled into #wp-manager-pro-root (same container as Dialog) so z-index beats the dialog backdrop */}
       {editorExpanded && createPortal(
         <div
-          className="fixed inset-0 flex flex-col bg-[#1e1e1e]"
-          style={{ zIndex: 9999 }}
+          className="fixed inset-x-0 bottom-0 flex flex-col bg-[#1e1e1e]"
+          style={{ zIndex: 9999, top: 32 }}
           onPointerDown={e => e.stopPropagation()}
           onClick={e => e.stopPropagation()}
         >
@@ -229,7 +229,7 @@ export function Snippets() {
           </div>
           <div className="flex-1 min-h-0">
             <Editor
-              height="calc(100vh - 37px)"
+              height="calc(100vh - 69px)"
               language={getSnippetLang(form.type)}
               theme="vs-dark"
               value={form.code}
