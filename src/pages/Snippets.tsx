@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { PageHeader } from '@/components/PageHeader'
@@ -112,7 +113,8 @@ export function Snippets() {
     setShowForm(true)
   }
 
-  const isFormOpen = showForm || !!editSnippet
+  // Dialog is hidden when fullscreen editor is active — avoids Radix dismiss interference
+  const isFormOpen = (showForm || !!editSnippet) && !editorExpanded
 
   if (isLoading) return <PageLoader text="Loading snippets..." />
 
@@ -204,11 +206,11 @@ export function Snippets() {
         )}
       </div>
 
-      {/* Fullscreen editor overlay — rendered outside Dialog to avoid z-index / layout issues */}
-      {editorExpanded && (
+      {/* Fullscreen editor overlay — portaled into #wp-manager-pro-root (same container as Dialog) so z-index beats the dialog backdrop */}
+      {editorExpanded && createPortal(
         <div
           className="fixed inset-0 flex flex-col bg-[#1e1e1e]"
-          style={{ zIndex: 999999 }}
+          style={{ zIndex: 9999 }}
           onPointerDown={e => e.stopPropagation()}
           onClick={e => e.stopPropagation()}
         >
@@ -227,7 +229,7 @@ export function Snippets() {
           </div>
           <div className="flex-1 min-h-0">
             <Editor
-              height="100%"
+              height="calc(100vh - 37px)"
               language={getSnippetLang(form.type)}
               theme="vs-dark"
               value={form.code}
@@ -243,7 +245,8 @@ export function Snippets() {
               }}
             />
           </div>
-        </div>
+        </div>,
+        document.getElementById('wp-manager-pro-root') ?? document.body
       )}
 
       {/* Create / Edit Dialog */}
@@ -308,22 +311,28 @@ export function Snippets() {
                 </button>
               </div>
               <div className="border rounded-md overflow-hidden" style={{ height: '300px' }}>
-                <Editor
-                  height="300px"
-                  language={getSnippetLang(form.type)}
-                  theme="vs-dark"
-                  value={form.code}
-                  onChange={v => setForm(f => ({ ...f, code: v || '' }))}
-                  options={{
-                    minimap: { enabled: false },
-                    fontSize: 13,
-                    wordWrap: 'on',
-                    scrollBeyondLastLine: false,
-                    automaticLayout: true,
-                    lineNumbers: 'on',
-                    renderWhitespace: 'none',
-                  }}
-                />
+                {editorExpanded ? (
+                  <div className="h-full bg-[#1e1e1e] flex items-center justify-center text-slate-500 text-sm">
+                    Editing in fullscreen…
+                  </div>
+                ) : (
+                  <Editor
+                    height="300px"
+                    language={getSnippetLang(form.type)}
+                    theme="vs-dark"
+                    value={form.code}
+                    onChange={v => setForm(f => ({ ...f, code: v || '' }))}
+                    options={{
+                      minimap: { enabled: false },
+                      fontSize: 13,
+                      wordWrap: 'on',
+                      scrollBeyondLastLine: false,
+                      automaticLayout: true,
+                      lineNumbers: 'on',
+                      renderWhitespace: 'none',
+                    }}
+                  />
+                )}
               </div>
             </div>
           </div>
