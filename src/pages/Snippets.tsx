@@ -213,7 +213,7 @@ export function Snippets() {
           onClick={e => e.stopPropagation()}
         >
           <div className="flex items-center justify-between px-4 py-2 bg-[#252526] border-b border-[#3c3c3c] shrink-0">
-            <span className="text-sm font-medium text-slate-200">
+            <span className="text-sm font-medium text-white">
               {form.title || 'Untitled'} — <span className="font-mono uppercase text-xs text-slate-400">{form.type}</span>
             </span>
             <button
