@@ -13,7 +13,7 @@ import {
   RefreshCw, AlertTriangle, FolderPlus, ArrowLeft, Upload, Pencil
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
-import Editor from '@monaco-editor/react'
+import { CodeEditor, extToLang } from '@/components/CodeEditor'
 
 interface FileItem {
   name: string
@@ -30,27 +30,6 @@ interface FileListData {
   items: FileItem[]
   breadcrumbs: Array<{ name: string; path: string }>
   writable: boolean
-}
-
-function getMonacoLang(ext: string): string {
-  switch (ext.toLowerCase()) {
-    case 'php': return 'php'
-    case 'js':
-    case 'jsx': return 'javascript'
-    case 'ts':
-    case 'tsx': return 'typescript'
-    case 'css':
-    case 'scss': return 'css'
-    case 'html':
-    case 'htm': return 'html'
-    case 'json': return 'json'
-    case 'xml': return 'xml'
-    case 'md': return 'markdown'
-    case 'yml':
-    case 'yaml': return 'yaml'
-    case 'svg': return 'xml'
-    default: return 'plaintext'
-  }
 }
 
 export function FileManager() {
@@ -340,20 +319,12 @@ export function FileManager() {
                 </button>
               </div>
             </div>
-            <div className="relative flex-1 overflow-hidden bg-slate-900">
-              <Editor
-                height="100%"
-                language={getMonacoLang(editingFile.ext || '')}
-                theme="vs-dark"
+            <div className="relative flex-1 overflow-hidden bg-[#282c34]">
+              <CodeEditor
                 value={editContent}
-                onChange={(v) => setEditContent(v || '')}
-                options={{
-                  minimap: { enabled: false },
-                  fontSize: 13,
-                  wordWrap: 'on',
-                  scrollBeyondLastLine: false,
-                  automaticLayout: true,
-                }}
+                onChange={(v) => setEditContent(v)}
+                language={extToLang(editingFile.ext || '')}
+                height="100%"
               />
             </div>
             <div className="px-4 py-1.5 bg-slate-800 border-t border-slate-700 text-xs text-slate-400 flex items-center justify-between">

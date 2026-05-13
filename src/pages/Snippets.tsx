@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import Editor from '@monaco-editor/react'
+import { CodeEditor, type CodeLang } from '@/components/CodeEditor'
 import { Switch } from '@/components/ui/switch'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
@@ -33,7 +33,7 @@ const TYPE_COLORS: Record<string, string> = {
   js:  'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300 border-yellow-200',
 }
 
-function getSnippetLang(type: string): string {
+function getSnippetLang(type: string): CodeLang {
   switch (type) {
     case 'php': return 'php'
     case 'css': return 'css'
@@ -227,22 +227,12 @@ export function Snippets() {
               <Minimize2 className="w-4 h-4" />
             </button>
           </div>
-          <div className="flex-1 min-h-0">
-            <Editor
-              height="calc(100vh - 69px)"
-              language={getSnippetLang(form.type)}
-              theme="vs-dark"
+          <div className="flex-1 min-h-0 overflow-auto">
+            <CodeEditor
               value={form.code}
-              onChange={v => setForm(f => ({ ...f, code: v || '' }))}
-              options={{
-                minimap: { enabled: true },
-                fontSize: 13,
-                wordWrap: 'on',
-                scrollBeyondLastLine: false,
-                automaticLayout: true,
-                lineNumbers: 'on',
-                renderWhitespace: 'none',
-              }}
+              onChange={v => setForm(f => ({ ...f, code: v }))}
+              language={getSnippetLang(form.type)}
+              height="calc(100vh - 69px)"
             />
           </div>
         </div>,
@@ -312,25 +302,15 @@ export function Snippets() {
               </div>
               <div className="border rounded-md overflow-hidden" style={{ height: '300px' }}>
                 {editorExpanded ? (
-                  <div className="h-full bg-[#1e1e1e] flex items-center justify-center text-slate-500 text-sm">
+                  <div className="h-full bg-[#282c34] flex items-center justify-center text-slate-500 text-sm">
                     Editing in fullscreen…
                   </div>
                 ) : (
-                  <Editor
-                    height="300px"
-                    language={getSnippetLang(form.type)}
-                    theme="vs-dark"
+                  <CodeEditor
                     value={form.code}
-                    onChange={v => setForm(f => ({ ...f, code: v || '' }))}
-                    options={{
-                      minimap: { enabled: false },
-                      fontSize: 13,
-                      wordWrap: 'on',
-                      scrollBeyondLastLine: false,
-                      automaticLayout: true,
-                      lineNumbers: 'on',
-                      renderWhitespace: 'none',
-                    }}
+                    onChange={v => setForm(f => ({ ...f, code: v }))}
+                    language={getSnippetLang(form.type)}
+                    height="300px"
                   />
                 )}
               </div>
