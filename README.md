@@ -2,7 +2,7 @@
 
 > A comprehensive, agency-ready WordPress management suite — built with React 19, TypeScript, and the WordPress REST API.
 
-![Version](https://img.shields.io/badge/version-3.1.0-blue)
+![Version](https://img.shields.io/badge/version-3.2.0-blue)
 ![WordPress](https://img.shields.io/badge/WordPress-5.9%2B-21759b)
 ![PHP](https://img.shields.io/badge/PHP-7.4%2B-8892be)
 ![License](https://img.shields.io/badge/license-GPL--2.0%2B-green)
@@ -57,7 +57,17 @@ All operations happen through a secured REST API (`wp-manager-pro/v1`) that requ
 
 ---
 
-## What's New in v3.1.0 — Plugin Health Check
+## What's New in v3.2.0 — Syntax-highlighted code editor (CodeMirror 6)
+
+| Feature | Description |
+|---------|-------------|
+| 🎨 CodeMirror 6 editor | Replaces Monaco across **File Manager** and **Snippets** (inline + fullscreen) with a fully bundled, no-CDN editor |
+| 🔌 Works offline / behind firewalls | Fixes [#2](https://github.com/nurkamol/wp-manager-pro/issues/2) — Monaco was loading language workers from jsdelivr, which is blocked on many production sites and left the editor as plain monochrome text |
+| 🌈 One-Dark theme | PHP · JavaScript · TypeScript · CSS · HTML · JSON · XML · SVG · Markdown · YAML — all syntax-highlighted |
+| 🧱 Shared component | New `src/components/CodeEditor.tsx` is the single source of truth used by both pages |
+| 📦 Smaller payload | ~200 KB bundled vs. Monaco's ~5 MB CDN download — zero external requests on first paint |
+
+### Also in v3.1.0 — Plugin Health Check
 
 | Feature | Description |
 |---------|-------------|
@@ -116,7 +126,7 @@ All operations happen through a secured REST API (`wp-manager-pro/v1`) that requ
 ### File Manager
 - Full filesystem browser starting from `ABSPATH`
 - Breadcrumb navigation with file metadata (size, modified date, writable status)
-- Monaco Editor (VS Code engine) with full syntax highlighting for PHP, JS, TS, CSS, JSON, SQL, YAML, HTML, SVG, Markdown, and more
+- **v3.2.0** CodeMirror 6 editor (bundled, no CDN) with full syntax highlighting for PHP, JS, TS, CSS, JSON, YAML, HTML, SVG, Markdown, and more — works offline and behind strict CSP/firewalls
 - Upload files directly to any directory
 - Rename files and folders in-place
 - Create directories, delete files and folders
@@ -214,7 +224,8 @@ Six-tab page for advanced WordPress introspection and testing:
 - PHP snippets execute on `init`; CSS outputs to `wp_head`; JS outputs to `wp_footer`
 - Per-snippet enable/disable toggle — no deletion required to disable
 - Stored in the custom `wp_wmp_snippets` database table
-- **v1.8.0** Monaco Editor (VS Code engine) in the create/edit dialog with syntax highlighting per snippet type
+- **v1.8.0** Code editor in the create/edit dialog with syntax highlighting per snippet type
+- **v3.2.0** Editor switched to CodeMirror 6 (bundled, no CDN) — One-Dark theme; inline + fullscreen modes
 
 ### Redirect Manager *(New in v1.4.0)*
 - Full 301/302/307/308 redirect CRUD with source → destination mapping
@@ -356,14 +367,14 @@ Five-tab page for media library cleanup and maintenance:
 ## Installation
 
 ### From ZIP
-1. Download `wp-manager-pro-v2.9.3.zip` from the [Releases](https://github.com/nurkamol/wp-manager-pro/releases) page.
+1. Download `wp-manager-pro-v3.2.0.zip` from the [Releases](https://github.com/nurkamol/wp-manager-pro/releases) page.
 2. In WP Admin → **Plugins → Add New → Upload Plugin**.
 3. Upload the ZIP and click **Install Now**, then **Activate**.
 4. Navigate to **WP Manager** in the admin sidebar (or click **Open** in the Plugins list).
 
 ### Manual
 ```bash
-unzip wp-manager-pro-v2.9.3.zip -d /path/to/wp-content/plugins/
+unzip wp-manager-pro-v3.2.0.zip -d /path/to/wp-content/plugins/
 ```
 
 Then activate via WP Admin → **Plugins**.
@@ -401,7 +412,7 @@ npm run build
 ### Package Plugin ZIP
 ```bash
 cd ..
-zip -r wp-manager-pro-v2.9.3.zip \
+zip -r wp-manager-pro-v3.2.0.zip \
   wp-manager-pro/wp-manager-pro.php \
   wp-manager-pro/includes/ \
   wp-manager-pro/assets/build/
@@ -421,7 +432,7 @@ zip -r wp-manager-pro-v2.9.3.zip \
 | shadcn/ui | manual | Component library (Radix UI) |
 | TanStack Query | v5 | Server state & caching |
 | React Router | v7 | Client-side routing (HashRouter) |
-| Monaco Editor | latest | VS Code editor engine (File Manager) |
+| CodeMirror 6 | via `@uiw/react-codemirror` 4 | Bundled code editor for File Manager & Snippets — One-Dark theme, no CDN |
 | Lucide React | 0.469 | Icon set |
 | Sonner | 1.7 | Toast notifications |
 
@@ -648,6 +659,7 @@ wp-manager-pro/
 │   │   ├── Layout.tsx
 │   │   ├── PageHeader.tsx
 │   │   ├── LoadingSpinner.tsx
+│   │   ├── CodeEditor.tsx          # v3.2.0 Shared CodeMirror 6 wrapper
 │   │   └── ui/                     # shadcn components
 │   └── pages/
 │       ├── Dashboard.tsx

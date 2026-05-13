@@ -30,6 +30,19 @@ interface BrandingSettings {
 // ── Changelog data ─────────────────────────────────────────────────────────────
 const changelog: { version: string; date: string; features: string[] }[] = [
   {
+    version: '3.2.0',
+    date: '2026-05-13',
+    features: [
+      'Code editor replaced: Monaco → CodeMirror 6 across File Manager and Snippets (inline + fullscreen)',
+      'Fixes #2: Monaco loaded language workers from a public CDN (jsdelivr) by default — on sites with strict CSP, firewalls, or offline networks the workers were blocked, leaving the editor as plain monochrome text. CodeMirror 6 is bundled directly into the plugin; zero external requests, syntax highlighting works everywhere',
+      'New shared CodeEditor component (src/components/CodeEditor.tsx) — single source of truth used by both File Manager and Snippets; One-Dark theme, basic setup, language detection by file extension',
+      'Language support: PHP, JavaScript, TypeScript, CSS, HTML, JSON, XML, SVG, Markdown, YAML',
+      'lang-php configured with { plain: true } so files with no closing ?> tag (e.g. wp-config.php) are fully highlighted from byte 0 instead of starting in HTML mode',
+      'CSS specificity fix in src/index.css — the .wmp-app span { color: inherit } admin-reset rule (0-1-1) was overriding CodeMirror token classes (0-1-0); added :not(.cm-editor *) so highlight styles render',
+      'Bundle reduced ~5 MB CDN payload → ~200 KB on-disk; @monaco-editor/react dependency removed',
+    ],
+  },
+  {
     version: '3.1.0',
     date: '2026-03-19',
     features: [

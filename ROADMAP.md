@@ -2,7 +2,7 @@
 
 This document outlines the planned feature development for WP Manager Pro. Releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Minor versions (`1.x.0`) add new features; patch versions (`1.x.y`) deliver bug fixes and polish.
 
-> **Current version:** 3.1.0 — last updated 2026-03-19
+> **Current version:** 3.2.0 — last updated 2026-05-13
 
 ---
 
@@ -39,10 +39,11 @@ This document outlines the planned feature development for WP Manager Pro. Relea
 | [2.9.4] | Deep root-cause fix for Media Library modal never opening: Rollup minifier named Lucide icon `const wp`, shadowing `window.wp` globally; fixed by switching to IIFE build format; `wmpOpenMedia` bridge hardened to use `window.wp` explicitly |
 | [3.0.0] | Dark Mode Auto-Sync, Dashboard Widgets (configurable grid), Notification Centre (bell + slide-out panel), Mobile/Tablet Layout (bottom nav, auto-collapse), Global Search (live search in Command Palette), System-wide Command Palette overlay (WPMGR admin bar button), Custom Post Type Manager (CPTs + taxonomies UI) |
 | [3.1.0] | Plugin Health Check (abandoned, compatibility, CVE, quality flags via WP.org + WPScan APIs, 24 h cached), WPMGR admin bar button polished, CPT/taxonomy pages added to Command Palette |
+| [3.2.0] | Code editor replaced: Monaco → **CodeMirror 6** in File Manager and Snippets (inline + fullscreen). Fixes [#2](https://github.com/nurkamol/wp-manager-pro/issues/2): Monaco's CDN-loaded language workers left the editor as plain text on sites with strict CSP / firewalls / offline networks. CodeMirror 6 is bundled, no external requests, One-Dark theme, PHP / JS / TS / CSS / HTML / JSON / XML / SVG / Markdown / YAML support, new shared `CodeEditor` component |
 
 ---
 
-### v3.2.0 — Monitoring & Integrations
+### v3.3.0 — Monitoring & Integrations
 *Focus: outgoing integrations and automated reporting*
 
 - **Scheduled Reports** — weekly/monthly HTML email digest of site health, security score, backup status, top audit events
@@ -107,5 +108,6 @@ Have a feature request or want to vote on a backlog item? [Open an issue](https:
 [2.9.2]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v2.9.2
 [2.9.3]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v2.9.3
 [2.9.4]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v2.9.4
-[3.1.0]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v3.1.0
 [3.0.0]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v3.0.0
+[3.1.0]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v3.1.0
+[3.2.0]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v3.2.0

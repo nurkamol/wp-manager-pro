@@ -7,6 +7,23 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [3.2.0] — 2026-05-13
+
+### Changed
+- **Code editor replaced: Monaco → CodeMirror 6** in both the File Manager and the Snippets editor (inline + fullscreen). Affects every code-editing surface in the plugin.
+
+### Fixed
+- **Syntax highlighting not rendering in the File Manager editor on production sites** ([#2](https://github.com/nurkamol/wp-manager-pro/issues/2)) — `@monaco-editor/react` loaded its language workers from a public CDN (jsdelivr) by default. WordPress installs behind strict CSP, firewalls, or offline networks blocked the worker requests, leaving the editor as plain monochrome text. CodeMirror 6 is bundled directly into the plugin and ships zero external requests.
+- **Token colours overridden by the admin reset rule** — the `.wmp-app span { color: inherit }` rule in `src/index.css` (specificity 0-1-1) was beating CodeMirror's single-class token rules (0-1-0). Added a `:not(.cm-editor *)` exclusion so highlight styles render correctly.
+- **PHP files with no closing `?>` tag highlighted incompletely** — pass `{ plain: true }` to `@codemirror/lang-php` so the parser treats `.php` files as PHP from byte 0 rather than starting in HTML mode.
+
+### Improved
+- New shared `src/components/CodeEditor.tsx` component used by both File Manager and Snippets — single source of truth for the editor theme, basic setup, and language detection.
+- Language support: PHP, JavaScript, TypeScript, CSS, HTML, JSON, XML, SVG, Markdown, YAML — all with the One-Dark theme.
+- Removed `@monaco-editor/react` dependency.
+
+---
+
 ## [3.1.0] — 2026-03-19
 
 ### Added
@@ -891,5 +908,6 @@ First public release of WP Manager Pro — a comprehensive, agency-ready WordPre
 [2.2.0]: https://github.com/nurkamol/wp-manager-pro/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/nurkamol/wp-manager-pro/compare/v2.0.0...v2.1.0
 
+[3.2.0]: https://github.com/nurkamol/wp-manager-pro/compare/v3.1.0...v3.2.0
 [3.1.0]: https://github.com/nurkamol/wp-manager-pro/compare/v3.0.0...v3.1.0
 [3.0.0]: https://github.com/nurkamol/wp-manager-pro/compare/v2.9.4...v3.0.0
