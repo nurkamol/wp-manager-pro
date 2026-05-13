@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import CodeMirror, { type Extension } from '@uiw/react-codemirror'
-import { oneDark } from '@codemirror/theme-one-dark'
+import { oneDark, oneDarkHighlightStyle } from '@codemirror/theme-one-dark'
+import { syntaxHighlighting } from '@codemirror/language'
 import { php } from '@codemirror/lang-php'
 import { javascript } from '@codemirror/lang-javascript'
 import { css } from '@codemirror/lang-css'
@@ -37,7 +38,7 @@ export function extToLang(ext: string): CodeLang {
 
 function langExtension(lang: CodeLang): Extension[] {
   switch (lang) {
-    case 'php': return [php()]
+    case 'php': return [php({ plain: true })]
     case 'javascript': return [javascript({ jsx: true })]
     case 'typescript': return [javascript({ jsx: true, typescript: true })]
     case 'css':
@@ -69,7 +70,10 @@ export function CodeEditor({
   className,
   readOnly = false,
 }: CodeEditorProps) {
-  const extensions = useMemo(() => langExtension(language), [language])
+  const extensions = useMemo(
+    () => [...langExtension(language), syntaxHighlighting(oneDarkHighlightStyle)],
+    [language]
+  )
 
   return (
     <CodeMirror
