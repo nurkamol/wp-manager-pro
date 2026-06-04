@@ -7,6 +7,27 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [3.4.0] — 2026-06-05
+
+### Changed
+- **File Manager rebuilt on [elFinder 2.1.69](https://github.com/studio-42/elfinder)** ([#4](https://github.com/nurkamol/wp-manager-pro/issues/4)) — the custom React file browser (and its v3.3.0 right-click menu) is replaced by the full elFinder engine: drag-and-drop, multi-select, a complete toolbar, quick-look preview, image thumbnails, tree-wide search, and a rich context menu.
+
+### Added
+- **Archive operations** — compress files/folders to `.zip` and extract archives in place (previously unavailable).
+- **Permissions (chmod)** — view and change file/directory permissions from the UI.
+- elFinder's client is vendored under `assets/elfinder/`; the PHP connector under `includes/vendor/elfinder/php/`.
+
+### Backend
+- New REST route `GET|POST /files/elfinder` boots an elFinder `LocalFileSystem` volume rooted at `ABSPATH`, gated by `manage_options` and authenticated by the WP REST nonce (sent both as the `X-WP-Nonce` header and `_wpnonce`, so plain file/quick-look links work).
+- `wp-config.php` is exposed read-only and locked (no overwrite, rename, move, or delete) via the connector's `accessControl` callback.
+- **Conflict-safe loading** — our bundled elFinder is required only when no `\elFinder` class is already present, so sites also running an elFinder-based plugin (e.g. Filester) no longer fatal on a redeclared `elFinderAutoloader()`.
+
+### Notes
+- The enqueue layer loads elFinder against WordPress's bundled jQuery + jQuery UI; the React page mounts it on a node and tears it down on unmount.
+- The older `/files/*` REST endpoints (read/write/copy/move/etc.) remain registered but are no longer used by the UI.
+
+---
+
 ## [3.3.0] — 2026-06-05
 
 ### Added

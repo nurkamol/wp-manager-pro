@@ -1,573 +1,97 @@
-import { useState, useCallback, useRef } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { api } from '@/lib/api'
+import { useEffect, useRef, useState } from 'react'
 import { PageHeader } from '@/components/PageHeader'
-import { PageLoader } from '@/components/LoadingSpinner'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
-import { toast } from 'sonner'
-import { formatBytes, getFileIcon } from '@/lib/utils'
-import {
-  FolderOpen, File, ChevronRight, Home, Save, X, Trash2,
-  RefreshCw, AlertTriangle, FolderPlus, ArrowLeft, Upload, Pencil,
-  Download, Copy, Scissors, ClipboardPaste, FilePlus, Files, Link2
-} from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
-import { CodeEditor, extToLang } from '@/components/CodeEditor'
-import {
-  ContextMenu, ContextMenuContent, ContextMenuItem,
-  ContextMenuSeparator, ContextMenuTrigger,
-} from '@/components/ui/context-menu'
+import { AlertTriangle } from 'lucide-react'
 
-type Clipboard = { item: FileItem; mode: 'copy' | 'cut' }
-
-interface FileItem {
-  name: string
-  path: string
-  type: 'file' | 'directory'
-  size: number | null
-  modified: number
-  writable: boolean
-  ext: string | null
-}
-
-interface FileListData {
-  path: string
-  items: FileItem[]
-  breadcrumbs: Array<{ name: string; path: string }>
-  writable: boolean
-}
+// elFinder ships as a jQuery plugin loaded globally by WordPress (see
+// class-admin.php enqueue_assets). It is not an ES module, so we reach it through
+// the window-scoped jQuery rather than importing it.
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 export function FileManager() {
-  const queryClient = useQueryClient()
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const hostRef = useRef<HTMLDivElement>(null)
+  const instanceRef = useRef<any>(null)
+  const [error, setError] = useState<string | null>(null)
 
-  const [currentPath, setCurrentPath] = useState('')
-  const [editingFile, setEditingFile] = useState<{ path: string; name: string; content: string; ext: string } | null>(null)
-  const [editContent, setEditContent] = useState('')
-  const [deleteTarget, setDeleteTarget] = useState<FileItem | null>(null)
-  const [newDirName, setNewDirName] = useState('')
-  const [showNewDir, setShowNewDir] = useState(false)
-  const [renameTarget, setRenameTarget] = useState<FileItem | null>(null)
-  const [newName, setNewName] = useState('')
-  const [newFileName, setNewFileName] = useState('')
-  const [showNewFile, setShowNewFile] = useState(false)
-  const [clipboard, setClipboard] = useState<Clipboard | null>(null)
+  useEffect(() => {
+    const w = window as any
+    const $ = w.jQuery
+    const cfg = w.wpManagerPro?.elfinder
 
-  const { data: fileData, isLoading, refetch } = useQuery<FileListData>({
-    queryKey: ['files', currentPath],
-    queryFn: () => api.get(`/files?path=${encodeURIComponent(currentPath)}`),
-  })
-
-  const readFileMutation = useMutation({
-    mutationFn: (path: string) => api.get<{ path: string; name: string; content: string; ext: string }>(`/files/read?path=${encodeURIComponent(path)}`),
-    onSuccess: (data) => {
-      setEditingFile(data)
-      setEditContent(data.content)
-    },
-    onError: (err: Error) => toast.error(err.message),
-  })
-
-  const saveFileMutation = useMutation({
-    mutationFn: ({ path, content }: { path: string; content: string }) =>
-      api.post('/files/write', { path, content }),
-    onSuccess: () => {
-      toast.success('File saved successfully')
-    },
-    onError: (err: Error) => toast.error(err.message),
-  })
-
-  const deleteFileMutation = useMutation({
-    mutationFn: (path: string) => api.delete('/files/delete', { path }),
-    onSuccess: () => {
-      toast.success('Deleted successfully')
-      setDeleteTarget(null)
-      queryClient.invalidateQueries({ queryKey: ['files', currentPath] })
-    },
-    onError: (err: Error) => toast.error(err.message),
-  })
-
-  const mkdirMutation = useMutation({
-    mutationFn: (name: string) => api.post('/files/mkdir', { path: `${fileData?.path}/${name}` }),
-    onSuccess: () => {
-      toast.success('Directory created')
-      setShowNewDir(false)
-      setNewDirName('')
-      queryClient.invalidateQueries({ queryKey: ['files', currentPath] })
-    },
-    onError: (err: Error) => toast.error(err.message),
-  })
-
-  const uploadMutation = useMutation({
-    mutationFn: (fd: FormData) => api.upload('/files/upload', fd),
-    onSuccess: () => {
-      toast.success('File uploaded successfully')
-      queryClient.invalidateQueries({ queryKey: ['files', currentPath] })
-    },
-    onError: (err: Error) => toast.error(err.message),
-  })
-
-  const renameMutation = useMutation({
-    mutationFn: ({ path, name }: { path: string; name: string }) =>
-      api.post('/files/rename', { path, name }),
-    onSuccess: () => {
-      toast.success('Renamed successfully')
-      setRenameTarget(null)
-      setNewName('')
-      queryClient.invalidateQueries({ queryKey: ['files', currentPath] })
-    },
-    onError: (err: Error) => toast.error(err.message),
-  })
-
-  const invalidate = useCallback(
-    () => queryClient.invalidateQueries({ queryKey: ['files', currentPath] }),
-    [queryClient, currentPath]
-  )
-
-  const newFileMutation = useMutation({
-    mutationFn: (name: string) => api.post('/files/new', { path: fileData?.path, name }),
-    onSuccess: () => {
-      toast.success('File created')
-      setShowNewFile(false)
-      setNewFileName('')
-      invalidate()
-    },
-    onError: (err: Error) => toast.error(err.message),
-  })
-
-  const duplicateMutation = useMutation({
-    mutationFn: (path: string) => api.post('/files/duplicate', { path }),
-    onSuccess: () => {
-      toast.success('Duplicated successfully')
-      invalidate()
-    },
-    onError: (err: Error) => toast.error(err.message),
-  })
-
-  const copyMutation = useMutation({
-    mutationFn: ({ path, destination }: { path: string; destination: string }) =>
-      api.post('/files/copy', { path, destination }),
-    onSuccess: () => {
-      toast.success('Copied successfully')
-      invalidate()
-    },
-    onError: (err: Error) => toast.error(err.message),
-  })
-
-  const moveMutation = useMutation({
-    mutationFn: ({ path, destination }: { path: string; destination: string }) =>
-      api.post('/files/move', { path, destination }),
-    onSuccess: () => {
-      toast.success('Moved successfully')
-      setClipboard(null)
-      invalidate()
-    },
-    onError: (err: Error) => toast.error(err.message),
-  })
-
-  const handlePaste = useCallback((destination: string) => {
-    if (!clipboard) return
-    if (clipboard.mode === 'cut') {
-      moveMutation.mutate({ path: clipboard.item.path, destination })
-    } else {
-      copyMutation.mutate({ path: clipboard.item.path, destination })
+    if (!cfg) {
+      setError('File Manager configuration is missing.')
+      return
     }
-  }, [clipboard, moveMutation, copyMutation])
+    if (!$ || !$.fn || !$.fn.elfinder) {
+      setError('elFinder failed to load. Try a hard refresh (Cmd/Ctrl+Shift+R).')
+      return
+    }
+    if (!hostRef.current) return
 
-  const handleDownload = useCallback((item: FileItem) => {
-    const a = document.createElement('a')
-    a.href = api.url(`/files/download?path=${encodeURIComponent(item.path)}`)
-    a.download = item.name
-    document.body.appendChild(a)
-    a.click()
-    a.remove()
-  }, [])
+    const nonce: string = w.wpManagerPro.nonce
 
-  const handleCopyPath = useCallback(async (item: FileItem) => {
-    try {
-      await navigator.clipboard.writeText(item.path)
-      toast.success('Path copied to clipboard')
-    } catch {
-      toast.error('Could not copy path')
+    // elFinder needs an explicit pixel height; fill the viewport below the header.
+    const calcHeight = () => {
+      const top = hostRef.current?.getBoundingClientRect().top ?? 120
+      return Math.max(420, Math.floor(window.innerHeight - top - 16))
+    }
+
+    const instance = $(hostRef.current).elfinder({
+      url: cfg.connectorUrl,
+      baseUrl: cfg.baseUrl,
+      lang: cfg.lang || 'en',
+      // Authenticate every connector request with the WordPress REST nonce.
+      // customHeaders covers XHR calls; customData covers GET file/quicklook
+      // links that elFinder builds as plain URLs (no custom headers possible).
+      customHeaders: { 'X-WP-Nonce': nonce },
+      customData: { _wpnonce: nonce },
+      height: calcHeight(),
+      resizable: false,
+      rememberLastDir: true,
+      commandsOptions: {
+        // No cloud volumes are mounted; hide the net-mount dialog entirely.
+        netmount: { drivers: [] },
+      },
+    }).elfinder('instance')
+
+    instanceRef.current = instance
+
+    const onResize = () => {
+      if (instanceRef.current) instanceRef.current.resize('100%', calcHeight())
+    }
+    window.addEventListener('resize', onResize)
+
+    return () => {
+      window.removeEventListener('resize', onResize)
+      try {
+        instanceRef.current?.destroy?.()
+      } catch {
+        /* elFinder already torn down */
+      }
+      instanceRef.current = null
     }
   }, [])
-
-  const handleItemClick = useCallback((item: FileItem) => {
-    if (item.type === 'directory') {
-      setCurrentPath(item.path)
-    } else {
-      readFileMutation.mutate(item.path)
-    }
-  }, [readFileMutation])
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    const fd = new FormData()
-    fd.append('file', file)
-    fd.append('path', fileData?.path || '')
-    uploadMutation.mutate(fd)
-    // Reset input so same file can be re-uploaded
-    e.target.value = ''
-  }
-
-  if (isLoading && !fileData) return <PageLoader text="Loading files..." />
 
   return (
     <div className="fade-in h-full flex flex-col">
-      <input
-        type="file"
-        ref={fileInputRef}
-        className="hidden"
-        onChange={handleFileUpload}
-      />
-
       <PageHeader
         title="File Manager"
-        description="Browse and edit WordPress files"
-        actions={
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={uploadMutation.isPending}>
-              {uploadMutation.isPending ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-              Upload File
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => { setShowNewFile(true); setShowNewDir(false) }}>
-              <FilePlus className="w-4 h-4" /> New File
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => { setShowNewDir(true); setShowNewFile(false) }}>
-              <FolderPlus className="w-4 h-4" /> New Folder
-            </Button>
-            {clipboard && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => fileData && handlePaste(fileData.path)}
-                disabled={copyMutation.isPending || moveMutation.isPending}
-                title={`${clipboard.mode === 'cut' ? 'Move' : 'Copy'} "${clipboard.item.name}" here`}
-              >
-                <ClipboardPaste className="w-4 h-4" /> Paste
-              </Button>
-            )}
-            <Button variant="outline" size="sm" onClick={() => refetch()}>
-              <RefreshCw className="w-4 h-4" /> Refresh
-            </Button>
-          </div>
-        }
+        description="Browse, edit, upload, archive and manage every file under your WordPress root"
       />
 
-      <div className="flex flex-1 overflow-hidden">
-        {/* File Browser Panel */}
-        <div className={`${editingFile ? 'w-80' : 'flex-1'} flex flex-col border-r bg-white transition-all duration-200`}>
-          {/* Breadcrumbs */}
-          <div className="flex items-center gap-1 px-4 py-2 border-b bg-slate-50 text-sm overflow-x-auto">
-            <button
-              onClick={() => setCurrentPath('')}
-              className="text-blue-600 hover:text-blue-800 shrink-0 flex items-center gap-1"
-            >
-              <Home className="w-3.5 h-3.5" />
-            </button>
-            {fileData?.breadcrumbs.slice(1).map((crumb, i) => (
-              <span key={i} className="flex items-center gap-1 shrink-0">
-                <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-                <button
-                  onClick={() => setCurrentPath(crumb.path)}
-                  className="text-blue-600 hover:text-blue-800 truncate max-w-[100px]"
-                  title={crumb.path}
-                >
-                  {crumb.name}
-                </button>
-              </span>
-            ))}
-          </div>
-
-          {/* Go up */}
-          {fileData?.breadcrumbs && fileData.breadcrumbs.length > 1 && (
-            <button
-              onClick={() => {
-                const crumbs = fileData.breadcrumbs
-                if (crumbs.length >= 2) {
-                  setCurrentPath(crumbs[crumbs.length - 2].path)
-                }
-              }}
-              className="flex items-center gap-2 px-4 py-2 text-sm text-slate-500 hover:bg-slate-50 border-b"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              ..
-            </button>
-          )}
-
-          {/* File list */}
-          <div className="flex-1 overflow-y-auto">
-            {isLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <RefreshCw className="w-5 h-5 animate-spin text-blue-500" />
-              </div>
-            ) : (
-              <div>
-                {/* New file input */}
-                {showNewFile && (
-                  <div className="flex items-center gap-2 px-4 py-2 border-b bg-blue-50">
-                    <FilePlus className="w-4 h-4 text-blue-500" />
-                    <Input
-                      autoFocus
-                      placeholder="File name (e.g. notes.txt)"
-                      value={newFileName}
-                      onChange={e => setNewFileName(e.target.value)}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter' && newFileName) newFileMutation.mutate(newFileName)
-                        if (e.key === 'Escape') { setShowNewFile(false); setNewFileName('') }
-                      }}
-                      className="h-7 text-sm"
-                    />
-                    <Button size="sm" className="h-7 px-2" onClick={() => newFileMutation.mutate(newFileName)} disabled={!newFileName || newFileMutation.isPending}>
-                      <Save className="w-3 h-3" />
-                    </Button>
-                    <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => { setShowNewFile(false); setNewFileName('') }}>
-                      <X className="w-3 h-3" />
-                    </Button>
-                  </div>
-                )}
-
-                {/* New directory input */}
-                {showNewDir && (
-                  <div className="flex items-center gap-2 px-4 py-2 border-b bg-blue-50">
-                    <FolderOpen className="w-4 h-4 text-blue-500" />
-                    <Input
-                      autoFocus
-                      placeholder="Directory name"
-                      value={newDirName}
-                      onChange={e => setNewDirName(e.target.value)}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter' && newDirName) mkdirMutation.mutate(newDirName)
-                        if (e.key === 'Escape') { setShowNewDir(false); setNewDirName('') }
-                      }}
-                      className="h-7 text-sm"
-                    />
-                    <Button size="sm" className="h-7 px-2" onClick={() => mkdirMutation.mutate(newDirName)} disabled={!newDirName}>
-                      <Save className="w-3 h-3" />
-                    </Button>
-                    <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => { setShowNewDir(false); setNewDirName('') }}>
-                      <X className="w-3 h-3" />
-                    </Button>
-                  </div>
-                )}
-
-                {fileData?.items.map((item) => (
-                  <ContextMenu key={item.path}>
-                    <ContextMenuTrigger asChild>
-                      <div
-                        className="flex items-center justify-between px-4 py-2 hover:bg-slate-50 cursor-pointer border-b border-slate-50 group"
-                        onClick={() => handleItemClick(item)}
-                      >
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <span className="text-base shrink-0">
-                            {item.type === 'directory'
-                              ? '📁'
-                              : getFileIcon(item.ext || '')}
-                          </span>
-                          <div className="min-w-0">
-                            <p className="text-sm text-slate-700 truncate">{item.name}</p>
-                            {item.type === 'file' && item.size !== null && (
-                              <p className="text-[10px] text-slate-400">{formatBytes(item.size)}</p>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                          {!item.writable && (
-                            <Badge variant="secondary" className="text-[10px]">Read-only</Badge>
-                          )}
-                          {item.type === 'directory' && (
-                            <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-                          )}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              setRenameTarget(item)
-                              setNewName(item.name)
-                            }}
-                            className="text-slate-400 hover:text-blue-600 p-1 rounded"
-                            title="Rename"
-                          >
-                            <Pencil className="w-3 h-3" />
-                          </button>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setDeleteTarget(item) }}
-                            className="text-red-400 hover:text-red-600 p-1 rounded"
-                            title="Delete"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </button>
-                        </div>
-                      </div>
-                    </ContextMenuTrigger>
-                    <ContextMenuContent className="w-52">
-                      {item.type === 'directory' ? (
-                        <ContextMenuItem onClick={() => setCurrentPath(item.path)}>
-                          <FolderOpen className="text-slate-500" /> Open
-                        </ContextMenuItem>
-                      ) : (
-                        <ContextMenuItem onClick={() => readFileMutation.mutate(item.path)}>
-                          <Pencil className="text-slate-500" /> Edit
-                        </ContextMenuItem>
-                      )}
-                      {item.type === 'file' && (
-                        <ContextMenuItem onClick={() => handleDownload(item)}>
-                          <Download className="text-slate-500" /> Download
-                        </ContextMenuItem>
-                      )}
-                      <ContextMenuSeparator />
-                      <ContextMenuItem onClick={() => { setRenameTarget(item); setNewName(item.name) }}>
-                        <Pencil className="text-slate-500" /> Rename
-                      </ContextMenuItem>
-                      <ContextMenuItem onClick={() => duplicateMutation.mutate(item.path)}>
-                        <Files className="text-slate-500" /> Duplicate
-                      </ContextMenuItem>
-                      <ContextMenuItem onClick={() => setClipboard({ item, mode: 'copy' })}>
-                        <Copy className="text-slate-500" /> Copy
-                      </ContextMenuItem>
-                      <ContextMenuItem onClick={() => setClipboard({ item, mode: 'cut' })}>
-                        <Scissors className="text-slate-500" /> Cut
-                      </ContextMenuItem>
-                      {item.type === 'directory' && (
-                        <ContextMenuItem
-                          disabled={!clipboard || clipboard.item.path === item.path}
-                          onClick={() => handlePaste(item.path)}
-                        >
-                          <ClipboardPaste className="text-slate-500" /> Paste into folder
-                        </ContextMenuItem>
-                      )}
-                      <ContextMenuItem onClick={() => handleCopyPath(item)}>
-                        <Link2 className="text-slate-500" /> Copy path
-                      </ContextMenuItem>
-                      <ContextMenuSeparator />
-                      <ContextMenuItem
-                        className="text-red-600 focus:text-red-600"
-                        onClick={() => setDeleteTarget(item)}
-                      >
-                        <Trash2 /> Delete
-                      </ContextMenuItem>
-                    </ContextMenuContent>
-                  </ContextMenu>
-                ))}
-
-                {fileData?.items.length === 0 && (
-                  <div className="text-center py-8 text-slate-400 text-sm">
-                    Empty directory
-                  </div>
-                )}
-              </div>
-            )}
+      {error ? (
+        <div className="flex items-start gap-3 m-4 p-4 rounded-lg border border-amber-200 bg-amber-50 text-amber-800 text-sm">
+          <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
+          <div>
+            <p className="font-medium">File Manager could not start</p>
+            <p className="text-amber-700">{error}</p>
           </div>
         </div>
-
-        {/* Monaco Editor Panel */}
-        {editingFile && (
-          <div className="flex-1 flex flex-col overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-2 border-b bg-slate-800 text-white">
-              <div className="flex items-center gap-2">
-                <File className="w-4 h-4 text-slate-400" />
-                <span className="text-sm font-mono">{editingFile.name}</span>
-                <Badge variant="secondary" className="text-[10px] bg-slate-700 text-slate-300 border-0">
-                  {editingFile.ext || 'txt'}
-                </Badge>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  size="sm"
-                  onClick={() => saveFileMutation.mutate({ path: editingFile.path, content: editContent })}
-                  disabled={saveFileMutation.isPending}
-                  className="bg-blue-600 hover:bg-blue-700 h-7"
-                >
-                  {saveFileMutation.isPending ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-                  Save
-                </Button>
-                <button
-                  onClick={() => setEditingFile(null)}
-                  className="text-slate-400 hover:text-white p-1"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-            <div className="relative flex-1 overflow-hidden bg-[#282c34]">
-              <CodeEditor
-                value={editContent}
-                onChange={(v) => setEditContent(v)}
-                language={extToLang(editingFile.ext || '')}
-                height="100%"
-              />
-            </div>
-            <div className="px-4 py-1.5 bg-slate-800 border-t border-slate-700 text-xs text-slate-400 flex items-center justify-between">
-              <span className="font-mono">{editingFile.path}</span>
-              <span>{editContent.split('\n').length} lines</span>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Delete Confirm */}
-      <Dialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-red-500" /> Delete {deleteTarget?.type === 'directory' ? 'Directory' : 'File'}
-            </DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete <strong>{deleteTarget?.name}</strong>?
-              {deleteTarget?.type === 'directory' && ' This will delete all contents inside.'}
-              {' '}This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteTarget(null)}>Cancel</Button>
-            <Button
-              variant="destructive"
-              onClick={() => deleteTarget && deleteFileMutation.mutate(deleteTarget.path)}
-              disabled={deleteFileMutation.isPending}
-            >
-              {deleteFileMutation.isPending ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-              Delete
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Rename Dialog */}
-      <Dialog open={!!renameTarget} onOpenChange={() => { setRenameTarget(null); setNewName('') }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Pencil className="w-4 h-4" /> Rename {renameTarget?.type === 'directory' ? 'Folder' : 'File'}
-            </DialogTitle>
-            <DialogDescription>
-              Enter a new name for <strong>{renameTarget?.name}</strong>.
-            </DialogDescription>
-          </DialogHeader>
-          <Input
-            autoFocus
-            value={newName}
-            onChange={e => setNewName(e.target.value)}
-            onKeyDown={e => {
-              if (e.key === 'Enter' && newName && renameTarget) {
-                renameMutation.mutate({ path: renameTarget.path, name: newName })
-              }
-              if (e.key === 'Escape') { setRenameTarget(null); setNewName('') }
-            }}
-            placeholder="New name"
-          />
-          <DialogFooter>
-            <Button variant="outline" onClick={() => { setRenameTarget(null); setNewName('') }}>Cancel</Button>
-            <Button
-              onClick={() => renameTarget && renameMutation.mutate({ path: renameTarget.path, name: newName })}
-              disabled={!newName || renameMutation.isPending || newName === renameTarget?.name}
-            >
-              {renameMutation.isPending ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-              Rename
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      ) : (
+        <div className="flex-1 min-h-0 px-2 pb-2">
+          {/* elFinder mounts its full UI inside this node. */}
+          <div ref={hostRef} className="h-full" />
+        </div>
+      )}
     </div>
   )
 }

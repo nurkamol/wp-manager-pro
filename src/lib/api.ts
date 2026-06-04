@@ -20,6 +20,11 @@ declare global {
       permalinks?: {
         isPlain: boolean
       }
+      elfinder?: {
+        connectorUrl: string
+        baseUrl: string
+        lang: string
+      }
     }
   }
 }

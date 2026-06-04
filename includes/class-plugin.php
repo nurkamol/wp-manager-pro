@@ -35,6 +35,7 @@ class Plugin {
             'class-plugins-controller',
             'class-themes-controller',
             'class-files-controller',
+            'class-elfinder-controller',
             'class-database-controller',
             'class-system-controller',
             'class-users-controller',

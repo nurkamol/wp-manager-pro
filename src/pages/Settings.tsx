@@ -30,6 +30,17 @@ interface BrandingSettings {
 // ── Changelog data ─────────────────────────────────────────────────────────────
 const changelog: { version: string; date: string; features: string[] }[] = [
   {
+    version: '3.4.0',
+    date: '2026-06-05',
+    features: [
+      'File Manager rebuilt on elFinder 2.1.69 (#4) — drag-and-drop, multi-select, full toolbar, quick-look preview, image thumbnails, tree-wide search, and a rich right-click menu, replacing the custom React browser',
+      'Archive operations — compress files/folders to .zip and extract archives in place',
+      'Permissions (chmod) — view and change file/directory permissions from the UI',
+      'Secured connector: GET|POST /files/elfinder boots a LocalFileSystem volume rooted at ABSPATH, gated by manage_options + the REST nonce; wp-config.php is read-only and locked',
+      'Conflict-safe with other elFinder-based plugins (e.g. Filester) — our bundled copy loads only when no elFinder is already present, avoiding a fatal autoloader redeclare',
+    ],
+  },
+  {
     version: '3.3.0',
     date: '2026-06-05',
     features: [

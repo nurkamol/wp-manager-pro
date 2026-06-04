@@ -2,7 +2,7 @@
 
 This document outlines the planned feature development for WP Manager Pro. Releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Minor versions (`1.x.0`) add new features; patch versions (`1.x.y`) deliver bug fixes and polish.
 
-> **Current version:** 3.3.0 — last updated 2026-06-05
+> **Current version:** 3.4.0 — last updated 2026-06-05
 
 ---
 
@@ -42,16 +42,9 @@ This document outlines the planned feature development for WP Manager Pro. Relea
 | [3.2.0] | Code editor replaced: Monaco → **CodeMirror 6** in File Manager and Snippets (inline + fullscreen). Fixes [#2](https://github.com/nurkamol/wp-manager-pro/issues/2): Monaco's CDN-loaded language workers left the editor as plain text on sites with strict CSP / firewalls / offline networks. CodeMirror 6 is bundled, no external requests, One-Dark theme, PHP / JS / TS / CSS / HTML / JSON / XML / SVG / Markdown / YAML support, new shared `CodeEditor` component |
 | [3.2.1] | **Switch back from "Login as"** ([#3](https://github.com/nurkamol/wp-manager-pro/issues/3)): impersonating a user now adds a "Switch back to {admin}" admin-bar link that restores the original session. Secured by a nonce plus an HttpOnly, SameSite=Lax cookie-bound token kept only in the originating admin's browser; return is gated on the original account still being an administrator |
 | [3.3.0] | **File Manager right-click actions** ([#4](https://github.com/nurkamol/wp-manager-pro/issues/4)): context menu on every file/folder (Open/Edit, Download, Rename, Duplicate, Copy, Cut, Paste into folder, Copy path, Delete), Copy/Cut/Paste between directories, recursive Duplicate with auto `-copy` suffix, inline New File, and one-click Download. New REST endpoints `/files/new`, `/files/copy`, `/files/move`, `/files/duplicate`, `/files/download` confined to `ABSPATH` with protected-file guards |
+| [3.4.0] | **File Manager rebuilt on [elFinder 2.1.69](https://github.com/studio-42/elfinder)** ([#4](https://github.com/nurkamol/wp-manager-pro/issues/4)): drag-and-drop, multi-select, full toolbar, quick-look preview, thumbnails, tree-wide search, archive (zip) compress/extract, and chmod. Bundled PHP connector boots a `LocalFileSystem` volume rooted at `ABSPATH`, gated by `manage_options` + the REST nonce, with `wp-config.php` read-only/locked; conflict-safe with other elFinder-based plugins |
 
 ---
-
-### v3.4.0 — File Manager → elFinder migration
-*Focus: replace the custom File Manager with a full-featured file browser*
-
-- **Migrate the File Manager to [elFinder](https://github.com/studio-42/elfinder)** ([#4](https://github.com/nurkamol/wp-manager-pro/issues/4)) — adopt the elFinder engine for a Filester-class experience: drag-and-drop, multi-select, a full toolbar, thumbnails/preview, and a richer right-click menu
-- **Archive operations** — compress to `.zip` and extract archives in place (a key gap the current manager doesn't cover)
-- **Permissions (chmod)** — view and change file/directory permissions from the UI
-- Wire elFinder's connector to the existing `manage_options`-gated REST layer and keep the `ABSPATH` path-sanitization and protected-file guards from the current controller
 
 ### v3.5.0 — Monitoring & Integrations
 *Focus: outgoing integrations and automated reporting*
@@ -123,3 +116,4 @@ Have a feature request or want to vote on a backlog item? [Open an issue](https:
 [3.2.0]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v3.2.0
 [3.2.1]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v3.2.1
 [3.3.0]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v3.3.0
+[3.4.0]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v3.4.0

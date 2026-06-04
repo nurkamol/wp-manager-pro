@@ -2,7 +2,7 @@
 
 > A comprehensive, agency-ready WordPress management suite — built with React 19, TypeScript, and the WordPress REST API.
 
-![Version](https://img.shields.io/badge/version-3.3.0-blue)
+![Version](https://img.shields.io/badge/version-3.4.0-blue)
 ![WordPress](https://img.shields.io/badge/WordPress-5.9%2B-21759b)
 ![PHP](https://img.shields.io/badge/PHP-7.4%2B-8892be)
 ![License](https://img.shields.io/badge/license-GPL--2.0%2B-green)
@@ -57,14 +57,15 @@ All operations happen through a secured REST API (`wp-manager-pro/v1`) that requ
 
 ---
 
-## What's New in v3.3.0 — File Manager right-click actions
+## What's New in v3.4.0 — File Manager rebuilt on elFinder
 
 | Feature | Description |
 |---------|-------------|
-| 🖱️ Right-click context menu | Right-click any file or folder for Open/Edit, Download, Rename, Duplicate, Copy, Cut, Paste, Copy path, and Delete ([#4](https://github.com/nurkamol/wp-manager-pro/issues/4)) |
-| ✂️ Copy / Cut / Paste | Copy or move files and folders between directories — pick **Copy** or **Cut**, navigate, then **Paste** from the toolbar or into any folder |
-| 📄 New File + Download | Create empty files inline and download any file straight from the browser |
-| 🧬 Duplicate | One-click duplicate of any file or folder with an auto `-copy` suffix (recursive for folders) |
+| 🗂️ Full file manager | The File Manager is now powered by [elFinder 2.1.69](https://github.com/studio-42/elfinder) ([#4](https://github.com/nurkamol/wp-manager-pro/issues/4)) — drag-and-drop, multi-select, a complete toolbar, and a rich right-click menu |
+| 🗜️ Archive operations | Compress files/folders to **`.zip`** and extract archives in place |
+| 🔒 Permissions (chmod) | View and change file/directory permissions from the UI |
+| 🖼️ Preview & thumbnails | Quick-look preview and image thumbnails, plus search across the tree |
+| 🔐 Secured connector | A bundled PHP connector scoped to `ABSPATH`, gated by `manage_options` + the REST nonce; `wp-config.php` is read-only and locked. Conflict-safe with other elFinder-based plugins (e.g. Filester) |
 
 ## What's New in v3.2.1 — Switch back from "Login as"
 
@@ -140,15 +141,15 @@ All operations happen through a secured REST API (`wp-manager-pro/v1`) that requ
 - **v1.2.0** Smart WP.org search buttons
 
 ### File Manager
-- Full filesystem browser starting from `ABSPATH`
-- Breadcrumb navigation with file metadata (size, modified date, writable status)
-- **v3.2.0** CodeMirror 6 editor (bundled, no CDN) with full syntax highlighting for PHP, JS, TS, CSS, JSON, YAML, HTML, SVG, Markdown, and more — works offline and behind strict CSP/firewalls
-- Upload files directly to any directory
-- **v3.3.0** Right-click context menu on every file and folder — Open/Edit, Download, Rename, Duplicate, Copy, Cut, Paste, Copy path, Delete
-- **v3.3.0** Copy / Cut / Paste files and folders between directories (recursive for folders); New File inline creation; one-click Download
-- Rename files and folders in-place
-- Create directories, delete files and folders
-- Security: path traversal protection via `realpath()`, critical file guard, 2 MB read limit, protected-file guards on move/duplicate
+- **v3.4.0** Rebuilt on [elFinder 2.1.69](https://github.com/studio-42/elfinder) — a full-featured file browser embedded in the admin UI
+- Drag-and-drop, multi-select, complete toolbar and right-click context menu
+- **v3.4.0** Archive operations — compress to `.zip` and extract in place
+- **v3.4.0** Permissions (chmod) editing from the UI
+- Upload (incl. drag-and-drop), download, rename, duplicate, copy/cut/paste across directories, new file/folder, delete
+- Quick-look preview, image thumbnails, and tree-wide search
+- Inline editing of text files
+- Bundled PHP connector scoped to `ABSPATH`, gated by `manage_options` + the REST nonce; `wp-config.php` is read-only and locked
+- Conflict-safe with other elFinder-based plugins (loads our bundled copy only when no elFinder is already present)
 
 ### Database Manager
 - Table browser: engine, collation, row count, size

@@ -7,6 +7,7 @@ use WP_Manager_Pro\API\Controllers\Dashboard_Controller;
 use WP_Manager_Pro\API\Controllers\Plugins_Controller;
 use WP_Manager_Pro\API\Controllers\Themes_Controller;
 use WP_Manager_Pro\API\Controllers\Files_Controller;
+use WP_Manager_Pro\API\Controllers\Elfinder_Controller;
 use WP_Manager_Pro\API\Controllers\Database_Controller;
 use WP_Manager_Pro\API\Controllers\System_Controller;
 use WP_Manager_Pro\API\Controllers\Users_Controller;
@@ -273,6 +274,19 @@ class Routes {
             'methods'             => 'GET',
             'callback'            => [ Files_Controller::class, 'download_file' ],
             'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        // elFinder connector — handles both GET (open/tree/file) and POST (upload/paste/etc.).
+        register_rest_route( $namespace, '/files/elfinder', [
+            [
+                'methods'             => 'GET',
+                'callback'            => [ Elfinder_Controller::class, 'run' ],
+                'permission_callback' => [ self::class, 'admin_permission' ],
+            ],
+            [
+                'methods'             => 'POST',
+                'callback'            => [ Elfinder_Controller::class, 'run' ],
+                'permission_callback' => [ self::class, 'admin_permission' ],
+            ],
         ] );
 
         // Database.
