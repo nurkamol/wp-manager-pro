@@ -45,7 +45,15 @@ This document outlines the planned feature development for WP Manager Pro. Relea
 
 ---
 
-### v3.3.0 — Monitoring & Integrations
+### v3.4.0 — File Manager → elFinder migration
+*Focus: replace the custom File Manager with a full-featured file browser*
+
+- **Migrate the File Manager to [elFinder](https://github.com/studio-42/elfinder)** ([#4](https://github.com/nurkamol/wp-manager-pro/issues/4)) — adopt the elFinder engine for a Filester-class experience: drag-and-drop, multi-select, a full toolbar, thumbnails/preview, and a richer right-click menu
+- **Archive operations** — compress to `.zip` and extract archives in place (a key gap the current manager doesn't cover)
+- **Permissions (chmod)** — view and change file/directory permissions from the UI
+- Wire elFinder's connector to the existing `manage_options`-gated REST layer and keep the `ABSPATH` path-sanitization and protected-file guards from the current controller
+
+### v3.5.0 — Monitoring & Integrations
 *Focus: outgoing integrations and automated reporting*
 
 - **Scheduled Reports** — weekly/monthly HTML email digest of site health, security score, backup status, top audit events
