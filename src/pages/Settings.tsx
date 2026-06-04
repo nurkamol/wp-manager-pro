@@ -30,6 +30,14 @@ interface BrandingSettings {
 // ── Changelog data ─────────────────────────────────────────────────────────────
 const changelog: { version: string; date: string; features: string[] }[] = [
   {
+    version: '3.2.1',
+    date: '2026-06-05',
+    features: [
+      'Fixes #3: "Login as" now has a way back — switching into another user previously swapped the session with no return path, stranding admins in the impersonated account. The admin bar shows a "Switch back to {admin}" link while impersonating',
+      'Switch-back is secured by a nonce plus a token bound to an HttpOnly, SameSite=Lax cookie set in the originating admin\'s browser — an impersonated user who later logs in normally cannot escalate back to the admin account from leftover state; return is also gated on the original account still being an administrator',
+    ],
+  },
+  {
     version: '3.2.0',
     date: '2026-05-13',
     features: [

@@ -73,6 +73,7 @@ class Plugin {
     private function init_hooks() {
         add_action( 'init', [ $this, 'load_textdomain' ] );
         add_action( 'init', [ $this, 'handle_login_as' ] );
+        add_action( 'init', [ $this, 'handle_switch_back' ] );
         add_action( 'admin_menu', [ Admin::class, 'register_menu' ] );
         add_action( 'admin_enqueue_scripts', [ Admin::class, 'enqueue_assets' ] );
         add_filter( 'plugin_action_links_' . WP_MANAGER_PRO_BASENAME, [ Admin::class, 'add_plugin_links' ] );
@@ -81,6 +82,7 @@ class Plugin {
 
         // Admin bar shortcut button + global keyboard listener.
         add_action( 'admin_bar_menu', [ $this, 'add_admin_bar_node' ], 999 );
+        add_action( 'admin_bar_menu', [ $this, 'add_switch_back_bar_item' ], 998 );
         add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_global_shortcut' ] );
 
         // Self-updater — GitHub Releases integration.
@@ -251,13 +253,127 @@ class Plugin {
             wp_die( esc_html__( 'User not found.', 'wp-manager-pro' ), 'WP Manager Pro', [ 'response' => 404 ] );
         }
 
+        $admin_id = isset( $transient['admin_id'] ) ? absint( $transient['admin_id'] ) : get_current_user_id();
+
         delete_transient( 'wmp_login_as_' . $user_id );
+
+        // Set up a secure, cookie-bound switch-back token so the original admin
+        // can return to their own account. Binding the token to a browser cookie
+        // (rather than to persistent user meta) means the impersonated user
+        // cannot later escalate back to the admin account from a normal login.
+        $back_token = wp_generate_password( 43, false );
+        set_transient( 'wmp_switch_back_' . $user_id, [
+            'token'    => wp_hash( $back_token ),
+            'admin_id' => $admin_id,
+        ], DAY_IN_SECONDS );
+
+        $this->set_switch_back_cookie( $back_token, time() + DAY_IN_SECONDS );
 
         wp_set_current_user( $user_id );
         wp_set_auth_cookie( $user_id, true );
 
         wp_safe_redirect( admin_url() );
         exit;
+    }
+
+    /**
+     * Handle the "Switch back" request that returns an impersonating admin to
+     * their original account. The request is authenticated by a nonce tied to
+     * the current (impersonated) user plus a token bound to the browser cookie
+     * set when the switch began.
+     */
+    public function handle_switch_back() {
+        if ( empty( $_GET['wmp_switch_back'] ) ) {
+            return;
+        }
+
+        $current_id = get_current_user_id();
+        if ( ! $current_id ) {
+            return;
+        }
+
+        $nonce = isset( $_GET['_wpnonce'] ) ? sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ) : '';
+        if ( ! wp_verify_nonce( $nonce, 'wmp_switch_back_' . $current_id ) ) {
+            wp_die( esc_html__( 'Invalid switch-back request.', 'wp-manager-pro' ), 'WP Manager Pro', [ 'response' => 403 ] );
+        }
+
+        $transient = get_transient( 'wmp_switch_back_' . $current_id );
+        $cookie    = isset( $_COOKIE['wmp_switch_back'] ) ? sanitize_text_field( wp_unslash( $_COOKIE['wmp_switch_back'] ) ) : '';
+
+        if ( ! $transient || ! $cookie || ! hash_equals( $transient['token'], wp_hash( $cookie ) ) ) {
+            wp_die( esc_html__( 'Switch-back session is invalid or has expired.', 'wp-manager-pro' ), 'WP Manager Pro', [ 'response' => 403 ] );
+        }
+
+        $admin_id = absint( $transient['admin_id'] );
+        $admin    = get_user_by( 'id', $admin_id );
+
+        // The account we return to must still exist and be an administrator.
+        if ( ! $admin || ! user_can( $admin, 'manage_options' ) ) {
+            wp_die( esc_html__( 'Original account is no longer available.', 'wp-manager-pro' ), 'WP Manager Pro', [ 'response' => 403 ] );
+        }
+
+        delete_transient( 'wmp_switch_back_' . $current_id );
+        $this->set_switch_back_cookie( '', time() - DAY_IN_SECONDS );
+
+        wp_set_current_user( $admin_id );
+        wp_set_auth_cookie( $admin_id, true );
+
+        wp_safe_redirect( admin_url( 'admin.php?page=wp-manager-pro' ) );
+        exit;
+    }
+
+    /**
+     * Set (or clear) the cookie that binds a switch-back token to the browser
+     * that initiated the user switch.
+     */
+    private function set_switch_back_cookie( $value, $expires ) {
+        $path   = defined( 'COOKIEPATH' ) && COOKIEPATH ? COOKIEPATH : '/';
+        $domain = defined( 'COOKIE_DOMAIN' ) ? COOKIE_DOMAIN : '';
+
+        setcookie( 'wmp_switch_back', $value, [
+            'expires'  => $expires,
+            'path'     => $path,
+            'domain'   => $domain,
+            'secure'   => is_ssl(),
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ] );
+    }
+
+    /**
+     * Add a "Switch back to {admin}" link to the admin bar while an admin is
+     * impersonating another user. Shown to the impersonated user regardless of
+     * their capabilities, since they may not have `manage_options`.
+     */
+    public function add_switch_back_bar_item( \WP_Admin_Bar $bar ) {
+        $current_id = get_current_user_id();
+        if ( ! $current_id || empty( $_COOKIE['wmp_switch_back'] ) ) {
+            return;
+        }
+
+        $transient = get_transient( 'wmp_switch_back_' . $current_id );
+        if ( ! $transient ) {
+            return;
+        }
+
+        $admin = get_user_by( 'id', absint( $transient['admin_id'] ) );
+        if ( ! $admin ) {
+            return;
+        }
+
+        $url = wp_nonce_url(
+            add_query_arg( 'wmp_switch_back', '1', admin_url() ),
+            'wmp_switch_back_' . $current_id
+        );
+
+        $bar->add_node( [
+            'id'    => 'wmp-switch-back',
+            'title' => '<span class="ab-icon dashicons dashicons-undo" style="font-size:16px;line-height:32px;vertical-align:middle;"></span><span style="vertical-align:middle;">'
+                . sprintf( esc_html__( 'Switch back to %s', 'wp-manager-pro' ), esc_html( $admin->display_name ) )
+                . '</span>',
+            'href'  => esc_url( $url ),
+            'meta'  => [ 'title' => esc_attr__( 'Return to your administrator account', 'wp-manager-pro' ) ],
+        ] );
     }
 
     /**

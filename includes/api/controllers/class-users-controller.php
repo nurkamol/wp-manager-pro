@@ -124,11 +124,10 @@ class Users_Controller {
             return new WP_Error( 'user_not_found', 'User not found.', [ 'status' => 404 ] );
         }
 
-        // Store original admin in session.
         $original_user_id = get_current_user_id();
-        update_user_meta( $user_id, 'wmp_original_admin', $original_user_id );
 
-        // Generate a temporary login token.
+        // Generate a temporary login token. The originating admin is carried in
+        // the transient so the switch-back flow can return to the right account.
         $token = wp_generate_password( 32, false );
         set_transient( 'wmp_login_as_' . $user_id, [
             'token'    => $token,

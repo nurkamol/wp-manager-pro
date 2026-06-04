@@ -2,7 +2,7 @@
 
 This document outlines the planned feature development for WP Manager Pro. Releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Minor versions (`1.x.0`) add new features; patch versions (`1.x.y`) deliver bug fixes and polish.
 
-> **Current version:** 3.2.0 — last updated 2026-05-13
+> **Current version:** 3.2.1 — last updated 2026-06-05
 
 ---
 
@@ -40,6 +40,7 @@ This document outlines the planned feature development for WP Manager Pro. Relea
 | [3.0.0] | Dark Mode Auto-Sync, Dashboard Widgets (configurable grid), Notification Centre (bell + slide-out panel), Mobile/Tablet Layout (bottom nav, auto-collapse), Global Search (live search in Command Palette), System-wide Command Palette overlay (WPMGR admin bar button), Custom Post Type Manager (CPTs + taxonomies UI) |
 | [3.1.0] | Plugin Health Check (abandoned, compatibility, CVE, quality flags via WP.org + WPScan APIs, 24 h cached), WPMGR admin bar button polished, CPT/taxonomy pages added to Command Palette |
 | [3.2.0] | Code editor replaced: Monaco → **CodeMirror 6** in File Manager and Snippets (inline + fullscreen). Fixes [#2](https://github.com/nurkamol/wp-manager-pro/issues/2): Monaco's CDN-loaded language workers left the editor as plain text on sites with strict CSP / firewalls / offline networks. CodeMirror 6 is bundled, no external requests, One-Dark theme, PHP / JS / TS / CSS / HTML / JSON / XML / SVG / Markdown / YAML support, new shared `CodeEditor` component |
+| [3.2.1] | **Switch back from "Login as"** ([#3](https://github.com/nurkamol/wp-manager-pro/issues/3)): impersonating a user now adds a "Switch back to {admin}" admin-bar link that restores the original session. Secured by a nonce plus an HttpOnly, SameSite=Lax cookie-bound token kept only in the originating admin's browser; return is gated on the original account still being an administrator |
 
 ---
 
@@ -111,3 +112,4 @@ Have a feature request or want to vote on a backlog item? [Open an issue](https:
 [3.0.0]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v3.0.0
 [3.1.0]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v3.1.0
 [3.2.0]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v3.2.0
+[3.2.1]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v3.2.1

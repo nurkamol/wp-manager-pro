@@ -7,6 +7,16 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [3.2.1] — 2026-06-05
+
+### Fixed
+- **"Login as" had no way back** ([#3](https://github.com/nurkamol/wp-manager-pro/issues/3)) — switching into another user swapped the auth cookie but left no return path (the `wmp_original_admin` user-meta it stored was never read). Admins were stranded in the impersonated account. The admin bar now shows a **"Switch back to {admin}"** link while impersonating, which restores the original administrator session.
+
+### Security
+- Switch-back is authenticated by a nonce tied to the impersonated user **plus** a random token bound to an HttpOnly, SameSite=Lax browser cookie set when the switch begins. Because the token lives only in the originating admin's browser — not in persistent user-meta — an impersonated user who later logs in normally cannot use leftover state to escalate back to the administrator account. The return is additionally gated on the original account still holding `manage_options`.
+
+---
+
 ## [3.2.0] — 2026-05-13
 
 ### Changed

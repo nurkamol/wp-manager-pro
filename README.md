@@ -2,7 +2,7 @@
 
 > A comprehensive, agency-ready WordPress management suite — built with React 19, TypeScript, and the WordPress REST API.
 
-![Version](https://img.shields.io/badge/version-3.2.0-blue)
+![Version](https://img.shields.io/badge/version-3.2.1-blue)
 ![WordPress](https://img.shields.io/badge/WordPress-5.9%2B-21759b)
 ![PHP](https://img.shields.io/badge/PHP-7.4%2B-8892be)
 ![License](https://img.shields.io/badge/license-GPL--2.0%2B-green)
@@ -56,6 +56,13 @@
 All operations happen through a secured REST API (`wp-manager-pro/v1`) that requires the `manage_options` capability on every route.
 
 ---
+
+## What's New in v3.2.1 — Switch back from "Login as"
+
+| Feature | Description |
+|---------|-------------|
+| ↩️ Switch back | Fixes [#3](https://github.com/nurkamol/wp-manager-pro/issues/3) — "Login as" used to swap your session with no way back, stranding you in the impersonated account. The admin bar now shows a **"Switch back to {admin}"** link while impersonating |
+| 🔐 Secure return | Authenticated by a nonce plus a token bound to an HttpOnly, SameSite=Lax cookie in the originating admin's browser — leftover state can't be used to escalate back to admin; return is gated on the original account still being an administrator |
 
 ## What's New in v3.2.0 — Syntax-highlighted code editor (CodeMirror 6)
 
