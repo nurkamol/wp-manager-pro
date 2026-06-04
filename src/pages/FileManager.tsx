@@ -10,10 +10,17 @@ import { toast } from 'sonner'
 import { formatBytes, getFileIcon } from '@/lib/utils'
 import {
   FolderOpen, File, ChevronRight, Home, Save, X, Trash2,
-  RefreshCw, AlertTriangle, FolderPlus, ArrowLeft, Upload, Pencil
+  RefreshCw, AlertTriangle, FolderPlus, ArrowLeft, Upload, Pencil,
+  Download, Copy, Scissors, ClipboardPaste, FilePlus, Files, Link2
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { CodeEditor, extToLang } from '@/components/CodeEditor'
+import {
+  ContextMenu, ContextMenuContent, ContextMenuItem,
+  ContextMenuSeparator, ContextMenuTrigger,
+} from '@/components/ui/context-menu'
+
+type Clipboard = { item: FileItem; mode: 'copy' | 'cut' }
 
 interface FileItem {
   name: string
@@ -44,6 +51,9 @@ export function FileManager() {
   const [showNewDir, setShowNewDir] = useState(false)
   const [renameTarget, setRenameTarget] = useState<FileItem | null>(null)
   const [newName, setNewName] = useState('')
+  const [newFileName, setNewFileName] = useState('')
+  const [showNewFile, setShowNewFile] = useState(false)
+  const [clipboard, setClipboard] = useState<Clipboard | null>(null)
 
   const { data: fileData, isLoading, refetch } = useQuery<FileListData>({
     queryKey: ['files', currentPath],
@@ -110,6 +120,79 @@ export function FileManager() {
     onError: (err: Error) => toast.error(err.message),
   })
 
+  const invalidate = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: ['files', currentPath] }),
+    [queryClient, currentPath]
+  )
+
+  const newFileMutation = useMutation({
+    mutationFn: (name: string) => api.post('/files/new', { path: fileData?.path, name }),
+    onSuccess: () => {
+      toast.success('File created')
+      setShowNewFile(false)
+      setNewFileName('')
+      invalidate()
+    },
+    onError: (err: Error) => toast.error(err.message),
+  })
+
+  const duplicateMutation = useMutation({
+    mutationFn: (path: string) => api.post('/files/duplicate', { path }),
+    onSuccess: () => {
+      toast.success('Duplicated successfully')
+      invalidate()
+    },
+    onError: (err: Error) => toast.error(err.message),
+  })
+
+  const copyMutation = useMutation({
+    mutationFn: ({ path, destination }: { path: string; destination: string }) =>
+      api.post('/files/copy', { path, destination }),
+    onSuccess: () => {
+      toast.success('Copied successfully')
+      invalidate()
+    },
+    onError: (err: Error) => toast.error(err.message),
+  })
+
+  const moveMutation = useMutation({
+    mutationFn: ({ path, destination }: { path: string; destination: string }) =>
+      api.post('/files/move', { path, destination }),
+    onSuccess: () => {
+      toast.success('Moved successfully')
+      setClipboard(null)
+      invalidate()
+    },
+    onError: (err: Error) => toast.error(err.message),
+  })
+
+  const handlePaste = useCallback((destination: string) => {
+    if (!clipboard) return
+    if (clipboard.mode === 'cut') {
+      moveMutation.mutate({ path: clipboard.item.path, destination })
+    } else {
+      copyMutation.mutate({ path: clipboard.item.path, destination })
+    }
+  }, [clipboard, moveMutation, copyMutation])
+
+  const handleDownload = useCallback((item: FileItem) => {
+    const a = document.createElement('a')
+    a.href = api.url(`/files/download?path=${encodeURIComponent(item.path)}`)
+    a.download = item.name
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+  }, [])
+
+  const handleCopyPath = useCallback(async (item: FileItem) => {
+    try {
+      await navigator.clipboard.writeText(item.path)
+      toast.success('Path copied to clipboard')
+    } catch {
+      toast.error('Could not copy path')
+    }
+  }, [])
+
   const handleItemClick = useCallback((item: FileItem) => {
     if (item.type === 'directory') {
       setCurrentPath(item.path)
@@ -149,9 +232,23 @@ export function FileManager() {
               {uploadMutation.isPending ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
               Upload File
             </Button>
-            <Button variant="outline" size="sm" onClick={() => setShowNewDir(true)}>
+            <Button variant="outline" size="sm" onClick={() => { setShowNewFile(true); setShowNewDir(false) }}>
+              <FilePlus className="w-4 h-4" /> New File
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => { setShowNewDir(true); setShowNewFile(false) }}>
               <FolderPlus className="w-4 h-4" /> New Folder
             </Button>
+            {clipboard && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => fileData && handlePaste(fileData.path)}
+                disabled={copyMutation.isPending || moveMutation.isPending}
+                title={`${clipboard.mode === 'cut' ? 'Move' : 'Copy'} "${clipboard.item.name}" here`}
+              >
+                <ClipboardPaste className="w-4 h-4" /> Paste
+              </Button>
+            )}
             <Button variant="outline" size="sm" onClick={() => refetch()}>
               <RefreshCw className="w-4 h-4" /> Refresh
             </Button>
@@ -208,6 +305,30 @@ export function FileManager() {
               </div>
             ) : (
               <div>
+                {/* New file input */}
+                {showNewFile && (
+                  <div className="flex items-center gap-2 px-4 py-2 border-b bg-blue-50">
+                    <FilePlus className="w-4 h-4 text-blue-500" />
+                    <Input
+                      autoFocus
+                      placeholder="File name (e.g. notes.txt)"
+                      value={newFileName}
+                      onChange={e => setNewFileName(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter' && newFileName) newFileMutation.mutate(newFileName)
+                        if (e.key === 'Escape') { setShowNewFile(false); setNewFileName('') }
+                      }}
+                      className="h-7 text-sm"
+                    />
+                    <Button size="sm" className="h-7 px-2" onClick={() => newFileMutation.mutate(newFileName)} disabled={!newFileName || newFileMutation.isPending}>
+                      <Save className="w-3 h-3" />
+                    </Button>
+                    <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => { setShowNewFile(false); setNewFileName('') }}>
+                      <X className="w-3 h-3" />
+                    </Button>
+                  </div>
+                )}
+
                 {/* New directory input */}
                 {showNewDir && (
                   <div className="flex items-center gap-2 px-4 py-2 border-b bg-blue-50">
@@ -233,51 +354,101 @@ export function FileManager() {
                 )}
 
                 {fileData?.items.map((item) => (
-                  <div
-                    key={item.path}
-                    className="flex items-center justify-between px-4 py-2 hover:bg-slate-50 cursor-pointer border-b border-slate-50 group"
-                    onClick={() => handleItemClick(item)}
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <span className="text-base shrink-0">
-                        {item.type === 'directory'
-                          ? '📁'
-                          : getFileIcon(item.ext || '')}
-                      </span>
-                      <div className="min-w-0">
-                        <p className="text-sm text-slate-700 truncate">{item.name}</p>
-                        {item.type === 'file' && item.size !== null && (
-                          <p className="text-[10px] text-slate-400">{formatBytes(item.size)}</p>
-                        )}
+                  <ContextMenu key={item.path}>
+                    <ContextMenuTrigger asChild>
+                      <div
+                        className="flex items-center justify-between px-4 py-2 hover:bg-slate-50 cursor-pointer border-b border-slate-50 group"
+                        onClick={() => handleItemClick(item)}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <span className="text-base shrink-0">
+                            {item.type === 'directory'
+                              ? '📁'
+                              : getFileIcon(item.ext || '')}
+                          </span>
+                          <div className="min-w-0">
+                            <p className="text-sm text-slate-700 truncate">{item.name}</p>
+                            {item.type === 'file' && item.size !== null && (
+                              <p className="text-[10px] text-slate-400">{formatBytes(item.size)}</p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                          {!item.writable && (
+                            <Badge variant="secondary" className="text-[10px]">Read-only</Badge>
+                          )}
+                          {item.type === 'directory' && (
+                            <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                          )}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setRenameTarget(item)
+                              setNewName(item.name)
+                            }}
+                            className="text-slate-400 hover:text-blue-600 p-1 rounded"
+                            title="Rename"
+                          >
+                            <Pencil className="w-3 h-3" />
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setDeleteTarget(item) }}
+                            className="text-red-400 hover:text-red-600 p-1 rounded"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                      {!item.writable && (
-                        <Badge variant="secondary" className="text-[10px]">Read-only</Badge>
+                    </ContextMenuTrigger>
+                    <ContextMenuContent className="w-52">
+                      {item.type === 'directory' ? (
+                        <ContextMenuItem onClick={() => setCurrentPath(item.path)}>
+                          <FolderOpen className="text-slate-500" /> Open
+                        </ContextMenuItem>
+                      ) : (
+                        <ContextMenuItem onClick={() => readFileMutation.mutate(item.path)}>
+                          <Pencil className="text-slate-500" /> Edit
+                        </ContextMenuItem>
                       )}
+                      {item.type === 'file' && (
+                        <ContextMenuItem onClick={() => handleDownload(item)}>
+                          <Download className="text-slate-500" /> Download
+                        </ContextMenuItem>
+                      )}
+                      <ContextMenuSeparator />
+                      <ContextMenuItem onClick={() => { setRenameTarget(item); setNewName(item.name) }}>
+                        <Pencil className="text-slate-500" /> Rename
+                      </ContextMenuItem>
+                      <ContextMenuItem onClick={() => duplicateMutation.mutate(item.path)}>
+                        <Files className="text-slate-500" /> Duplicate
+                      </ContextMenuItem>
+                      <ContextMenuItem onClick={() => setClipboard({ item, mode: 'copy' })}>
+                        <Copy className="text-slate-500" /> Copy
+                      </ContextMenuItem>
+                      <ContextMenuItem onClick={() => setClipboard({ item, mode: 'cut' })}>
+                        <Scissors className="text-slate-500" /> Cut
+                      </ContextMenuItem>
                       {item.type === 'directory' && (
-                        <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                        <ContextMenuItem
+                          disabled={!clipboard || clipboard.item.path === item.path}
+                          onClick={() => handlePaste(item.path)}
+                        >
+                          <ClipboardPaste className="text-slate-500" /> Paste into folder
+                        </ContextMenuItem>
                       )}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setRenameTarget(item)
-                          setNewName(item.name)
-                        }}
-                        className="text-slate-400 hover:text-blue-600 p-1 rounded"
-                        title="Rename"
+                      <ContextMenuItem onClick={() => handleCopyPath(item)}>
+                        <Link2 className="text-slate-500" /> Copy path
+                      </ContextMenuItem>
+                      <ContextMenuSeparator />
+                      <ContextMenuItem
+                        className="text-red-600 focus:text-red-600"
+                        onClick={() => setDeleteTarget(item)}
                       >
-                        <Pencil className="w-3 h-3" />
-                      </button>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setDeleteTarget(item) }}
-                        className="text-red-400 hover:text-red-600 p-1 rounded"
-                        title="Delete"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
-                    </div>
-                  </div>
+                        <Trash2 /> Delete
+                      </ContextMenuItem>
+                    </ContextMenuContent>
+                  </ContextMenu>
                 ))}
 
                 {fileData?.items.length === 0 && (

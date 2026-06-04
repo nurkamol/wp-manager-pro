@@ -339,6 +339,212 @@ class Files_Controller {
         ], 200 );
     }
 
+    /**
+     * Create an empty file inside a directory.
+     */
+    public static function create_file( WP_REST_Request $request ) {
+        $dir  = $request->get_param( 'path' );
+        $name = $request->get_param( 'name' );
+
+        $safe_dir = self::sanitize_path( $dir );
+
+        if ( ! $safe_dir || ! is_dir( $safe_dir ) ) {
+            return new WP_Error( 'invalid_path', 'Invalid or forbidden directory.', [ 'status' => 403 ] );
+        }
+
+        if ( ! is_writable( $safe_dir ) ) {
+            return new WP_Error( 'not_writable', 'Directory is not writable.', [ 'status' => 403 ] );
+        }
+
+        if ( empty( $name ) || strpos( $name, '/' ) !== false || strpos( $name, '\\' ) !== false ) {
+            return new WP_Error( 'invalid_name', 'Name must not contain path separators.', [ 'status' => 400 ] );
+        }
+
+        $safe_name = sanitize_file_name( $name );
+
+        if ( empty( $safe_name ) ) {
+            return new WP_Error( 'invalid_name', 'Invalid file name.', [ 'status' => 400 ] );
+        }
+
+        $target = $safe_dir . DIRECTORY_SEPARATOR . $safe_name;
+
+        if ( file_exists( $target ) ) {
+            return new WP_Error( 'already_exists', 'A file or directory with that name already exists.', [ 'status' => 409 ] );
+        }
+
+        if ( file_put_contents( $target, '' ) === false ) {
+            return new WP_Error( 'create_failed', 'Failed to create the file.', [ 'status' => 500 ] );
+        }
+
+        return new WP_REST_Response( [ 'success' => true, 'message' => 'File created.', 'path' => $target, 'name' => $safe_name ], 200 );
+    }
+
+    /**
+     * Copy a file or directory into a destination directory.
+     */
+    public static function copy_file( WP_REST_Request $request ) {
+        return self::transfer( $request, 'copy' );
+    }
+
+    /**
+     * Move a file or directory into a destination directory.
+     */
+    public static function move_file( WP_REST_Request $request ) {
+        return self::transfer( $request, 'move' );
+    }
+
+    /**
+     * Duplicate a file or directory in place, appending a unique suffix.
+     */
+    public static function duplicate_file( WP_REST_Request $request ) {
+        $path      = $request->get_param( 'path' );
+        $safe_path = self::sanitize_path( $path );
+
+        if ( ! $safe_path || ! file_exists( $safe_path ) ) {
+            return new WP_Error( 'invalid_path', 'Invalid or forbidden path.', [ 'status' => 403 ] );
+        }
+
+        if ( in_array( basename( $safe_path ), [ 'wp-config.php', '.htaccess' ], true ) ) {
+            return new WP_Error( 'protected_file', 'This file is protected and cannot be duplicated.', [ 'status' => 403 ] );
+        }
+
+        $dir   = dirname( $safe_path );
+        $name  = basename( $safe_path );
+        $ext   = is_dir( $safe_path ) ? '' : pathinfo( $name, PATHINFO_EXTENSION );
+        $base  = $ext ? substr( $name, 0, -( strlen( $ext ) + 1 ) ) : $name;
+
+        // Find a free "name-copy", "name-copy-2", ... target.
+        $target = '';
+        for ( $i = 1; $i < 1000; $i++ ) {
+            $suffix    = $i === 1 ? '-copy' : '-copy-' . $i;
+            $candidate = $dir . DIRECTORY_SEPARATOR . $base . $suffix . ( $ext ? '.' . $ext : '' );
+            if ( ! file_exists( $candidate ) ) {
+                $target = $candidate;
+                break;
+            }
+        }
+
+        if ( ! $target ) {
+            return new WP_Error( 'duplicate_failed', 'Could not find a free name to duplicate to.', [ 'status' => 500 ] );
+        }
+
+        $ok = is_dir( $safe_path ) ? self::copy_directory( $safe_path, $target ) : @copy( $safe_path, $target );
+
+        if ( ! $ok ) {
+            return new WP_Error( 'duplicate_failed', 'Failed to duplicate the item.', [ 'status' => 500 ] );
+        }
+
+        return new WP_REST_Response( [ 'success' => true, 'message' => 'Duplicated successfully.', 'path' => $target, 'name' => basename( $target ) ], 200 );
+    }
+
+    /**
+     * Shared implementation for copy/move into a destination directory.
+     */
+    private static function transfer( WP_REST_Request $request, $mode ) {
+        $path        = $request->get_param( 'path' );
+        $destination = $request->get_param( 'destination' );
+
+        $safe_path = self::sanitize_path( $path );
+        $safe_dest = self::sanitize_path( $destination );
+
+        if ( ! $safe_path || ! file_exists( $safe_path ) ) {
+            return new WP_Error( 'invalid_path', 'Invalid or forbidden source path.', [ 'status' => 403 ] );
+        }
+
+        if ( ! $safe_dest || ! is_dir( $safe_dest ) ) {
+            return new WP_Error( 'invalid_destination', 'Invalid or forbidden destination directory.', [ 'status' => 403 ] );
+        }
+
+        if ( ! is_writable( $safe_dest ) ) {
+            return new WP_Error( 'not_writable', 'Destination directory is not writable.', [ 'status' => 403 ] );
+        }
+
+        // Disallow moving/copying a directory into itself or its own descendant.
+        if ( is_dir( $safe_path ) && strpos( $safe_dest . DIRECTORY_SEPARATOR, $safe_path . DIRECTORY_SEPARATOR ) === 0 ) {
+            return new WP_Error( 'invalid_destination', 'Cannot move or copy a folder into itself.', [ 'status' => 400 ] );
+        }
+
+        if ( 'move' === $mode && in_array( basename( $safe_path ), [ 'wp-config.php', '.htaccess', 'index.php' ], true ) ) {
+            return new WP_Error( 'protected_file', 'This file is protected and cannot be moved.', [ 'status' => 403 ] );
+        }
+
+        $target = $safe_dest . DIRECTORY_SEPARATOR . basename( $safe_path );
+
+        if ( $target === $safe_path ) {
+            return new WP_Error( 'same_location', 'Source and destination are the same.', [ 'status' => 400 ] );
+        }
+
+        if ( file_exists( $target ) ) {
+            return new WP_Error( 'already_exists', 'An item with that name already exists in the destination.', [ 'status' => 409 ] );
+        }
+
+        if ( 'move' === $mode ) {
+            $ok = @rename( $safe_path, $target );
+        } else {
+            $ok = is_dir( $safe_path ) ? self::copy_directory( $safe_path, $target ) : @copy( $safe_path, $target );
+        }
+
+        if ( ! $ok ) {
+            return new WP_Error( 'transfer_failed', 'Failed to ' . $mode . ' the item.', [ 'status' => 500 ] );
+        }
+
+        return new WP_REST_Response( [
+            'success' => true,
+            'message' => 'move' === $mode ? 'Moved successfully.' : 'Copied successfully.',
+            'path'    => $target,
+        ], 200 );
+    }
+
+    /**
+     * Stream a file to the browser as a download. Authenticated via the REST
+     * nonce passed as `_wpnonce` (so a plain anchor/href download works) and the
+     * `manage_options` permission callback on the route.
+     */
+    public static function download_file( WP_REST_Request $request ) {
+        $path      = $request->get_param( 'path' );
+        $safe_path = self::sanitize_path( $path );
+
+        if ( ! $safe_path || ! is_file( $safe_path ) ) {
+            return new WP_Error( 'invalid_path', 'Invalid or forbidden path.', [ 'status' => 403 ] );
+        }
+
+        if ( ! is_readable( $safe_path ) ) {
+            return new WP_Error( 'not_readable', 'File is not readable.', [ 'status' => 403 ] );
+        }
+
+        nocache_headers();
+        header( 'Content-Type: application/octet-stream' );
+        header( 'Content-Disposition: attachment; filename="' . basename( $safe_path ) . '"' );
+        header( 'Content-Length: ' . filesize( $safe_path ) );
+
+        // Discard any buffered REST output before streaming raw bytes.
+        while ( ob_get_level() ) {
+            ob_end_clean();
+        }
+
+        readfile( $safe_path );
+        exit;
+    }
+
+    /**
+     * Recursively copy a directory tree.
+     */
+    private static function copy_directory( $source, $dest ) {
+        if ( ! @mkdir( $dest, 0755, true ) && ! is_dir( $dest ) ) {
+            return false;
+        }
+        $items = array_diff( scandir( $source ), [ '.', '..' ] );
+        foreach ( $items as $item ) {
+            $from = $source . DIRECTORY_SEPARATOR . $item;
+            $to   = $dest . DIRECTORY_SEPARATOR . $item;
+            $ok   = is_dir( $from ) ? self::copy_directory( $from, $to ) : @copy( $from, $to );
+            if ( ! $ok ) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     private static function delete_directory( $dir ) {
         if ( ! is_dir( $dir ) ) return false;
         $files = array_diff( scandir( $dir ), [ '.', '..' ] );

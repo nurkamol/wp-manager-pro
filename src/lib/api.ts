@@ -105,6 +105,16 @@ export const api = {
       body: body ? JSON.stringify(body) : undefined,
     }),
 
+  /**
+   * Build an authenticated GET URL (nonce in the query string) suitable for a
+   * plain anchor/href download, where request headers cannot be set.
+   */
+  url: (endpoint: string) => {
+    const config = getConfig()
+    const sep = endpoint.includes('?') ? '&' : '?'
+    return `${config.apiUrl}${endpoint}${sep}_wpnonce=${encodeURIComponent(config.nonce)}`
+  },
+
   // For multipart/form-data uploads — do NOT set Content-Type (browser sets boundary automatically).
   upload: <T = unknown>(endpoint: string, formData: FormData) => {
     const config = getConfig()

@@ -7,6 +7,21 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [3.3.0] — 2026-06-05
+
+### Added
+- **File Manager right-click context menu** ([#4](https://github.com/nurkamol/wp-manager-pro/issues/4)) — right-click any file or folder for Open/Edit, Download, Rename, Duplicate, Copy, Cut, Paste into folder, Copy path, and Delete.
+- **Copy / Cut / Paste** — move or copy files and folders between directories. Pick Copy or Cut from the context menu, navigate, then Paste from the toolbar or directly into a target folder. Folder copies are recursive.
+- **Duplicate** — one-click duplicate of any file or folder, with an auto-incrementing `-copy` / `-copy-2` suffix (recursive for directories).
+- **New File** — create an empty file inline from the toolbar.
+- **Download** — download any file directly from the browser via an authenticated link.
+
+### Backend
+- New REST endpoints under `wp-manager-pro/v1`: `POST /files/new`, `POST /files/copy`, `POST /files/move`, `POST /files/duplicate`, and `GET /files/download`. All reuse the existing `realpath()`-based path sanitization confined to `ABSPATH`, with protected-file guards (`wp-config.php`, `.htaccess`, `index.php`) on move/duplicate and a guard against copying/moving a folder into its own descendant.
+- New `@radix-ui/react-context-menu` dependency and a shadcn `context-menu` UI primitive.
+
+---
+
 ## [3.2.1] — 2026-06-05
 
 ### Fixed

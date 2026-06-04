@@ -249,6 +249,31 @@ class Routes {
             'callback'            => [ Files_Controller::class, 'rename_file' ],
             'permission_callback' => [ self::class, 'admin_permission' ],
         ] );
+        register_rest_route( $namespace, '/files/new', [
+            'methods'             => 'POST',
+            'callback'            => [ Files_Controller::class, 'create_file' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/files/copy', [
+            'methods'             => 'POST',
+            'callback'            => [ Files_Controller::class, 'copy_file' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/files/move', [
+            'methods'             => 'POST',
+            'callback'            => [ Files_Controller::class, 'move_file' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/files/duplicate', [
+            'methods'             => 'POST',
+            'callback'            => [ Files_Controller::class, 'duplicate_file' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
+        register_rest_route( $namespace, '/files/download', [
+            'methods'             => 'GET',
+            'callback'            => [ Files_Controller::class, 'download_file' ],
+            'permission_callback' => [ self::class, 'admin_permission' ],
+        ] );
 
         // Database.
         register_rest_route( $namespace, '/database/tables', [

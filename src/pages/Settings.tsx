@@ -30,6 +30,16 @@ interface BrandingSettings {
 // ── Changelog data ─────────────────────────────────────────────────────────────
 const changelog: { version: string; date: string; features: string[] }[] = [
   {
+    version: '3.3.0',
+    date: '2026-06-05',
+    features: [
+      'File Manager right-click context menu (#4) — Open/Edit, Download, Rename, Duplicate, Copy, Cut, Paste into folder, Copy path, and Delete on any file or folder',
+      'Copy / Cut / Paste files and folders between directories — pick Copy or Cut, navigate, then Paste from the toolbar or into a target folder (recursive for folders)',
+      'Duplicate any file or folder with an auto-incrementing -copy suffix; New File inline creation from the toolbar; one-click Download of any file',
+      'New REST endpoints: /files/new, /files/copy, /files/move, /files/duplicate, /files/download — all confined to ABSPATH via realpath() with protected-file guards on move/duplicate',
+    ],
+  },
+  {
     version: '3.2.1',
     date: '2026-06-05',
     features: [

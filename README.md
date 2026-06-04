@@ -2,7 +2,7 @@
 
 > A comprehensive, agency-ready WordPress management suite — built with React 19, TypeScript, and the WordPress REST API.
 
-![Version](https://img.shields.io/badge/version-3.2.1-blue)
+![Version](https://img.shields.io/badge/version-3.3.0-blue)
 ![WordPress](https://img.shields.io/badge/WordPress-5.9%2B-21759b)
 ![PHP](https://img.shields.io/badge/PHP-7.4%2B-8892be)
 ![License](https://img.shields.io/badge/license-GPL--2.0%2B-green)
@@ -56,6 +56,15 @@
 All operations happen through a secured REST API (`wp-manager-pro/v1`) that requires the `manage_options` capability on every route.
 
 ---
+
+## What's New in v3.3.0 — File Manager right-click actions
+
+| Feature | Description |
+|---------|-------------|
+| 🖱️ Right-click context menu | Right-click any file or folder for Open/Edit, Download, Rename, Duplicate, Copy, Cut, Paste, Copy path, and Delete ([#4](https://github.com/nurkamol/wp-manager-pro/issues/4)) |
+| ✂️ Copy / Cut / Paste | Copy or move files and folders between directories — pick **Copy** or **Cut**, navigate, then **Paste** from the toolbar or into any folder |
+| 📄 New File + Download | Create empty files inline and download any file straight from the browser |
+| 🧬 Duplicate | One-click duplicate of any file or folder with an auto `-copy` suffix (recursive for folders) |
 
 ## What's New in v3.2.1 — Switch back from "Login as"
 
@@ -135,9 +144,11 @@ All operations happen through a secured REST API (`wp-manager-pro/v1`) that requ
 - Breadcrumb navigation with file metadata (size, modified date, writable status)
 - **v3.2.0** CodeMirror 6 editor (bundled, no CDN) with full syntax highlighting for PHP, JS, TS, CSS, JSON, YAML, HTML, SVG, Markdown, and more — works offline and behind strict CSP/firewalls
 - Upload files directly to any directory
+- **v3.3.0** Right-click context menu on every file and folder — Open/Edit, Download, Rename, Duplicate, Copy, Cut, Paste, Copy path, Delete
+- **v3.3.0** Copy / Cut / Paste files and folders between directories (recursive for folders); New File inline creation; one-click Download
 - Rename files and folders in-place
 - Create directories, delete files and folders
-- Security: path traversal protection via `realpath()`, critical file guard, 2 MB read limit
+- Security: path traversal protection via `realpath()`, critical file guard, 2 MB read limit, protected-file guards on move/duplicate
 
 ### Database Manager
 - Table browser: engine, collation, row count, size
