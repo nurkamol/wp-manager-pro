@@ -2,7 +2,7 @@
 
 This document outlines the planned feature development for WP Manager Pro. Releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Minor versions (`1.x.0`) add new features; patch versions (`1.x.y`) deliver bug fixes and polish.
 
-> **Current version:** 3.4.2 — last updated 2026-06-05
+> **Current version:** 3.4.3 — last updated 2026-06-05
 
 ---
 
@@ -45,6 +45,7 @@ This document outlines the planned feature development for WP Manager Pro. Relea
 | [3.4.0] | **File Manager rebuilt on [elFinder 2.1.69](https://github.com/studio-42/elfinder)** ([#4](https://github.com/nurkamol/wp-manager-pro/issues/4)): drag-and-drop, multi-select, full toolbar, quick-look preview, thumbnails, tree-wide search, archive (zip) compress/extract, and chmod. Bundled PHP connector boots a `LocalFileSystem` volume rooted at `ABSPATH`, gated by `manage_options` + the REST nonce, with `wp-config.php` read-only/locked; conflict-safe with other elFinder-based plugins |
 | [3.4.1] | **File Manager rendering & themes**: elFinder now renders in an isolated iframe (no more app CSS bleed), bundles jQuery UI theme CSS for correct widget styling, adds theme selection incl. a **Dark Slim** dark theme, advanced toolbar/context-menu config, and hides `.tmb`/`.DS_Store` from the listing |
 | [3.4.2] | **File Manager editors & dark theme**: Filester-style "Edit file" submenu with bundled **ACE** (offline, syntax-highlighted) + built-in TextArea; contrast-fixed **Dark** theme so secondary columns/read-only rows are legible |
+| [3.4.3] | **Fix**: "Edit file → ACE Editor" opened blank — WordPress' noConflict jQuery left the iframe without a global `$`, which elFinder's `editors.default` ACE loader relies on. Restored `$ = jQuery`; ACE now loads and renders the file. Bundled ACE autocomplete snippets |
 
 ---
 
@@ -121,3 +122,4 @@ Have a feature request or want to vote on a backlog item? [Open an issue](https:
 [3.4.0]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v3.4.0
 [3.4.1]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v3.4.1
 [3.4.2]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v3.4.2
+[3.4.3]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v3.4.3

@@ -30,6 +30,14 @@ interface BrandingSettings {
 // ── Changelog data ─────────────────────────────────────────────────────────────
 const changelog: { version: string; date: string; features: string[] }[] = [
   {
+    version: '3.4.3',
+    date: '2026-06-05',
+    features: [
+      'Fixes the File Manager "Edit file → ACE Editor" opening blank — WordPress runs jQuery in noConflict mode (no global $), and elFinder\'s editors.default ACE loader uses a bare $, which threw before ACE loaded. The iframe now restores $ = jQuery so ACE renders the file with syntax highlighting',
+      'Bundled ACE autocomplete snippets for the included modes (removes a snippets 404)',
+    ],
+  },
+  {
     version: '3.4.2',
     date: '2026-06-05',
     features: [

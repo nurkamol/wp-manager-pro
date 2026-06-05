@@ -142,6 +142,11 @@ class Elfinder_Controller {
 <body>
 <div id="wmp-elfinder"></div>
 <script src="<?php echo esc_url( $jquery ); ?>"></script>
+<!-- WordPress ships jQuery in noConflict mode (no global $). elFinder's bundled
+     editors.default uses a bare `$` (e.g. $.Deferred() in the ACE loader), so
+     restore it here. This iframe only contains jQuery/jQuery-UI/elFinder, so
+     reclaiming $ for jQuery is safe. -->
+<script>window.$ = window.jQuery;</script>
 <script src="<?php echo esc_url( $jqui_js ); ?>"></script>
 <script src="<?php echo esc_url( $base . 'js/elfinder.min.js' ); ?>"></script>
 <!-- Bundled editor integrations (ACE etc.) for the "Edit file" submenu. -->

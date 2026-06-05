@@ -7,6 +7,14 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [3.4.3] — 2026-06-05
+
+### Fixed
+- **ACE editor opened blank** ("Edit file → ACE Editor" showed an empty dialog) — WordPress serves jQuery in noConflict mode, so the iframe had no global `$`. elFinder's bundled `editors.default` uses a bare `$.Deferred()` in its ACE loader, which threw `Cannot read properties of undefined (reading 'Deferred')` before ACE ever loaded. The host page now restores `window.$ = window.jQuery` right after jQuery, so ACE initialises and renders the file (verified: content loads with `ace/mode/php`).
+- Bundled ACE autocomplete **snippets** for the included modes, removing a `snippets/<mode>.js` 404 and enabling snippet completion.
+
+---
+
 ## [3.4.2] — 2026-06-05
 
 ### Added

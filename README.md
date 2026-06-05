@@ -2,7 +2,7 @@
 
 > A comprehensive, agency-ready WordPress management suite — built with React 19, TypeScript, and the WordPress REST API.
 
-![Version](https://img.shields.io/badge/version-3.4.2-blue)
+![Version](https://img.shields.io/badge/version-3.4.3-blue)
 ![WordPress](https://img.shields.io/badge/WordPress-5.9%2B-21759b)
 ![PHP](https://img.shields.io/badge/PHP-7.4%2B-8892be)
 ![License](https://img.shields.io/badge/license-GPL--2.0%2B-green)
@@ -56,6 +56,12 @@
 All operations happen through a secured REST API (`wp-manager-pro/v1`) that requires the `manage_options` capability on every route.
 
 ---
+
+## What's New in v3.4.3 — Fix: ACE editor opened blank
+
+| Fix | Description |
+|-----|-------------|
+| 🐞 ACE editor blank | In v3.4.2 the **Edit file → ACE Editor** dialog opened empty. WordPress ships jQuery in noConflict mode (no global `$`), and elFinder's bundled `editors.default` uses a bare `$` in its ACE loader, which threw before ACE initialised. The iframe now restores `$ = jQuery`, so ACE loads and shows the file with PHP/JS/CSS… highlighting. Autocomplete snippets are bundled too |
 
 ## What's New in v3.4.2 — File Manager editors & dark theme
 
