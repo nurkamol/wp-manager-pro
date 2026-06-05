@@ -7,6 +7,16 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [3.4.4] — 2026-06-05
+
+### Fixed
+- **Custom login page layout scattered** ([#6](https://github.com/nurkamol/wp-manager-pro/issues/6)) — on the centered layout, `body.login` was `display:flex` with the default `flex-direction:row`, so WordPress's language switcher and footer (plus the plugin's injected heading) laid out in a row beside `#login`; because `#login` is `width:100%`, it pushed those siblings out to the left/right edges. Added `flex-direction: column` so the heading, card, language switcher, and footer stack centered. Verified: card centred at exactly 50% of the viewport.
+
+### Improved
+- **File Manager no longer renders a silent blank frame** ([#5](https://github.com/nurkamol/wp-manager-pro/issues/5)) — the elFinder iframe now guards against partial asset loads (proxy/CSP/404) and **shows the actual error** instead of a blank panel: it checks that jQuery and `jQuery.fn.elfinder` loaded, wraps init in try/catch, installs a window `error` handler, and the React page shows an "Open File Manager in a new tab" fallback if the frame is blocked entirely. This surfaces the real cause on locked-down hosts (e.g. CloudPanel/Nginx) rather than failing silently.
+
+---
+
 ## [3.4.3] — 2026-06-05
 
 ### Fixed

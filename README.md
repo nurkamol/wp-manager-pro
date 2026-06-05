@@ -2,7 +2,7 @@
 
 > A comprehensive, agency-ready WordPress management suite — built with React 19, TypeScript, and the WordPress REST API.
 
-![Version](https://img.shields.io/badge/version-3.4.3-blue)
+![Version](https://img.shields.io/badge/version-3.4.4-blue)
 ![WordPress](https://img.shields.io/badge/WordPress-5.9%2B-21759b)
 ![PHP](https://img.shields.io/badge/PHP-7.4%2B-8892be)
 ![License](https://img.shields.io/badge/license-GPL--2.0%2B-green)
@@ -56,6 +56,13 @@
 All operations happen through a secured REST API (`wp-manager-pro/v1`) that requires the `manage_options` capability on every route.
 
 ---
+
+## What's New in v3.4.4 — Login centering + File Manager resilience
+
+| Fix | Description |
+|-----|-------------|
+| 🎯 Login page centered | Fixes [#6](https://github.com/nurkamol/wp-manager-pro/issues/6) — the custom login page scattered the form, language switcher, and footer across a row. Added `flex-direction: column` so everything stacks centered (verified: card at exactly 50% of the viewport) |
+| 🛟 No more silent blank File Manager | [#5](https://github.com/nurkamol/wp-manager-pro/issues/5) — if a proxy/CSP/404 blocks an asset, the iframe now **shows the real error** (and a "open in new tab" fallback) instead of a blank panel, so the cause is diagnosable on locked-down hosts |
 
 ## What's New in v3.4.3 — Fix: ACE editor opened blank
 

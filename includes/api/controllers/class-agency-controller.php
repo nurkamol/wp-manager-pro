@@ -297,7 +297,14 @@ class Agency_Controller {
 
         // ── Body & background ────────────────────────────────────────────────
         $css  = "html { height: 100%; }";
-        $css .= "body.login { background-color: {$bg_color}; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; }";
+        // flex-direction: column is essential — WordPress renders the language
+        // switcher and footer (and the plugin's injected heading) as direct
+        // children of body.login alongside #login. Without column, #login's
+        // width:100% pushes those siblings out to the left/right edges (see #6).
+        $css .= "body.login { background-color: {$bg_color}; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 20px; box-sizing: border-box; }";
+        // Keep the secondary controls tidy and centered beneath the card.
+        $css .= "body.login .language-switcher { margin: 0; }";
+        $css .= "body.login #language-switcher { display: flex; justify-content: center; }";
 
         if ( $bg_image ) {
             $css .= "body.login { background-image: url('{$bg_image}'); background-size: cover; background-position: center; background-repeat: no-repeat; }";

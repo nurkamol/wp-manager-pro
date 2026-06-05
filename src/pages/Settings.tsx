@@ -30,6 +30,14 @@ interface BrandingSettings {
 // ── Changelog data ─────────────────────────────────────────────────────────────
 const changelog: { version: string; date: string; features: string[] }[] = [
   {
+    version: '3.4.4',
+    date: '2026-06-05',
+    features: [
+      'Fixes #6: custom login page layout — the form, language switcher, and footer were scattered across a row. Added flex-direction: column so everything stacks centered (verified the card sits at exactly 50% of the viewport)',
+      'Improves #5: the File Manager iframe no longer renders a silent blank panel — it now checks jQuery/elFinder loaded, catches init errors, and surfaces the real message (with an "open in new tab" fallback) so blocked assets on locked-down hosts (CloudPanel/Nginx/CSP) are diagnosable',
+    ],
+  },
+  {
     version: '3.4.3',
     date: '2026-06-05',
     features: [

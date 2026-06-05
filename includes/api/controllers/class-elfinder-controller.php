@@ -137,10 +137,37 @@ class Elfinder_Controller {
 <style>
   html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; background: #fff; }
   #wmp-elfinder { border: 0; }
+  #wmp-elf-error { display: none; box-sizing: border-box; max-width: 640px; margin: 48px auto; padding: 24px 28px;
+    font: 14px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #7a2e0e;
+    background: #fff7ed; border: 1px solid #fed7aa; border-radius: 10px; }
+  #wmp-elf-error h2 { margin: 0 0 8px; font-size: 16px; color: #9a3412; }
+  #wmp-elf-error code { background: #fff; padding: 2px 6px; border-radius: 4px; border: 1px solid #fed7aa; word-break: break-all; }
+  #wmp-elf-error a { color: #2563eb; }
 </style>
 </head>
 <body>
 <div id="wmp-elfinder"></div>
+<div id="wmp-elf-error" role="alert"></div>
+<script>
+  // Surface any load/init failure visibly instead of leaving the iframe blank,
+  // so the cause is diagnosable on any hosting stack (see issue #5).
+  window.__wmpElfFail = function (msg) {
+    var box = document.getElementById('wmp-elf-error');
+    var fm  = document.getElementById('wmp-elfinder');
+    if (fm) { fm.style.display = 'none'; }
+    if (!box) { return; }
+    box.style.display = 'block';
+    box.innerHTML = '<h2>File Manager could not load</h2>' +
+      '<p>' + String(msg).replace(/[<>&]/g, function (c) { return { '<':'&lt;','>':'&gt;','&':'&amp;' }[c]; }) + '</p>' +
+      '<p>Try a hard refresh (Ctrl/Cmd+Shift+R). If it persists, open this frame directly to see the browser console: ' +
+      '<a href="' + location.href + '" target="_blank" rel="noopener">open in a new tab</a>, and share the console error on ' +
+      '<a href="https://github.com/nurkamol/wp-manager-pro/issues" target="_blank" rel="noopener">GitHub</a>.</p>';
+  };
+  window.addEventListener('error', function (e) {
+    var where = e && e.filename ? ' @ ' + String(e.filename).split('/').pop() + ':' + (e.lineno || '?') : '';
+    window.__wmpElfFail('<code>' + (e && e.message ? e.message : 'Script error') + where + '</code>');
+  });
+</script>
 <script src="<?php echo esc_url( $jquery ); ?>"></script>
 <!-- WordPress ships jQuery in noConflict mode (no global $). elFinder's bundled
      editors.default uses a bare `$` (e.g. $.Deferred() in the ACE loader), so
@@ -154,6 +181,16 @@ class Elfinder_Controller {
 <script>
 (function () {
   var CFG = <?php echo $cfg; // phpcs:ignore — JSON-encoded, safe. ?>;
+  var fail = window.__wmpElfFail || function () {};
+
+  // Guard against partial asset loads (some hosts/proxies/CSP block scripts).
+  if (typeof window.jQuery === 'undefined') { fail('jQuery did not load.'); return; }
+  if (!window.jQuery.fn || typeof window.jQuery.fn.elfinder !== 'function') {
+    fail('elFinder did not load (jQuery.fn.elfinder missing). A proxy, CSP, or 404 may be blocking <code>js/elfinder.min.js</code>.');
+    return;
+  }
+
+  try {
   jQuery(function ($) {
     // Restrict the "Edit file" editors to ACE (bundled) — elFinder still offers
     // its built-in TextArea alongside it, matching the Filester-style submenu.
@@ -216,6 +253,9 @@ class Elfinder_Controller {
     $(window).on('resize', fit);
     fit();
   });
+  } catch (err) {
+    fail('<code>' + String(err && err.message ? err.message : err) + '</code>');
+  }
 })();
 </script>
 </body>
