@@ -7,6 +7,16 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [3.4.7] — 2026-06-06
+
+### Fixed
+- **Editing an HTML (or CSS/JS/XML/YAML) file in ACE replaced the whole File Manager with an error.** Two issues compounded: (1) the global error handler added in v3.4.4 (the #5 blank-frame safeguard) was catching **every** runtime error, so a non-fatal `NetworkError` during editing tore down the entire UI; and (2) ACE workers were only bundled for `base/php/json`, so opening HTML/CSS/JS made ACE fetch a missing `worker-<mode>.js` and throw that `NetworkError`.
+  - The error handler now only surfaces failures that happen **before** elFinder has initialised (`__wmpElfReady` flag set on the volume `open` event); once the File Manager is running, runtime errors no longer replace it.
+  - Bundled the remaining common ACE workers — **css, html, javascript, xml, yaml** (joining base/php/json) — so editing any common file type lints cleanly with no 404s.
+  - Verified: opening `readme.html` in ACE now loads the content in `ace/mode/html` (99 lines), the File Manager stays visible, and there are zero failed requests.
+
+---
+
 ## [3.4.6] — 2026-06-05
 
 ### Improved

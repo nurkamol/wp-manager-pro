@@ -152,6 +152,10 @@ class Elfinder_Controller {
   // Surface any load/init failure visibly instead of leaving the iframe blank,
   // so the cause is diagnosable on any hosting stack (see issue #5).
   window.__wmpElfFail = function (msg) {
+    // Once elFinder is up and running, a runtime error (e.g. an ACE worker that
+    // 404s while editing) must NOT tear down the whole UI — only surface failures
+    // that happen BEFORE the file manager has initialised (see #5).
+    if (window.__wmpElfReady) { return; }
     var box = document.getElementById('wmp-elf-error');
     var fm  = document.getElementById('wmp-elfinder');
     if (fm) { fm.style.display = 'none'; }
@@ -164,6 +168,7 @@ class Elfinder_Controller {
       '<a href="https://github.com/nurkamol/wp-manager-pro/issues" target="_blank" rel="noopener">GitHub</a>.</p>';
   };
   window.addEventListener('error', function (e) {
+    if (window.__wmpElfReady) { return; } // ignore post-init runtime errors
     var where = e && e.filename ? ' @ ' + String(e.filename).split('/').pop() + ':' + (e.lineno || '?') : '';
     window.__wmpElfFail('<code>' + (e && e.message ? e.message : 'Script error') + where + '</code>');
   });
@@ -248,6 +253,13 @@ class Elfinder_Controller {
         files: ['getfile', '|', 'open', 'opennew', 'download', 'opendir', 'quicklook', '|', 'copy', 'cut', 'paste', 'duplicate', '|', 'rm', '|', 'edit', 'rename', 'resize', '|', 'archive', 'extract', '|', 'selectall', 'selectinvert', '|', 'info', 'chmod']
       }
     }).elfinder('instance');
+
+    // elFinder is initialised — from here on, runtime errors (e.g. a missing ACE
+    // worker while editing) are non-fatal and must not replace the UI with the
+    // load-failure panel. Mark ready once the volume has actually opened.
+    instance.bind('open', function () { window.__wmpElfReady = true; });
+    // Safety net in case the 'open' event is missed.
+    setTimeout(function () { window.__wmpElfReady = true; }, 4000);
 
     var fit = function () { if (instance) instance.resize('100%', $(window).height()); };
     $(window).on('resize', fit);

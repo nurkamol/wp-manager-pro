@@ -2,7 +2,7 @@
 
 > A comprehensive, agency-ready WordPress management suite — built with React 19, TypeScript, and the WordPress REST API.
 
-![Version](https://img.shields.io/badge/version-3.4.6-blue)
+![Version](https://img.shields.io/badge/version-3.4.7-blue)
 ![WordPress](https://img.shields.io/badge/WordPress-5.9%2B-21759b)
 ![PHP](https://img.shields.io/badge/PHP-7.4%2B-8892be)
 ![License](https://img.shields.io/badge/license-GPL--2.0%2B-green)
@@ -56,6 +56,12 @@
 All operations happen through a secured REST API (`wp-manager-pro/v1`) that requires the `manage_options` capability on every route.
 
 ---
+
+## What's New in v3.4.7 — Fix: editing HTML/CSS/JS in ACE errored
+
+| Fix | Description |
+|-----|-------------|
+| 🐞 ACE editor error on HTML/CSS/JS | Opening an HTML (or CSS/JS/XML/YAML) file in **ACE Editor** replaced the File Manager with a `NetworkError`. Cause: the v3.4.4 error safeguard caught *every* runtime error (not just load failures), and ACE workers were only bundled for php/json. Now the safeguard only fires before init, and the **css/html/javascript/xml/yaml** workers are bundled — all common file types edit cleanly |
 
 ## What's New in v3.4.6 — Cleaner self-updates
 

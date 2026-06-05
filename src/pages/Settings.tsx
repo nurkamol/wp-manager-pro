@@ -30,6 +30,14 @@ interface BrandingSettings {
 // ── Changelog data ─────────────────────────────────────────────────────────────
 const changelog: { version: string; date: string; features: string[] }[] = [
   {
+    version: '3.4.7',
+    date: '2026-06-06',
+    features: [
+      'Fixes editing HTML/CSS/JS/XML/YAML files in ACE Editor throwing a NetworkError that replaced the whole File Manager — the v3.4.4 error safeguard now only fires before elFinder initialises (not for non-fatal runtime errors)',
+      'Bundled the remaining common ACE workers (css, html, javascript, xml, yaml) alongside base/php/json, so all common file types edit and lint cleanly with no 404s',
+    ],
+  },
+  {
     version: '3.4.6',
     date: '2026-06-05',
     features: [
