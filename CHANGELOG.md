@@ -7,6 +7,16 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [3.4.2] — 2026-06-05
+
+### Added
+- **Filester-style "Edit file" submenu** — right-clicking a file now offers **ACE Editor** (syntax-highlighted) alongside elFinder's built-in **TextArea**. ACE 1.44 is **bundled** under `assets/elfinder/ace/` (no CDN) — pruned to common modes (PHP, JS, TS, CSS/SCSS/LESS, HTML, JSON, XML/SVG, SQL, YAML, Markdown, shell, ini, apache/nginx conf, Python, Twig, and more), light + several dark editor themes, and PHP/JSON workers. Wired via the bundled `editors.default.min.js` with `options.cdns.ace` pointed at the local copy; the editor list is filtered to ACE only.
+
+### Fixed
+- **Dark theme was hard to read** — the community "Dark Slim" theme renders secondary text in `#999`, so read-only rows and the perms/date/size/kind columns nearly vanished. Added a contrast-fix overlay (`themes/dark-slim/dark-fix.css`, loaded via the theme's `cssurls` array) that brightens filenames, list columns, the tree, and the status bar. The theme is now simply labelled **Dark** in Preferences.
+
+---
+
 ## [3.4.1] — 2026-06-05
 
 ### Fixed

@@ -111,11 +111,18 @@ class Elfinder_Controller {
 
         // Pass typed config to the inline boot script.
         $cfg = wp_json_encode( [
-            'url'        => $connector,
-            'baseUrl'    => $base,
-            'restNonce'  => $rest_nonce,
-            'lang'       => 'en',
-            'darkCss'    => $base . 'themes/dark-slim/css/elfinder.theme.min.css',
+            'url'       => $connector,
+            'baseUrl'   => $base,
+            'restNonce' => $rest_nonce,
+            'lang'      => 'en',
+            // ACE editor base (contains ace.js + modes/themes/workers). The bundled
+            // editors.default.js loads it via options.cdns.ace — fully offline.
+            'aceUrl'    => untrailingslashit( $base . 'ace' ),
+            // Dark theme = community Dark Slim + our contrast-fix overlay (array).
+            'darkCss'   => [
+                $base . 'themes/dark-slim/css/elfinder.theme.min.css',
+                $base . 'themes/dark-slim/dark-fix.css',
+            ],
         ] );
 
         ?><!DOCTYPE html>
@@ -137,10 +144,23 @@ class Elfinder_Controller {
 <script src="<?php echo esc_url( $jquery ); ?>"></script>
 <script src="<?php echo esc_url( $jqui_js ); ?>"></script>
 <script src="<?php echo esc_url( $base . 'js/elfinder.min.js' ); ?>"></script>
+<!-- Bundled editor integrations (ACE etc.) for the "Edit file" submenu. -->
+<script src="<?php echo esc_url( $base . 'js/extras/editors.default.min.js' ); ?>"></script>
 <script>
 (function () {
   var CFG = <?php echo $cfg; // phpcs:ignore — JSON-encoded, safe. ?>;
   jQuery(function ($) {
+    // Restrict the "Edit file" editors to ACE (bundled) — elFinder still offers
+    // its built-in TextArea alongside it, matching the Filester-style submenu.
+    // The rest of editors.default (CodeMirror, TinyMCE, online services…) is dropped.
+    var allEditors = (elFinder.prototype._options.commandsOptions.edit.editors || []);
+    var editors = allEditors.filter(function (ed) {
+      return ed.info && ed.info.id === 'aceeditor';
+    });
+
+    // Point ACE at the bundled copy (offline) while keeping other cdn defaults.
+    var cdns = $.extend({}, elFinder.prototype._options.cdns, { ace: CFG.aceUrl });
+
     var instance = $('#wmp-elfinder').elfinder({
       url: CFG.url,
       baseUrl: CFG.baseUrl,
@@ -154,9 +174,11 @@ class Elfinder_Controller {
       resizable: false,
       sound: false,
       rememberLastDir: true,
-      // Theme switcher (Default + bundled dark theme) is exposed in Preferences.
+      cdns: cdns,
+      commandsOptions: { edit: { editors: editors } },
+      // Theme switcher (Default + Dark) is exposed in the Preferences dialog.
       themes: {
-        'dark-slim': { name: 'Dark Slim', cssurls: CFG.darkCss }
+        'dark': { name: 'Dark', cssurls: CFG.darkCss }
       },
       theme: 'default',
       uiOptions: {

@@ -2,7 +2,7 @@
 
 > A comprehensive, agency-ready WordPress management suite — built with React 19, TypeScript, and the WordPress REST API.
 
-![Version](https://img.shields.io/badge/version-3.4.1-blue)
+![Version](https://img.shields.io/badge/version-3.4.2-blue)
 ![WordPress](https://img.shields.io/badge/WordPress-5.9%2B-21759b)
 ![PHP](https://img.shields.io/badge/PHP-7.4%2B-8892be)
 ![License](https://img.shields.io/badge/license-GPL--2.0%2B-green)
@@ -56,6 +56,14 @@
 All operations happen through a secured REST API (`wp-manager-pro/v1`) that requires the `manage_options` capability on every route.
 
 ---
+
+## What's New in v3.4.2 — File Manager editors & dark theme
+
+| Feature | Description |
+|---------|-------------|
+| ✏️ Edit file ▸ submenu | Right-click → **Edit file** now offers **ACE Editor** (bundled, syntax-highlighted, offline) alongside the built-in **TextArea** — Filester-style |
+| 📦 Bundled ACE | ACE 1.44 vendored (no CDN): PHP/JS/TS/CSS/HTML/JSON/SQL/YAML/Markdown and more, with light + dark editor themes |
+| 🌗 Readable dark theme | A contrast-fix overlay on the **Dark** theme so read-only rows and the perms/date/size/kind columns are legible |
 
 ## What's New in v3.4.1 — File Manager rendering & themes
 

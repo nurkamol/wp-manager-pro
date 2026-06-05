@@ -1,0 +1,51 @@
+/*
+ * WP Manager Pro — contrast boost layered over the "Dark Slim" theme.
+ * Dark Slim renders most secondary text in #999 / #666, which is hard to read on
+ * its dark background (read-only rows and the perm/date/size/kind columns nearly
+ * vanish). This file is loaded only while the Dark theme is active (it ships in
+ * the same theme `cssurls` array), so the overrides never touch the light theme.
+ */
+
+/* List-view: brighten filenames and the secondary columns. */
+.elfinder .elfinder-cwd-view-list .elfinder-cwd-filename,
+.elfinder .elfinder-cwd-file td .elfinder-cwd-filename {
+  color: #e7e9ee !important;
+}
+.elfinder .elfinder-cwd-view-list .elfinder-cwd-file td {
+  color: #c6cad3 !important;
+}
+.elfinder .elfinder-cwd-view-list thead td,
+.elfinder .elfinder-cwd-view-list .elfinder-cwd-file.ui-state-disabled td {
+  color: #aab0bb !important;
+}
+
+/* Icon-view filenames. */
+.elfinder .elfinder-cwd-filename {
+  color: #e2e5ea !important;
+}
+
+/* Selected row stays crisp white on the blue highlight. */
+.elfinder .elfinder-cwd-file.ui-selected .elfinder-cwd-filename,
+.elfinder .elfinder-cwd-file.ui-selected td {
+  color: #ffffff !important;
+}
+
+/* Hovered row. */
+.elfinder .elfinder-cwd-file.ui-state-hover td,
+.elfinder .elfinder-cwd-file.ui-state-hover .elfinder-cwd-filename {
+  color: #f2f4f7 !important;
+}
+
+/* Navigation tree + breadcrumb path + status bar. */
+.elfinder .elfinder-navbar-dir {
+  color: #d3d7df !important;
+}
+.elfinder .elfinder-statusbar,
+.elfinder .elfinder-path {
+  color: #c6cad3 !important;
+}
+
+/* Toolbar search placeholder/input legibility. */
+.elfinder .elfinder-toolbar .ui-widget-content input {
+  color: #e7e9ee !important;
+}

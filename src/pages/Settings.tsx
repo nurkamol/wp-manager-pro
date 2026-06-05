@@ -30,6 +30,15 @@ interface BrandingSettings {
 // ── Changelog data ─────────────────────────────────────────────────────────────
 const changelog: { version: string; date: string; features: string[] }[] = [
   {
+    version: '3.4.2',
+    date: '2026-06-05',
+    features: [
+      'File Manager "Edit file" submenu (Filester-style) — right-click a file to edit with ACE Editor (syntax-highlighted) or the built-in TextArea',
+      'ACE 1.44 is bundled (no CDN) with common modes (PHP/JS/TS/CSS/HTML/JSON/SQL/YAML/Markdown/shell/conf and more), light + dark editor themes, and PHP/JSON workers',
+      'Readable dark theme — a contrast-fix overlay brightens filenames, the perms/date/size/kind columns, the tree, and status bar (labelled "Dark" in Preferences)',
+    ],
+  },
+  {
     version: '3.4.1',
     date: '2026-06-05',
     features: [
