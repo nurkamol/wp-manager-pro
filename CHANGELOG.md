@@ -7,6 +7,16 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [3.4.5] — 2026-06-05
+
+### Fixed
+- **Release packaging dropped the entire File Manager** — this was the real cause of [#5](https://github.com/nurkamol/wp-manager-pro/issues/5). The GitHub release **assets** for v3.4.0–v3.4.4 were uploaded **truncated** (~980 KB instead of 1.2–2.1 MB): they shipped `assets/build/` but were missing `assets/elfinder/` (the entire elFinder client + connector assets) and `assets/global-palette.js`. So any site that installed or self-updated from a release got a File Manager whose scripts/styles all returned **404**, rendering blank. The packages were complete in source control the whole time — only the uploaded zips were bad (a `gh release create "<file>#<label>"` upload quirk).
+- **All affected release assets (v3.4.0–v3.4.4) have been re-uploaded complete and verified** against the source zips (stored asset size now matches byte-for-byte). v3.4.5 ships the verified-complete package, so the in-plugin self-updater auto-recovers any site stuck on a broken 3.4.x build.
+
+> If your File Manager shows a blank panel or "elFinder did not load", update to **v3.4.5** (or reinstall) — the assets are now delivered intact.
+
+---
+
 ## [3.4.4] — 2026-06-05
 
 ### Fixed

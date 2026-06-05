@@ -30,6 +30,14 @@ interface BrandingSettings {
 // ── Changelog data ─────────────────────────────────────────────────────────────
 const changelog: { version: string; date: string; features: string[] }[] = [
   {
+    version: '3.4.5',
+    date: '2026-06-05',
+    features: [
+      'Fixes #5 (real root cause): the GitHub release ZIPs for v3.4.0–v3.4.4 were uploaded truncated — missing the entire assets/elfinder/ tree and assets/global-palette.js — so installs/self-updates produced a File Manager that 404\'d every asset and rendered blank',
+      'All affected release assets re-uploaded complete and verified byte-for-byte; v3.4.5 ships the verified package so the self-updater auto-recovers any site stuck on a broken 3.4.x build. If your File Manager is blank, update to 3.4.5 or reinstall',
+    ],
+  },
+  {
     version: '3.4.4',
     date: '2026-06-05',
     features: [

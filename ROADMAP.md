@@ -2,7 +2,7 @@
 
 This document outlines the planned feature development for WP Manager Pro. Releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Minor versions (`1.x.0`) add new features; patch versions (`1.x.y`) deliver bug fixes and polish.
 
-> **Current version:** 3.4.4 — last updated 2026-06-05
+> **Current version:** 3.4.5 — last updated 2026-06-05
 
 ---
 
@@ -47,6 +47,7 @@ This document outlines the planned feature development for WP Manager Pro. Relea
 | [3.4.2] | **File Manager editors & dark theme**: Filester-style "Edit file" submenu with bundled **ACE** (offline, syntax-highlighted) + built-in TextArea; contrast-fixed **Dark** theme so secondary columns/read-only rows are legible |
 | [3.4.3] | **Fix**: "Edit file → ACE Editor" opened blank — WordPress' noConflict jQuery left the iframe without a global `$`, which elFinder's `editors.default` ACE loader relies on. Restored `$ = jQuery`; ACE now loads and renders the file. Bundled ACE autocomplete snippets |
 | [3.4.4] | **Fixes** [#6](https://github.com/nurkamol/wp-manager-pro/issues/6): custom login page scattered elements → `flex-direction: column` centers the form, language switcher, and footer. **Improves** [#5](https://github.com/nurkamol/wp-manager-pro/issues/5): the File Manager iframe surfaces real load/init errors (proxy/CSP/404) with an "open in new tab" fallback instead of a silent blank panel |
+| [3.4.5] | **Fixes** [#5](https://github.com/nurkamol/wp-manager-pro/issues/5) (root cause): the v3.4.0–v3.4.4 release **assets** were uploaded truncated, missing `assets/elfinder/` + `assets/global-palette.js`, so installs/self-updates 404'd all File Manager assets. All affected assets re-uploaded complete + verified; v3.4.5 ships the verified package so the self-updater auto-recovers stuck sites |
 
 ---
 
@@ -125,3 +126,4 @@ Have a feature request or want to vote on a backlog item? [Open an issue](https:
 [3.4.2]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v3.4.2
 [3.4.3]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v3.4.3
 [3.4.4]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v3.4.4
+[3.4.5]: https://github.com/nurkamol/wp-manager-pro/releases/tag/v3.4.5

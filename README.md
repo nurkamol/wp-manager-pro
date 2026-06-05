@@ -2,7 +2,7 @@
 
 > A comprehensive, agency-ready WordPress management suite — built with React 19, TypeScript, and the WordPress REST API.
 
-![Version](https://img.shields.io/badge/version-3.4.4-blue)
+![Version](https://img.shields.io/badge/version-3.4.5-blue)
 ![WordPress](https://img.shields.io/badge/WordPress-5.9%2B-21759b)
 ![PHP](https://img.shields.io/badge/PHP-7.4%2B-8892be)
 ![License](https://img.shields.io/badge/license-GPL--2.0%2B-green)
@@ -56,6 +56,12 @@
 All operations happen through a secured REST API (`wp-manager-pro/v1`) that requires the `manage_options` capability on every route.
 
 ---
+
+## What's New in v3.4.5 — Fix: broken release packaging (File Manager 404s)
+
+| Fix | Description |
+|-----|-------------|
+| 📦 Release zips were incomplete | **Root cause of [#5](https://github.com/nurkamol/wp-manager-pro/issues/5).** The release assets for v3.4.0–v3.4.4 were uploaded missing `assets/elfinder/` and `assets/global-palette.js`, so installs/self-updates produced a File Manager that 404'd every asset. All affected assets re-uploaded complete + verified; v3.4.5 ships the verified package so the self-updater auto-recovers stuck sites |
 
 ## What's New in v3.4.4 — Login centering + File Manager resilience
 
