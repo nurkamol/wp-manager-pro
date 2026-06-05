@@ -2,7 +2,7 @@
 
 > A comprehensive, agency-ready WordPress management suite — built with React 19, TypeScript, and the WordPress REST API.
 
-![Version](https://img.shields.io/badge/version-3.4.0-blue)
+![Version](https://img.shields.io/badge/version-3.4.1-blue)
 ![WordPress](https://img.shields.io/badge/WordPress-5.9%2B-21759b)
 ![PHP](https://img.shields.io/badge/PHP-7.4%2B-8892be)
 ![License](https://img.shields.io/badge/license-GPL--2.0%2B-green)
@@ -56,6 +56,16 @@
 All operations happen through a secured REST API (`wp-manager-pro/v1`) that requires the `manage_options` capability on every route.
 
 ---
+
+## What's New in v3.4.1 — File Manager rendering & themes
+
+| Feature | Description |
+|---------|-------------|
+| 🧊 Isolated iframe | elFinder now renders inside a sandboxed iframe so the app's global Tailwind/WP-admin CSS resets can no longer bleed in — the toolbar, search box, and info panel render correctly |
+| 🎨 jQuery UI styling | Bundled jQuery UI theme CSS (the piece missing in v3.4.0) restores proper widget styling |
+| 🌗 Theme selection + dark mode | A bundled **Dark Slim** theme; switch themes from elFinder's Preferences dialog |
+| 🛠️ Advanced config | Curated toolbar groups and right-click menus (incl. chmod, archive/extract, quick-look, fullscreen, duplicate, resize) |
+| 🙈 Cleaner listing | The `.tmb` thumbnail cache and `.DS_Store` are hidden from the file list |
 
 ## What's New in v3.4.0 — File Manager rebuilt on elFinder
 

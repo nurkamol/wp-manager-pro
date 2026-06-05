@@ -75,6 +75,7 @@ class Plugin {
         add_action( 'init', [ $this, 'load_textdomain' ] );
         add_action( 'init', [ $this, 'handle_login_as' ] );
         add_action( 'init', [ $this, 'handle_switch_back' ] );
+        add_action( 'wp_ajax_wmp_elfinder_host', [ API\Controllers\Elfinder_Controller::class, 'host' ] );
         add_action( 'admin_menu', [ Admin::class, 'register_menu' ] );
         add_action( 'admin_enqueue_scripts', [ Admin::class, 'enqueue_assets' ] );
         add_filter( 'plugin_action_links_' . WP_MANAGER_PRO_BASENAME, [ Admin::class, 'add_plugin_links' ] );

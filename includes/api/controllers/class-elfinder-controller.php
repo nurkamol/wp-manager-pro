@@ -59,17 +59,141 @@ class Elfinder_Controller {
 
     /**
      * Restrict access to sensitive files. `wp-config.php` stays visible and
-     * readable but cannot be written, renamed, moved, or deleted.
+     * readable but cannot be written, renamed, moved, or deleted. elFinder's own
+     * thumbnail cache and macOS cruft are hidden from the listing.
      *
-     * @return bool|null true to allow, false to deny, null for default.
+     * @return bool|null true to allow/hide, false to deny, null for default.
      */
     public static function access_control( $attr, $path, $data, $volume, $is_dir, $relpath ) {
-        if ( 'wp-config.php' === basename( $path ) ) {
+        $name = basename( $path );
+
+        // Hide the thumbnail cache and macOS metadata without blocking elFinder's
+        // own read/write of them (only the 'hidden' attribute is forced true).
+        if ( '.tmb' === $name || '.DS_Store' === $name || '.quarantine' === $name ) {
+            return 'hidden' === $attr ? true : null;
+        }
+
+        if ( 'wp-config.php' === $name ) {
             if ( 'write' === $attr )  return false; // no overwrite/edit.
             if ( 'locked' === $attr ) return true;  // no rename/move/delete.
             return null;                            // read allowed.
         }
 
         return null;
+    }
+
+    /**
+     * Render the self-contained iframe host document. Loading elFinder in its own
+     * document isolates it from the React app's global Tailwind/admin CSS resets,
+     * which otherwise strip the jQuery-UI widget styling. Capability + nonce gated.
+     */
+    public static function host() {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die( esc_html__( 'You are not allowed to access the File Manager.', 'wp-manager-pro' ), 403 );
+        }
+
+        $nonce = isset( $_GET['_wpnonce'] ) ? sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ) : '';
+        if ( ! wp_verify_nonce( $nonce, 'wmp_elfinder_host' ) ) {
+            wp_die( esc_html__( 'Invalid or expired File Manager session. Reload the page.', 'wp-manager-pro' ), 403 );
+        }
+
+        $base       = WP_MANAGER_PRO_URL . 'assets/elfinder/';
+        $connector  = rest_url( 'wp-manager-pro/v1/files/elfinder' );
+        $rest_nonce = wp_create_nonce( 'wp_rest' );
+        $jquery     = includes_url( 'js/jquery/jquery.min.js' );
+        $jqui_css   = $base . 'jquery-ui/jquery-ui.min.css';
+        $jqui_js    = $base . 'jquery-ui/jquery-ui.min.js';
+
+        nocache_headers();
+        header( 'Content-Type: text/html; charset=utf-8' );
+        // The iframe is same-origin; deny external framing for safety.
+        header( 'X-Frame-Options: SAMEORIGIN' );
+
+        // Pass typed config to the inline boot script.
+        $cfg = wp_json_encode( [
+            'url'        => $connector,
+            'baseUrl'    => $base,
+            'restNonce'  => $rest_nonce,
+            'lang'       => 'en',
+            'darkCss'    => $base . 'themes/dark-slim/css/elfinder.theme.min.css',
+        ] );
+
+        ?><!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>File Manager</title>
+<link rel="stylesheet" href="<?php echo esc_url( $jqui_css ); ?>">
+<link rel="stylesheet" href="<?php echo esc_url( $base . 'css/elfinder.min.css' ); ?>">
+<link rel="stylesheet" href="<?php echo esc_url( $base . 'css/theme.css' ); ?>">
+<style>
+  html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; background: #fff; }
+  #wmp-elfinder { border: 0; }
+</style>
+</head>
+<body>
+<div id="wmp-elfinder"></div>
+<script src="<?php echo esc_url( $jquery ); ?>"></script>
+<script src="<?php echo esc_url( $jqui_js ); ?>"></script>
+<script src="<?php echo esc_url( $base . 'js/elfinder.min.js' ); ?>"></script>
+<script>
+(function () {
+  var CFG = <?php echo $cfg; // phpcs:ignore — JSON-encoded, safe. ?>;
+  jQuery(function ($) {
+    var instance = $('#wmp-elfinder').elfinder({
+      url: CFG.url,
+      baseUrl: CFG.baseUrl,
+      cssAutoLoad: false,
+      lang: CFG.lang,
+      // Authenticate every connector request with the WP REST nonce — header for
+      // XHR, query param for plain file/quick-look URLs elFinder builds itself.
+      customHeaders: { 'X-WP-Nonce': CFG.restNonce },
+      customData: { _wpnonce: CFG.restNonce },
+      height: '100%',
+      resizable: false,
+      sound: false,
+      rememberLastDir: true,
+      // Theme switcher (Default + bundled dark theme) is exposed in Preferences.
+      themes: {
+        'dark-slim': { name: 'Dark Slim', cssurls: CFG.darkCss }
+      },
+      theme: 'default',
+      uiOptions: {
+        toolbar: [
+          ['back', 'forward'],
+          ['reload'],
+          ['home', 'up'],
+          ['mkdir', 'mkfile', 'upload'],
+          ['open', 'download', 'getfile'],
+          ['undo', 'redo'],
+          ['copy', 'cut', 'paste'],
+          ['rm', 'empty'],
+          ['rename', 'duplicate', 'edit', 'resize'],
+          ['extract', 'archive'],
+          ['search'],
+          ['view', 'sort'],
+          ['preference'],
+          ['fullscreen']
+        ],
+        toolbarExtra: { displayTextLabel: false, autoHideUA: ['search'] }
+      },
+      contextmenu: {
+        navbar: ['open', 'download', '|', 'copy', 'cut', 'paste', 'duplicate', '|', 'rm', '|', 'rename', '|', 'info', 'chmod'],
+        cwd: ['reload', 'back', '|', 'upload', 'mkdir', 'mkfile', 'paste', '|', 'sort', '|', 'info', 'preference', 'fullscreen'],
+        files: ['getfile', '|', 'open', 'opennew', 'download', 'opendir', 'quicklook', '|', 'copy', 'cut', 'paste', 'duplicate', '|', 'rm', '|', 'edit', 'rename', 'resize', '|', 'archive', 'extract', '|', 'selectall', 'selectinvert', '|', 'info', 'chmod']
+      }
+    }).elfinder('instance');
+
+    var fit = function () { if (instance) instance.resize('100%', $(window).height()); };
+    $(window).on('resize', fit);
+    fit();
+  });
+})();
+</script>
+</body>
+</html>
+<?php
+        exit;
     }
 }

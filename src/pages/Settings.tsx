@@ -30,6 +30,17 @@ interface BrandingSettings {
 // ── Changelog data ─────────────────────────────────────────────────────────────
 const changelog: { version: string; date: string; features: string[] }[] = [
   {
+    version: '3.4.1',
+    date: '2026-06-05',
+    features: [
+      'Fixes File Manager styling — elFinder now renders inside an isolated iframe so the app\'s global Tailwind/WP-admin CSS resets no longer bleed in and break the toolbar, search box, and info panel',
+      'Bundles jQuery UI 1.13.2 theme CSS (the piece missing in 3.4.0) so all widgets are styled correctly',
+      'Theme selection incl. a bundled Dark Slim dark theme — switch from elFinder\'s Preferences dialog',
+      'Advanced elFinder config — curated toolbar groups and right-click menus (chmod, archive/extract, quick-look, fullscreen, duplicate, resize)',
+      'Hides the .tmb thumbnail cache and .DS_Store from the file listing',
+    ],
+  },
+  {
     version: '3.4.0',
     date: '2026-06-05',
     features: [

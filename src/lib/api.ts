@@ -21,9 +21,7 @@ declare global {
         isPlain: boolean
       }
       elfinder?: {
-        connectorUrl: string
-        baseUrl: string
-        lang: string
+        hostUrl: string
       }
     }
   }

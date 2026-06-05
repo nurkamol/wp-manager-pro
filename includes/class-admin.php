@@ -70,42 +70,15 @@ class Admin {
             );
         }
 
-        // ── elFinder (File Manager) ──────────────────────────────────────────
-        // The File Manager embeds the bundled elFinder jQuery client. Enqueue its
-        // CSS/JS against WordPress's own jQuery + jQuery UI so the React bundle can
-        // initialise it on a DOM node. The bundle depends on 'wmp-elfinder' below,
-        // guaranteeing jQuery, jQuery UI, and elFinder are all present first.
-        $elf_dir = WP_MANAGER_PRO_PATH . 'assets/elfinder/';
-        $elf_url = WP_MANAGER_PRO_URL . 'assets/elfinder/';
-
-        if ( file_exists( $elf_dir . 'js/elfinder.min.js' ) ) {
-            wp_enqueue_style( 'wmp-elfinder', $elf_url . 'css/elfinder.min.css', [], filemtime( $elf_dir . 'css/elfinder.min.css' ) );
-            wp_enqueue_style( 'wmp-elfinder-theme', $elf_url . 'css/theme.css', [ 'wmp-elfinder' ], filemtime( $elf_dir . 'css/theme.css' ) );
-
-            wp_enqueue_script(
-                'wmp-elfinder',
-                $elf_url . 'js/elfinder.min.js',
-                [
-                    'jquery',
-                    'jquery-ui-core', 'jquery-ui-widget', 'jquery-ui-mouse', 'jquery-ui-position',
-                    'jquery-ui-draggable', 'jquery-ui-droppable', 'jquery-ui-resizable', 'jquery-ui-selectable',
-                    'jquery-ui-sortable', 'jquery-ui-slider', 'jquery-ui-tabs', 'jquery-ui-dialog', 'jquery-ui-button',
-                ],
-                filemtime( $elf_dir . 'js/elfinder.min.js' ),
-                true
-            );
-        }
-
         // Enqueue main JS.
         // 'media-editor' dependency ensures WordPress media scripts (wp.media)
         // are printed BEFORE our bundle, so window.wp.media is defined when
         // any Agency Tools media picker button is clicked.
-        // 'wmp-elfinder' ensures elFinder + jQuery UI are loaded before React mounts it.
         if ( file_exists( $build_dir . 'index.js' ) ) {
             wp_enqueue_script(
                 'wp-manager-pro',
                 $build_url . 'index.js',
-                [ 'media-editor', 'wmp-elfinder' ],
+                [ 'media-editor' ],
                 filemtime( $build_dir . 'index.js' ),
                 true
             );
@@ -130,9 +103,12 @@ class Admin {
                     'isPlain' => '' === get_option( 'permalink_structure', '' ),
                 ],
                 'elfinder' => [
-                    'connectorUrl' => rest_url( 'wp-manager-pro/v1/files/elfinder' ),
-                    'baseUrl'      => $elf_url,
-                    'lang'         => 'en',
+                    // The File Manager renders elFinder inside an isolated iframe to
+                    // shield it from the app's global Tailwind/admin CSS resets.
+                    'hostUrl' => add_query_arg( [
+                        'action'   => 'wmp_elfinder_host',
+                        '_wpnonce' => wp_create_nonce( 'wmp_elfinder_host' ),
+                    ], admin_url( 'admin-ajax.php' ) ),
                 ],
             ] );
         }

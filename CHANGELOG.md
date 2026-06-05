@@ -7,6 +7,23 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [3.4.1] — 2026-06-05
+
+### Fixed
+- **File Manager styling broke inside the app** — elFinder was mounted directly in the React app, where the global Tailwind preflight and `index.css` resets (`* {}`, `#wp-manager-pro-root *`, `.wmp-app :is(span, a, label…){ color: inherit }`) bled in and stripped its jQuery-UI widget styling, leaving the toolbar, search box, and info panel unstyled. elFinder now renders inside an **isolated iframe** (served by a `wmp_elfinder_host` admin-ajax handler), fully shielded from the app's CSS.
+- **Missing jQuery UI theme CSS** — the in-page embed loaded jQuery UI's JS but never its stylesheet. The iframe host bundles jQuery UI 1.13.2 (JS + base theme CSS + sprites), which was the remaining cause of the unstyled widgets.
+- The `.tmb` thumbnail cache and `.DS_Store` are now hidden from the listing via the connector's `accessControl`.
+
+### Added
+- **Theme selection incl. dark mode** — bundled **Dark Slim** theme; switch from elFinder's Preferences dialog.
+- **Advanced elFinder configuration** — curated toolbar groups and context menus across navbar/cwd/files (chmod, archive/extract, quick-look, fullscreen, duplicate, resize, select-all/invert, etc.).
+
+### Notes
+- Vendored under `assets/elfinder/`: `jquery-ui/` (JS + CSS + images) and `themes/dark-slim/`.
+- The in-page elFinder enqueue was removed from `class-admin.php`; the React page now renders the host iframe and the connector REST route is unchanged.
+
+---
+
 ## [3.4.0] — 2026-06-05
 
 ### Changed
