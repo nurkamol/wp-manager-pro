@@ -28,6 +28,40 @@ class Self_Updater {
         add_filter( 'plugins_api',  [ self::class, 'plugin_info' ], 10, 3 );
         add_action( 'in_plugin_update_message-' . WP_MANAGER_PRO_BASENAME, [ self::class, 'update_message' ], 10, 2 );
         add_action( 'upgrader_process_complete', [ self::class, 'after_update' ], 10, 2 );
+        // Guarantee a clean replacement on every update — wipe the old directory
+        // before extracting the new package so a previously incomplete install can
+        // never leave stale/truncated files behind.
+        add_filter( 'upgrader_package_options', [ self::class, 'force_clean_update' ] );
+    }
+
+    /**
+     * Force WordPress to fully clear the plugin directory before writing the new
+     * package. WordPress already sets `clear_destination` for routine plugin
+     * updates, but making it explicit here also covers manual ZIP re-installs and
+     * any upgrade path that would otherwise overlay files — so WP Manager Pro is
+     * always replaced cleanly rather than merged on top of an older/partial copy.
+     *
+     * @param array $options WP_Upgrader::install_package() options.
+     * @return array
+     */
+    public static function force_clean_update( array $options ): array {
+        $hook_extra = $options['hook_extra'] ?? [];
+
+        // Single-plugin updates carry the plugin basename; bulk updates carry a
+        // list under 'plugins'. Match either so our plugin is always force-cleaned.
+        $is_ours =
+            ( isset( $hook_extra['plugin'] ) && WP_MANAGER_PRO_BASENAME === $hook_extra['plugin'] ) ||
+            ( isset( $hook_extra['plugins'] ) && in_array( WP_MANAGER_PRO_BASENAME, (array) $hook_extra['plugins'], true ) ) ||
+            // Fallback: match by the destination folder name (covers paths where
+            // hook_extra is sparse, e.g. some manual "Replace current" installs).
+            ( isset( $options['destination'] ) && basename( untrailingslashit( $options['destination'] ) ) === dirname( WP_MANAGER_PRO_BASENAME ) );
+
+        if ( $is_ours ) {
+            $options['clear_destination']           = true;
+            $options['abort_if_destination_exists'] = false;
+        }
+
+        return $options;
     }
 
     // ── Inject update data into WP's transient ────────────────────────────────

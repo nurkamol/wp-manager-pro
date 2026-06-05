@@ -2,7 +2,7 @@
 
 > A comprehensive, agency-ready WordPress management suite — built with React 19, TypeScript, and the WordPress REST API.
 
-![Version](https://img.shields.io/badge/version-3.4.5-blue)
+![Version](https://img.shields.io/badge/version-3.4.6-blue)
 ![WordPress](https://img.shields.io/badge/WordPress-5.9%2B-21759b)
 ![PHP](https://img.shields.io/badge/PHP-7.4%2B-8892be)
 ![License](https://img.shields.io/badge/license-GPL--2.0%2B-green)
@@ -56,6 +56,12 @@
 All operations happen through a secured REST API (`wp-manager-pro/v1`) that requires the `manage_options` capability on every route.
 
 ---
+
+## What's New in v3.4.6 — Cleaner self-updates
+
+| Improvement | Description |
+|-------------|-------------|
+| 🧹 Force-clean updates | Follow-up to [#5](https://github.com/nurkamol/wp-manager-pro/issues/5): the self-updater now force-clears the plugin directory before writing the new package (via `clear_destination`), so an in-place update can't leave stale/incomplete files behind — no more delete-and-reinstall needed. Scoped to this plugin only; covers single, bulk, and manual-ZIP installs |
 
 ## What's New in v3.4.5 — Fix: broken release packaging (File Manager 404s)
 

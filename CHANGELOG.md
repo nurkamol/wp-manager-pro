@@ -7,6 +7,13 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [3.4.6] — 2026-06-05
+
+### Improved
+- **Self-updater now force-clears the plugin directory on every update** — follow-up hardening to [#5](https://github.com/nurkamol/wp-manager-pro/issues/5). A reporter found that a plain in-place update could leave a previous (incomplete) install's files behind; a clean delete-and-reinstall was needed. The updater now hooks `upgrader_package_options` to set `clear_destination` (and `abort_if_destination_exists = false`) for WP Manager Pro, so WordPress wipes the old directory before extracting the new package — guaranteeing a clean replacement instead of an overlay merge. Scoped to this plugin only (other plugins' updates are untouched); covers single, bulk, and manual-ZIP re-installs. Takes effect for updates performed from v3.4.6 onward.
+
+---
+
 ## [3.4.5] — 2026-06-05
 
 ### Fixed

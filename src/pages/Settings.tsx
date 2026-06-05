@@ -30,6 +30,14 @@ interface BrandingSettings {
 // ── Changelog data ─────────────────────────────────────────────────────────────
 const changelog: { version: string; date: string; features: string[] }[] = [
   {
+    version: '3.4.6',
+    date: '2026-06-05',
+    features: [
+      'Self-updater now force-clears the plugin directory on every update (follow-up to #5) — WordPress wipes the old WP Manager Pro folder before extracting the new package, so an in-place update can never leave stale/incomplete files behind (no more delete-and-reinstall)',
+      'Scoped to this plugin only (other plugins\' updates are untouched); covers single, bulk, and manual-ZIP re-installs. Effective for updates performed from v3.4.6 onward',
+    ],
+  },
+  {
     version: '3.4.5',
     date: '2026-06-05',
     features: [
