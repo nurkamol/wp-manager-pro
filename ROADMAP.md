@@ -2,7 +2,7 @@
 
 This document outlines the planned feature development for WP Manager Pro. Releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Minor versions (`1.x.0`) add new features; patch versions (`1.x.y`) deliver bug fixes and polish.
 
-> **Current version:** 3.4.7 — last updated 2026-06-06
+> **Current version:** 3.4.8 — last updated 2026-06-09
 
 ---
 
@@ -50,6 +50,7 @@ This document outlines the planned feature development for WP Manager Pro. Relea
 | [3.4.5] | **Fixes** [#5](https://github.com/nurkamol/wp-manager-pro/issues/5) (root cause): the v3.4.0–v3.4.4 release **assets** were uploaded truncated, missing `assets/elfinder/` + `assets/global-palette.js`, so installs/self-updates 404'd all File Manager assets. All affected assets re-uploaded complete + verified; v3.4.5 ships the verified package so the self-updater auto-recovers stuck sites |
 | [3.4.6] | **Hardening** (follow-up to [#5](https://github.com/nurkamol/wp-manager-pro/issues/5)): the self-updater force-clears the plugin directory on every update via `upgrader_package_options` (`clear_destination`), so an in-place update can't leave stale/incomplete files behind. Scoped to this plugin only; covers single, bulk, and manual-ZIP installs |
 | [3.4.7] | **Fix**: editing HTML/CSS/JS/XML/YAML in ACE threw a `NetworkError` that replaced the whole File Manager — the v3.4.4 error safeguard now only fires before init, and the missing ACE workers (css/html/javascript/xml/yaml) are bundled so every common file type edits cleanly |
+| [3.4.8] | **Fixes** [#7](https://github.com/nurkamol/wp-manager-pro/issues/7): deleting a theme threw a fatal "critical error" because core's `delete_theme()` needs `file.php` (for `request_filesystem_credentials`/`WP_Filesystem`) but doesn't load it itself, and the controller only loaded `theme.php`. Now loads `file.php`; delete/install/upload/update also force the `direct` filesystem method so non-interactive REST requests don't silently fail on credential prompts |
 
 ---
 

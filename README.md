@@ -2,7 +2,7 @@
 
 > A comprehensive, agency-ready WordPress management suite — built with React 19, TypeScript, and the WordPress REST API.
 
-![Version](https://img.shields.io/badge/version-3.4.7-blue)
+![Version](https://img.shields.io/badge/version-3.4.8-blue)
 ![WordPress](https://img.shields.io/badge/WordPress-5.9%2B-21759b)
 ![PHP](https://img.shields.io/badge/PHP-7.4%2B-8892be)
 ![License](https://img.shields.io/badge/license-GPL--2.0%2B-green)
@@ -56,6 +56,13 @@
 All operations happen through a secured REST API (`wp-manager-pro/v1`) that requires the `manage_options` capability on every route.
 
 ---
+
+## What's New in v3.4.8 — Fix: theme delete/upload critical error
+
+| Fix | Description |
+|-----|-------------|
+| 🐞 Theme delete crashed | Deleting a theme threw a fatal `There has been a critical error on this website` ([#7](https://github.com/nurkamol/wp-manager-pro/issues/7)). Core's `delete_theme()` needs `request_filesystem_credentials()` / `WP_Filesystem()` from `wp-admin/includes/file.php` but doesn't load it itself (unlike `delete_plugins()`), and the controller only loaded `theme.php` — so those functions were undefined in the REST request. The controller now loads `file.php` before deleting |
+| 🐞 Theme upload/install silently failed | The same path could make uploads/installs return a generic "installation failed" when WordPress fell back to prompting for FTP/SSH credentials in a non-interactive request. Delete, install, upload, and update now force the `direct` filesystem method, and uploads surface the real error |
 
 ## What's New in v3.4.7 — Fix: editing HTML/CSS/JS in ACE errored
 

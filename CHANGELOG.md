@@ -7,6 +7,15 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [3.4.8] — 2026-06-09
+
+### Fixed
+- **Deleting a theme triggered a fatal "critical error"** ([#7](https://github.com/nurkamol/wp-manager-pro/issues/7)). WordPress core's `delete_theme()` calls `request_filesystem_credentials()` / `WP_Filesystem()` (defined in `wp-admin/includes/file.php`) but — unlike `delete_plugins()` — does **not** load that file itself. The Themes controller only loaded `theme.php`, so in the REST context those functions were undefined and the request fataled with a raw `There has been a critical error on this website` notice. The controller now routes `delete_theme()` through `load_theme_functions()`, which loads `file.php`.
+- **Theme upload/install/update could silently fail** with a generic "Theme installation from upload failed." The same filesystem-credentials path was at fault: in a non-interactive REST request, WordPress could fall back to prompting for FTP/SSH credentials and the upgrader would just return `false`. Delete, install, upload, and update now force the `direct` filesystem method for the duration of the operation, and uploads surface the real upgrader error instead of the generic message.
+- Theme deletion now validates the theme exists up front and guards against `null`/`false` (non-writable filesystem) results, returning a clear error instead of a misleading success.
+
+---
+
 ## [3.4.7] — 2026-06-06
 
 ### Fixed
