@@ -30,6 +30,14 @@ interface BrandingSettings {
 // ── Changelog data ─────────────────────────────────────────────────────────────
 const changelog: { version: string; date: string; features: string[] }[] = [
   {
+    version: '3.4.8',
+    date: '2026-06-09',
+    features: [
+      'Fixes #7: deleting a theme threw a fatal "critical error" — WordPress core\'s delete_theme() needs request_filesystem_credentials()/WP_Filesystem() from wp-admin/includes/file.php but (unlike delete_plugins()) doesn\'t load it, and the controller only loaded theme.php, so those functions were undefined in the REST request. The controller now loads file.php before deleting',
+      'Theme delete/install/upload/update now force the "direct" filesystem method so non-interactive REST requests don\'t silently fail trying to prompt for FTP/SSH credentials; uploads now surface the real upgrader error instead of a generic "installation failed" message',
+    ],
+  },
+  {
     version: '3.4.7',
     date: '2026-06-06',
     features: [
