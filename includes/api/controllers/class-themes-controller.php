@@ -75,6 +75,11 @@ class Themes_Controller {
     }
 
     public static function delete_theme( WP_REST_Request $request ) {
+        // Loads theme.php plus file.php (request_filesystem_credentials / WP_Filesystem),
+        // which delete_theme() calls but does NOT require itself — unlike delete_plugins().
+        // Without file.php those functions are undefined in the REST context, causing a fatal.
+        self::load_theme_functions();
+
         $slug = sanitize_text_field( $request->get_param( 'slug' ) );
 
         if ( ! $slug ) {
@@ -86,17 +91,35 @@ class Themes_Controller {
             return new WP_Error( 'cannot_delete', 'Cannot delete the active theme.', [ 'status' => 403 ] );
         }
 
-        if ( ! function_exists( 'delete_theme' ) ) {
-            require_once ABSPATH . 'wp-admin/includes/theme.php';
+        if ( ! wp_get_theme( $slug )->exists() ) {
+            return new WP_Error( 'theme_not_found', 'Theme not found.', [ 'status' => 404 ] );
         }
 
+        // Force the direct filesystem method so REST requests never stall trying to
+        // prompt for FTP/SSH credentials (which would make delete_theme() return null).
+        add_filter( 'filesystem_method', [ __CLASS__, 'force_direct_filesystem' ] );
         $result = delete_theme( $slug );
+        remove_filter( 'filesystem_method', [ __CLASS__, 'force_direct_filesystem' ] );
 
         if ( is_wp_error( $result ) ) {
             return new WP_Error( 'delete_failed', $result->get_error_message(), [ 'status' => 500 ] );
         }
 
+        if ( null === $result || false === $result ) {
+            return new WP_Error( 'delete_failed', 'Theme could not be deleted. The filesystem may not be writable.', [ 'status' => 500 ] );
+        }
+
         return new WP_REST_Response( [ 'success' => true, 'message' => 'Theme deleted successfully.' ], 200 );
+    }
+
+    /**
+     * Force WordPress to use the direct filesystem method during theme operations.
+     * Prevents request_filesystem_credentials() from returning false (and the operation
+     * from silently failing) when the server can write files directly but WordPress would
+     * otherwise fall back to prompting for FTP/SSH credentials in a non-interactive request.
+     */
+    public static function force_direct_filesystem() {
+        return 'direct';
     }
 
     public static function install_theme( WP_REST_Request $request ) {
@@ -117,8 +140,10 @@ class Themes_Controller {
             return new WP_Error( 'theme_not_found', $api->get_error_message(), [ 'status' => 404 ] );
         }
 
+        add_filter( 'filesystem_method', [ __CLASS__, 'force_direct_filesystem' ] );
         $upgrader = new \Theme_Upgrader( new \WP_Ajax_Upgrader_Skin() );
         $result   = $upgrader->install( $api->download_link );
+        remove_filter( 'filesystem_method', [ __CLASS__, 'force_direct_filesystem' ] );
 
         if ( is_wp_error( $result ) ) {
             return new WP_Error( 'install_failed', $result->get_error_message(), [ 'status' => 500 ] );
@@ -194,14 +219,20 @@ class Themes_Controller {
 
         $overwrite = (bool) $request->get_param( 'overwrite' );
 
+        add_filter( 'filesystem_method', [ __CLASS__, 'force_direct_filesystem' ] );
         $upgrader = new \Theme_Upgrader( new \WP_Ajax_Upgrader_Skin() );
         $result   = $upgrader->install( $file['tmp_name'], [ 'overwrite_package' => $overwrite ] );
+        remove_filter( 'filesystem_method', [ __CLASS__, 'force_direct_filesystem' ] );
 
         if ( is_wp_error( $result ) ) {
             return new WP_Error( 'install_failed', $result->get_error_message(), [ 'status' => 500 ] );
         }
 
         if ( ! $result ) {
+            $skin_errors = $upgrader->skin->get_errors();
+            if ( is_wp_error( $skin_errors ) && $skin_errors->has_errors() ) {
+                return new WP_Error( 'install_failed', $skin_errors->get_error_message(), [ 'status' => 500 ] );
+            }
             return new WP_Error( 'install_failed', 'Theme installation from upload failed.', [ 'status' => 500 ] );
         }
 
@@ -316,8 +347,10 @@ class Themes_Controller {
             return new WP_Error( 'no_update', 'No update available for this theme.', [ 'status' => 400 ] );
         }
 
+        add_filter( 'filesystem_method', [ __CLASS__, 'force_direct_filesystem' ] );
         $upgrader = new \Theme_Upgrader( new \WP_Ajax_Upgrader_Skin() );
         $result   = $upgrader->upgrade( $slug );
+        remove_filter( 'filesystem_method', [ __CLASS__, 'force_direct_filesystem' ] );
 
         if ( is_wp_error( $result ) ) {
             return new WP_Error( 'update_failed', $result->get_error_message(), [ 'status' => 500 ] );
@@ -346,8 +379,10 @@ class Themes_Controller {
 
         $download_url = 'https://downloads.wordpress.org/theme/' . $slug . '.' . $version . '.zip';
 
+        add_filter( 'filesystem_method', [ __CLASS__, 'force_direct_filesystem' ] );
         $upgrader = new \Theme_Upgrader( new \WP_Ajax_Upgrader_Skin() );
         $result   = $upgrader->install( $download_url, [ 'overwrite_package' => true ] );
+        remove_filter( 'filesystem_method', [ __CLASS__, 'force_direct_filesystem' ] );
 
         if ( is_wp_error( $result ) ) {
             return new WP_Error( 'install_failed', $result->get_error_message(), [ 'status' => 500 ] );
