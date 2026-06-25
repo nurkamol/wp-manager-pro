@@ -246,12 +246,12 @@ export function Snippets() {
           if (!open) { setShowForm(false); setEditSnippet(null); setEditorExpanded(false) }
         }}
       >
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
+        <DialogContent className="max-w-3xl min-w-0">
+          <DialogHeader className="min-w-0">
             <DialogTitle>{editSnippet ? 'Edit Snippet' : 'New Snippet'}</DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-4">
+          <div className="space-y-4 min-w-0">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="snippet-title">Title</Label>
@@ -300,7 +300,7 @@ export function Snippets() {
                   <Maximize2 className="w-4 h-4" />
                 </button>
               </div>
-              <div className="border rounded-md overflow-hidden" style={{ height: '300px' }}>
+              <div className="border rounded-md overflow-hidden min-w-0" style={{ height: '300px' }}>
                 {editorExpanded ? (
                   <div className="h-full bg-[#282c34] flex items-center justify-center text-slate-500 text-sm">
                     Editing in fullscreen…

@@ -7,6 +7,13 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [3.4.9] — 2026-06-25
+
+### Fixed
+- **The "Edit Snippet" / "New Snippet" modal layout was broken** ([#8](https://github.com/nurkamol/wp-manager-pro/issues/8)). The dark CodeMirror editor container overflowed horizontally past the white modal boundary, and the title/description input fields were stretched and misaligned. Root cause: `DialogContent` is a CSS grid, and grid items default to `min-width: auto` — so the code editor's wide intrinsic content width refused to shrink and burst out of the modal on the right, dragging the inputs out of alignment with it. Added `min-w-0` to the dialog's grid children so the editor and inputs stay strictly within the modal bounds; CodeMirror now scrolls long lines horizontally inside its own container.
+
+---
+
 ## [3.4.8] — 2026-06-09
 
 ### Fixed
