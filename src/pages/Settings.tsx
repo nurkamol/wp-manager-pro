@@ -30,6 +30,14 @@ interface BrandingSettings {
 // ── Changelog data ─────────────────────────────────────────────────────────────
 const changelog: { version: string; date: string; features: string[] }[] = [
   {
+    version: '3.4.9',
+    date: '2026-06-25',
+    features: [
+      'Fixes #8: the Edit/New Snippet modal layout was broken — the dark CodeMirror editor overflowed past the white modal boundary and the title/description inputs stretched out of alignment. Root cause was the CSS-grid DialogContent: grid items default to min-width:auto, so the editor\'s wide intrinsic content width refused to shrink and burst out of the modal',
+      'Added min-w-0 to the dialog\'s grid children so the editor and inputs stay strictly within the modal; CodeMirror now scrolls long lines horizontally inside its own container',
+    ],
+  },
+  {
     version: '3.4.8',
     date: '2026-06-09',
     features: [
